@@ -1,0 +1,15 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/EF/bin/Debug/net8.0
+/EF/obj
+/.vs
+/Entity/bin/Debug/net8.0
+/Entity/obj
+/ModsAPI/bin/Debug/net8.0
+/ModsAPI/obj
+/Redis/obj
+/Redis/bin/Debug/net8.0
+/Service/obj
+/Service/bin/Debug/net8.0

@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ModsAPI</name>
+    </assembly>
+    <members>
+        <member name="T:ModsAPI.Controllers.UserController">
+            <summary>
+            用户相关api
+            </summary>
+        </member>
+        <member name="M:ModsAPI.Controllers.UserController.#ctor(Service.Interface.IUserService)">
+            <summary>
+            构造函数
+            </summary>
+            <param name="iUserService"></param>
+        </member>
+        <member name="T:ModsAPI.Middlewares.ExceptionHandlingMiddleware">
+            <summary>
+            全局异常捕获中间件
+            </summary>
+        </member>
+        <member name="M:ModsAPI.Middlewares.ExceptionHandlingMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            执行中间件
+            </summary>
+            <param name="httpContext"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ModsAPI.Middlewares.ExceptionHandlingMiddleware.HandleExceptionAsync(Microsoft.AspNetCore.Http.HttpContext,System.Exception)">
+            <summary>
+            异步处理异常
+            </summary>
+            <param name="context"></param>
+            <param name="exception"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ModsAPI.tools.AutofacModuleRegister.Load(Autofac.ContainerBuilder)">
+            <inheritdoc/>
+            重写Autofac管道Load方法，在这里注册注入
+        </member>
+        <member name="M:ModsAPI.tools.JwtHelper.CreateToken(Entity.User.UserEntity)">
+            <summary>
+            颁发Token
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:ModsAPI.tools.JwtHelper.CreateRefreshToken">
+            <summary>
+            生成refresh_Token
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:ModsAPI.tools.JwtHelper.GetTokenStr(System.String,System.String)">
+            <summary>
+            解析token返回字符串
+            </summary>
+            <param name="Token"></param>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="T:ModsAPI.tools.JwtSettings">
+            <summary>
+            JWT 配置信息
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.JwtSettings.Issuer">
+            <summary>
+            颁发者
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.JwtSettings.Audience">
+            <summary>
+            使用者
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.JwtSettings.SecrentKey">
+            <summary>
+            私钥
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.JwtSettings.Expirces">
+            <summary>
+            Token过期时间 单位秒
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.JwtSettings.RefreshTokenExpirces">
+            <summary>
+            Refresh_Token过期时间 单位秒
+            </summary>
+        </member>
+        <member name="T:ModsAPI.tools.ResponseToken">
+            <summary>
+            Token的返回实体
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.ResponseToken.Token">
+            <summary>
+            JWT Token
+            </summary>
+        </member>
+        <member name="P:ModsAPI.tools.ResponseToken.Refresh_Token">
+            <summary>
+            用于刷新token的刷新令牌
+            </summary>
+        </member>
+    </members>
+</doc>
