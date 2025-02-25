@@ -1,17 +1,14 @@
 using Autofac;
-using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ModsAPI.Middlewares;
 using ModsAPI.tools;
 using Newtonsoft.Json.Serialization;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +27,7 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddAuthentication(options =>
 {
@@ -90,6 +88,13 @@ builder.Services.AddSwaggerGen(s =>
     s.IncludeXmlComments(path, true); // true : 显示控制器层注释
     s.OrderActionsBy(o => o.RelativePath); // 对action的名称进行排序，如果有多个，就可以看见效果了。
 });
+builder.Services.AddRateLimiter(_ => _
+    .AddConcurrencyLimiter(policyName: "Concurrency", options =>
+    {
+        options.PermitLimit = Convert.ToInt32(builder.Configuration["PermitLimit"]);//时间窗口内允许的最大请求;
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = Convert.ToInt32(builder.Configuration["QueueLimit"]);// 队列中允许的最大请求数
+    }));
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
@@ -110,7 +115,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseRateLimiter();
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();

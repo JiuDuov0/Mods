@@ -29,10 +29,8 @@ namespace ModsAPI.tools
             var claims = new List<Claim>
             {
                 new Claim("UserId", userInfo.UserId),
-                new Claim("userRoleIDs", string.Join(",",userInfo.UserRoleID)),
+                new Claim("UserRoleIDs", string.Join(",",userInfo.UserRoleID)),
                 new Claim("NickName",userInfo.NickName),
-                //new Claim("roles", string.Join(";",customClaims.roles)),
-                //new Claim(JwtRegisteredClaimNames.Sub, sub),
             };
 
             string key = _jwtSettings.Value.SecrentKey;
@@ -55,6 +53,37 @@ namespace ModsAPI.tools
             _RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
             _RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
             return new ResponseToken() { Token = token, Refresh_Token = refreshToken };
+        }
+
+        /// <summary>
+        /// 生成存活时间最大的token
+        /// </summary>
+        /// <param name="userInfo"></param>
+        /// <returns></returns>
+        public ResponseToken CreateYearsToken(UserEntity userInfo)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim("UserId", userInfo.UserId),
+                new Claim("UserRoleIDs", string.Join(",",userInfo.UserRoleID)),
+                new Claim("NickName",userInfo.NickName),
+            };
+
+            string key = _jwtSettings.Value.SecrentKey;
+            byte[] secBytes = Encoding.UTF8.GetBytes(key);
+            var secKey = new SymmetricSecurityKey(secBytes);
+
+            var tokenDescriptor = new JwtSecurityToken(
+                claims: claims,
+                notBefore: DateTime.Now,
+                expires: DateTime.Now.AddYears(80),
+                issuer: _jwtSettings.Value.Issuer,
+                audience: _jwtSettings.Value.Audience,
+                signingCredentials: new SigningCredentials(secKey, SecurityAlgorithms.HmacSha256Signature)
+                );
+
+
+            return new ResponseToken() { Token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor) };
         }
 
         /// <summary>

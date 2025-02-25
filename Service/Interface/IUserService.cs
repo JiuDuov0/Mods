@@ -10,5 +10,6 @@ namespace Service.Interface
     public interface IUserService
     {
         public List<UserEntity> GetPages(int skip, int take);
+        public UserEntity Login(string Account, string Password);
     }
 }

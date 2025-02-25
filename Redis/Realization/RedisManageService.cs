@@ -72,7 +72,7 @@ namespace Redis.Realization
         }
         public string GetValue(string key, int DB = 0)
         {
-            return _redisConnection.GetDatabase().StringGet(key);
+            return _redisConnection.GetDatabase(DB).StringGet(key);
         }
 
         public void Set(string key, object value, object ts = null, int DB = 0)

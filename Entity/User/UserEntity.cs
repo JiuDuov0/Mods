@@ -18,10 +18,22 @@ namespace Entity.User
         /// 昵称
         /// </summary>
         public string? NickName { get; set; }
+        /// <summary>
+        /// 邮箱
+        /// </summary>
+        public string? Mail { get; set; }
+        /// <summary>
+        /// 头像
+        /// </summary>
+        public string? HeadPic { get; set; }
+        /// <summary>
+        /// 密码
+        /// </summary>
+        public string? Password { get; set; }
         [NotMapped]
         /// <summary>
         /// 角色id
         /// </summary>
-        public string[] UserRoleID { get; set; }
+        public List<string> UserRoleID { get; set; }
     }
 }

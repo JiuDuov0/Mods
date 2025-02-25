@@ -1,5 +1,6 @@
 ﻿using Entity;
 using Entity.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -11,6 +12,7 @@ namespace ModsAPI.Controllers
     /// 用户相关api
     /// </summary>
     [Route("api/[controller]/[action]")]
+    [Authorize]
     [ApiController]
     public class UserController : ControllerBase
     {
