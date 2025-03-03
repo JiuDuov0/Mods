@@ -26,6 +26,7 @@ namespace ModsAPI.Controllers
             _IUserService = iUserService;
         }
         [HttpPost(Name = "GetPage")]
+        [Authorize(Roles = "Developer")]
         public ResultEntity<List<UserEntity>> GetPage([FromBody] dynamic json)
         {
             json = JsonConvert.DeserializeObject(Convert.ToString(json));

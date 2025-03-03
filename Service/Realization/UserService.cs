@@ -26,8 +26,22 @@ namespace Service.Realization
 
         public UserEntity Login(string Account, string Password)
         {
-            var user = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserEntity.FirstOrDefault(x => x.Mail == Account && x.Password == Password);
-            //添加角色
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            var user = context.UserEntity.FirstOrDefault(x => x.Mail == Account && x.Password == Password);
+            //角色
+            if (user != null && user.UserId != null)
+            {
+                var roleids = context.UserRoleEntity.Where(x => x.UserId == user.UserId).ToList();
+                if (roleids == null || roleids.Count == 0)
+                {
+                    user.UserRoleID = new List<string>() { "4f58518b-5f9c-7cfe-ab48-9abc5d9ccc03" };
+                }
+                else
+                {
+                    //后面需要多角色再改吧
+                    user.UserRoleID = new List<string> { roleids[0].RoleId };
+                }
+            }
             return user;
         }
     }

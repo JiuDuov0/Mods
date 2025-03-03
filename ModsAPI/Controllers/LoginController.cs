@@ -34,7 +34,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 登录api
         /// </summary>
-        /// <param name="json">LoginAccount=账号（Email），Password=密码{"LoginAccount":"","Password":""}</param>
+        /// <param name="json">LoginAccount=账号（Email），Password=密码 json示例：{"LoginAccount":"","Password":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "UserLogin")]
         [EnableRateLimiting("Concurrency")]
@@ -63,7 +63,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 创建80年后过期的token
         /// </summary>
-        /// <param name="json"></param>
+        /// <param name="json">LoginAccount=账号（Email），Password=密码 json示例：{"LoginAccount":"","Password":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "CreateToken")]
         [EnableRateLimiting("Concurrency")]

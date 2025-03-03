@@ -25,5 +25,6 @@ namespace EF
             modelBuilder.Entity<UserEntity>().HasKey(x => x.UserId);
         }
         public DbSet<UserEntity> UserEntity { get; set; }
+        public DbSet<UserRoleEntity> UserRoleEntity { get; set; }
     }
 }
