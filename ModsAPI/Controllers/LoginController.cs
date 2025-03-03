@@ -89,5 +89,12 @@ namespace ModsAPI.Controllers
             }
             return new ResultEntity<ResponseToken> { ResultMsg = "账号或密码错误" };
         }
+        [HttpPost(Name = "Test")]
+        public string Test()
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
+            return "";
+        }
     }
 }

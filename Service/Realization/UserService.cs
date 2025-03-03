@@ -19,9 +19,14 @@ namespace Service.Realization
             _IDbContextServices = iDbContextServices;
         }
 
-        public List<UserEntity> GetPages(int skip, int take)
+        public List<UserEntity> GetPages(dynamic json)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserEntity.Skip(skip).Take(take).ToList();
+            int skip = Convert.ToInt32(json.Skip);
+            int take = Convert.ToInt32(json.Take);
+            var entity = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserEntity;
+            //条件
+            //entity.Where(x => x.UserId == "");
+            return entity.Skip(skip).Take(take).ToList();
         }
 
         public UserEntity Login(string Account, string Password)
@@ -34,12 +39,17 @@ namespace Service.Realization
                 var roleids = context.UserRoleEntity.Where(x => x.UserId == user.UserId).ToList();
                 if (roleids == null || roleids.Count == 0)
                 {
+                    //不储存普通用户的角色
                     user.UserRoleID = new List<string>() { "4f58518b-5f9c-7cfe-ab48-9abc5d9ccc03" };
                 }
                 else
                 {
-                    //后面需要多角色再改吧
-                    user.UserRoleID = new List<string> { roleids[0].RoleId };
+                    var list = new List<string>();
+                    foreach (var item in roleids)
+                    {
+                        list.Add(item.RoleId);
+                    }
+                    user.UserRoleID = list;
                 }
             }
             return user;

@@ -1,4 +1,5 @@
-﻿using Entity.User;
+﻿using Entity.Role;
+using Entity.User;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Redis.Interface;
@@ -32,6 +33,12 @@ namespace ModsAPI.tools
                 new Claim("UserRoleIDs", string.Join(",",userInfo.UserRoleID)),
                 new Claim("NickName",userInfo.NickName),
             };
+            var roleslist = new RoleEntity().GetRoleList();
+            foreach (var item in userInfo.UserRoleID)
+            {
+                var rolename = roleslist.Find(x => x.Id == item);
+                claims.Add(new Claim(ClaimTypes.Role, rolename.RoleName));
+            }
 
             string key = _jwtSettings.Value.SecrentKey;
             byte[] secBytes = Encoding.UTF8.GetBytes(key);

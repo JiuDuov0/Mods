@@ -9,7 +9,7 @@ namespace Service.Interface
 {
     public interface IUserService
     {
-        public List<UserEntity> GetPages(int skip, int take);
+        public List<UserEntity> GetPages(dynamic json);
         public UserEntity Login(string Account, string Password);
     }
 }
