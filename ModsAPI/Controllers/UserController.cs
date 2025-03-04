@@ -30,7 +30,7 @@ namespace ModsAPI.Controllers
         public ResultEntity<List<UserEntity>> GetPage([FromBody] dynamic json)
         {
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            return new ResultEntity<List<UserEntity>>() { ResultData = _IUserService.GetPages(0, 10) };
+            return new ResultEntity<List<UserEntity>>() { ResultData = _IUserService.GetPages(json) };
         }
     }
 }
