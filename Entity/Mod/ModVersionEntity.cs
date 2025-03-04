@@ -1,5 +1,4 @@
-﻿using Entity.Tag;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,54 +8,49 @@ using System.Threading.Tasks;
 
 namespace Entity.Mod
 {
-    [Table("Mod")]
-    public class ModEntity
+    [Table("ModVersion")]
+    public class ModVersionEntity
     {
         /// <summary>
-        /// Mod的唯一标识符
+        /// 版本的唯一标识符
         /// </summary>
         [Key]
+        public string? VersionId { get; set; }
+
+        /// <summary>
+        /// 所属Mod的唯一标识符
+        /// </summary>
         public string? ModId { get; set; }
 
         /// <summary>
-        /// Mod的名称
+        /// 版本号
         /// </summary>
-        public string? Name { get; set; }
+        public string? VersionNumber { get; set; }
 
         /// <summary>
-        /// Mod的描述
+        /// 版本的描述
         /// </summary>
         public string? Description { get; set; }
 
         /// <summary>
-        /// Mod的创建者用户ID
+        /// Mod的下载链接
         /// </summary>
-        public string? CreatorUserId { get; set; }
+        public string? DownloadUrl { get; set; }
 
         /// <summary>
-        /// Mod的创建时间
+        /// 版本的创建时间
         /// </summary>
         public DateTime CreatedAt { get; set; }
 
         /// <summary>
-        /// Mod的更新时间
+        /// 版本的更新时间
         /// </summary>
         public DateTime UpdatedAt { get; set; }
 
         /// <summary>
-        /// Mod的介绍视频链接
+        /// 导航属性，指向所属的Mod
         /// </summary>
-        public string? VideoUrl { get; set; }
-
-        /// <summary>
-        /// Mod父级mod
-        /// </summary>
-        public string? Parentld { get; set; }
-
-        /// <summary>
-        /// Mod的标签
-        /// </summary>
-        [NotMapped]
-        public List<TagEntity> Tags { get; set; } = new List<TagEntity>();
+        [ForeignKey("ModId")]
+        public ModEntity? Mod { get; set; }
     }
 }

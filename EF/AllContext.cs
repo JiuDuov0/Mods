@@ -1,4 +1,7 @@
-﻿using Entity.User;
+﻿using Entity.Mod;
+using Entity.Tag;
+using Entity.Type;
+using Entity.User;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -26,5 +29,12 @@ namespace EF
         }
         public DbSet<UserEntity> UserEntity { get; set; }
         public DbSet<UserRoleEntity> UserRoleEntity { get; set; }
+        public DbSet<TypesEntity> TypesEntity { get; set; }
+        public DbSet<TagEntity> TagEntity { get; set; }
+        public DbSet<ModEntity> ModEntity { get; set; }
+        public DbSet<ModPictureEntity> ModPictureEntity { get; set; }
+        public DbSet<ModTagsEntity> ModTagsEntity { get; set; }
+        public DbSet<ModTypeEntity> ModTypeEntity { get; set; }
+        public DbSet<ModVersionEntity> ModVersionEntity { get; set; }
     }
 }
