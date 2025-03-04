@@ -54,6 +54,11 @@ namespace Entity.Mod
         public string? Parentld { get; set; }
 
         /// <summary>
+        /// 下载次数
+        /// </summary>
+        public Int64? DownLoadCount { get; set; }
+
+        /// <summary>
         /// Mod的标签
         /// </summary>
         [NotMapped]

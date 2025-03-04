@@ -18,7 +18,7 @@ namespace ModsAPI.Controllers
     {
         private readonly IUserService _IUserService;
         /// <summary>
-        /// 构造函数
+        /// 构造函数依赖注入
         /// </summary>
         /// <param name="iUserService"></param>
         public UserController(IUserService iUserService)

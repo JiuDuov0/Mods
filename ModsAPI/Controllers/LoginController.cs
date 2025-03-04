@@ -20,7 +20,7 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         /// <summary>
-        /// 构造函数
+        /// 构造函数依赖注入
         /// </summary>
         /// <param name="iUserService"></param>
         /// <param name="jwtHelper"></param>
@@ -93,9 +93,9 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
-        /// 
+        /// 创建用户并登录
         /// </summary>
-        /// <param name="json">LoginAccount=账号（Email），Password=密码 json示例：{"LoginAccount":"","Password":""}</param>
+        /// <param name="json">LoginAccount=账号（Email），Password=密码，NickName=昵称 json示例：{"LoginAccount":"","NickName":"","Password":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "UserRegister")]
         [EnableRateLimiting("Concurrency")]
@@ -108,6 +108,14 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
             }
+            else if (!((string)json.LoginAccount).Contains('@') && !((string)json.LoginAccount).Contains('.'))
+            {
+                return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
+            }
+            if ((string)json.NickName == "" || (string)json.NickName == null)
+            {
+                return new ResultEntity<ResponseToken> { ResultMsg = "请检查昵称" };
+            }
             if ((string)json.Password == "" || (string)json.Password == null)
             {
                 return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
@@ -118,13 +126,16 @@ namespace ModsAPI.Controllers
             {
                 UserId = Guid.NewGuid().ToString(),
                 Mail = (string)json.LoginAccount,
-                Password = (string)json.Password
+                NickName = (string)json.NickName,
+                Password = (string)json.Password,
+                CreatedAt = DateTime.Now
             };
-            if (_IUserService.Register(User) != null)
+            User = _IUserService.Register(User);
+            if (User != null)
             {
-                return new ResultEntity<ResponseToken> { ResultData = _JwtHelper.CreateYearsToken(User) };
+                return new ResultEntity<ResponseToken> { ResultData = _JwtHelper.CreateToken(User) };
             }
-            return new ResultEntity<ResponseToken> { ResultMsg = "账号或密码错误" };
+            return new ResultEntity<ResponseToken> { ResultMsg = "信息错误" };
         }
 
         /// <summary>

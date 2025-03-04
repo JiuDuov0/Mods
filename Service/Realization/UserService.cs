@@ -59,17 +59,22 @@ namespace Service.Realization
         {
             var WriteContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var ReadContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
-
             WriteContext.Add(entity);
             WriteContext.SaveChanges();
+            //System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+            //watch.Start();
+
+            //watch.Stop();
+            //var timeSpan = watch.Elapsed.TotalMilliseconds;
             for (int i = 0; i < 5; i++)
             {
-                Thread.Sleep(1000);
                 var userselect = ReadContext.UserEntity.FirstOrDefault(x => x.UserId == entity.UserId);
                 if (userselect != null && userselect.UserId != null)
                 {
+                    userselect.UserRoleID = new List<string>() { "4f58518b-5f9c-7cfe-ab48-9abc5d9ccc03" };
                     return userselect;
                 }
+                Thread.Sleep(1000);
             }
             return null;
         }
