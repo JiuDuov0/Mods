@@ -11,5 +11,6 @@ namespace Service.Interface
     {
         public List<UserEntity> GetPages(dynamic json);
         public UserEntity Login(string Account, string Password);
+        public UserEntity? Register(UserEntity entity);
     }
 }

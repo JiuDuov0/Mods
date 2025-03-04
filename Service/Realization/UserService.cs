@@ -54,5 +54,24 @@ namespace Service.Realization
             }
             return user;
         }
+
+        public UserEntity? Register(UserEntity entity)
+        {
+            var WriteContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var ReadContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+
+            WriteContext.Add(entity);
+            WriteContext.SaveChanges();
+            for (int i = 0; i < 5; i++)
+            {
+                Thread.Sleep(1000);
+                var userselect = ReadContext.UserEntity.FirstOrDefault(x => x.UserId == entity.UserId);
+                if (userselect != null && userselect.UserId != null)
+                {
+                    return userselect;
+                }
+            }
+            return null;
+        }
     }
 }

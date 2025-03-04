@@ -32,6 +32,7 @@ namespace ModsAPI.tools
                 new Claim("UserId", userInfo.UserId),
                 new Claim("UserRoleIDs", string.Join(",",userInfo.UserRoleID)),
                 new Claim("NickName",userInfo.NickName),
+                new Claim("Days","1"),
             };
             var roleslist = new RoleEntity().GetRoleList();
             foreach (var item in userInfo.UserRoleID)
@@ -74,6 +75,7 @@ namespace ModsAPI.tools
                 new Claim("UserId", userInfo.UserId),
                 new Claim("UserRoleIDs", string.Join(",",userInfo.UserRoleID)),
                 new Claim("NickName",userInfo.NickName),
+                new Claim("Days","29200"),
             };
 
             string key = _jwtSettings.Value.SecrentKey;

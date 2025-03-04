@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Entity.Mod;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -30,10 +31,30 @@ namespace Entity.User
         /// 密码
         /// </summary>
         public string? Password { get; set; }
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime? CreatedAt { get; set; }
         [NotMapped]
         /// <summary>
         /// 角色id
         /// </summary>
         public List<string> UserRoleID { get; set; }
+        /// <summary>
+        /// 导航属性，指向Mod的图片
+        /// </summary>
+        public List<ModPictureEntity> ModPictureEntities { get; set; }
+        /// <summary>
+        /// 导航属性，指向Mod的标签
+        /// </summary>
+        public List<ModTagsEntity> ModTagsEntities { get; set; }
+        /// <summary>
+        /// 导航属性，指向Mod的类型
+        /// </summary>
+        public List<ModTypeEntity> ModTypeEntities { get; set; }
+        /// <summary>
+        /// 导航属性，指向Mod的版本
+        /// </summary>
+        public List<ModVersionEntity> ModVersionEntities { get; set; }
     }
 }
