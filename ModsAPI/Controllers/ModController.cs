@@ -3,6 +3,7 @@ using Entity.Mod;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Service.Interface;
 
 namespace ModsAPI.Controllers
@@ -25,14 +26,15 @@ namespace ModsAPI.Controllers
             _IModService = iModService;
         }
         /// <summary>
-        /// 
+        /// 分页获取Mod列表
         /// </summary>
-        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Select=查询框，Tags=标签，Types=类型</param>
+        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Select=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Select":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "ModListPage")]
         public ResultEntity<List<ModEntity>> ModListPage([FromBody] dynamic json)
         {
-            return null;
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json) };
         }
     }
 }

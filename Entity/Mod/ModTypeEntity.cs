@@ -26,7 +26,7 @@ namespace Entity.Mod
         /// <summary>
         /// 类型的唯一标识符
         /// </summary>
-        public string? TypeId { get; set; }
+        public string? TypesId { get; set; }
 
         /// <summary>
         /// 导航属性，指向所属的Mod
@@ -37,7 +37,7 @@ namespace Entity.Mod
         /// <summary>
         /// 导航属性，指向类型
         /// </summary>
-        [ForeignKey("TypeId")]
-        public TypesEntity? Type { get; set; }
+        [ForeignKey("TypesId")]
+        public TypesEntity? Types { get; set; }
     }
 }

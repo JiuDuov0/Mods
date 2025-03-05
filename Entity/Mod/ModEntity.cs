@@ -1,5 +1,4 @@
-﻿using Entity.Tag;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -36,12 +35,12 @@ namespace Entity.Mod
         /// <summary>
         /// Mod的创建时间
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
         /// <summary>
         /// Mod的更新时间
         /// </summary>
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// Mod的介绍视频链接
@@ -49,19 +48,23 @@ namespace Entity.Mod
         public string? VideoUrl { get; set; }
 
         /// <summary>
-        /// Mod父级mod
-        /// </summary>
-        public string? Parentld { get; set; }
-
-        /// <summary>
         /// 下载次数
         /// </summary>
         public Int64? DownLoadCount { get; set; }
 
         /// <summary>
-        /// Mod的标签
+        /// 导航属性，指向Mod的图片
         /// </summary>
-        [NotMapped]
-        public List<TagEntity> Tags { get; set; } = new List<TagEntity>();
+        public List<ModPictureEntity> ModPictureEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Mod的类型
+        /// </summary>
+        public List<ModTypeEntity> ModTypeEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Mod的版本
+        /// </summary>
+        public List<ModVersionEntity> ModVersionEntities { get; set; }
     }
 }
