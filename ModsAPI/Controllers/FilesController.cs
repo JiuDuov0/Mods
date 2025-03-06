@@ -1,4 +1,5 @@
 ﻿using Entity;
+using Entity.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +36,7 @@ namespace ModsAPI.Controllers
             _IConfiguration = configuration;
         }
         /// <summary>
-        /// 上传Mod
+        /// 上传Mod文件
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
@@ -44,6 +45,7 @@ namespace ModsAPI.Controllers
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             var result = new ResultEntity<string>();
 
@@ -52,38 +54,65 @@ namespace ModsAPI.Controllers
                 result.ResultCode = 400;
                 result.ResultMsg = "文件不能为空";
                 return result;
-            }else if (file.Length > 1024 * 1024 * 10)
+            }
+            else if (file.Length > 1024 * 1024)
             {
-                result.ResultCode = 400;
-                result.ResultMsg = "文件大小不能超过10M";
-                return result;
-            }else if (file.ContentType != "application/zip")
+                if (UserRoleIDs.Contains("b156c735-fe7b-421a-4764-78867798ef42") || UserRoleIDs.Contains("45166589-67eb-4012-abcc-817a0fa12c0e"))
+                {
+                    //有权限
+                    if (file.Length > 1024 * 1024 * 10)
+                    {
+                        result.ResultCode = 400;
+                        result.ResultMsg = "文件大小不能超过10M";
+                        return result;
+                    }
+                }
+                else
+                {
+                    result.ResultCode = 400;
+                    result.ResultMsg = "文件大小不能超过1M";
+                    return result;
+                }
+            }
+            else if (file.ContentType != "application/x-zip-compressed")
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
                 return result;
             }
-            var path = _IConfiguration["FilePath"];
+            var guid = Guid.NewGuid().ToString();
+            var filetype = file.FileName.Substring(file.FileName.LastIndexOf('.'), file.FileName.Length - file.FileName.LastIndexOf('.'));
+            var entity = new FilesEntity()
+            {
+                FileId = guid,
+                FilesType = filetype,
+                FilesName = file.FileName,
+                Size = file.Length.ToString(),
+                Path = _IConfiguration["FilePath"] + "\\" + guid + filetype,
+                UserId = UserId,
+                CreatedAt = DateTime.Now
+            };
+            var savepath = _IConfiguration["FilePath"];
             var filename = file.FileName;
             var filesize = file.Length;
 
-            //try
-            //{
-            //    var filePath = Path.Combine("uploads", file.FileName);
+            try
+            {
+                var filePath = Path.Combine(_IConfiguration["FilePath"], guid + filetype);
 
-            //    using (var stream = new FileStream(filePath, FileMode.Create))
-            //    {
-            //        await file.CopyToAsync(stream);
-            //    }
-            //    result.ResultCode = 200;
-            //    result.ResultMsg = "文件上传成功";
-            //    result.ResultData = filePath;
-            //}
-            //catch (Exception ex)
-            //{
-            //    result.ResultCode = 500;
-            //    result.ResultMsg = $"文件上传失败: {ex.Message}";
-            //}
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+                result.ResultCode = 200;
+                result.ResultMsg = "文件上传成功";
+                result.ResultData = filePath;
+            }
+            catch (Exception ex)
+            {
+                result.ResultCode = 500;
+                result.ResultMsg = $"文件上传失败: {ex.Message}";
+            }
 
             return result;
         }
