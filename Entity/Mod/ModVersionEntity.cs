@@ -59,6 +59,9 @@ namespace Entity.Mod
         [ForeignKey("ModId")]
         public ModEntity? Mod { get; set; }
 
+        /// <summary>
+        /// 导航属性，指向所属的Mod版本审批信息
+        /// </summary>
         public List<ApproveModVersionEntity> ApproveModVersionEntity { get; set; }
     }
 }

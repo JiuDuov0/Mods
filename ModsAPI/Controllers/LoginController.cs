@@ -156,6 +156,7 @@ namespace ModsAPI.Controllers
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            var role = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("Test", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             return "";
         }

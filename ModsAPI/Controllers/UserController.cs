@@ -57,8 +57,8 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// Mod订阅
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns>ModId:ModId json示例：{"ModId":""}</returns>
+        /// <param name="json">ModId:ModId json示例：{"ModId":""}</param>
+        /// <returns></returns>
         [HttpPost(Name = "ModSubscribe")]
         [Authorize]
         public ResultEntity<bool> ModSubscribe([FromBody] dynamic json)

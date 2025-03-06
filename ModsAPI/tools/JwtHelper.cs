@@ -77,6 +77,12 @@ namespace ModsAPI.tools
                 new Claim("NickName",userInfo.NickName),
                 new Claim("Days","29200"),
             };
+            var roleslist = new RoleEntity().GetRoleList();
+            foreach (var item in userInfo.UserRoleID)
+            {
+                var rolename = roleslist.Find(x => x.Id == item);
+                claims.Add(new Claim(ClaimTypes.Role, rolename.RoleName));
+            }
 
             string key = _jwtSettings.Value.SecrentKey;
             byte[] secBytes = Encoding.UTF8.GetBytes(key);
