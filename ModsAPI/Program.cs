@@ -97,6 +97,7 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         options.QueueLimit = Convert.ToInt32(builder.Configuration["QueueLimit"]);// 队列中允许的最大请求数
     }));
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.

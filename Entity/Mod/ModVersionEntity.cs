@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Entity.Approve;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -48,9 +49,16 @@ namespace Entity.Mod
         public DateTime UpdatedAt { get; set; }
 
         /// <summary>
+        /// 版本的状态
+        /// </summary>
+        public string? Status { get; set; }
+
+        /// <summary>
         /// 导航属性，指向所属的Mod
         /// </summary>
         [ForeignKey("ModId")]
         public ModEntity? Mod { get; set; }
+
+        public List<ApproveModVersionEntity> ApproveModVersionEntity { get; set; }
     }
 }

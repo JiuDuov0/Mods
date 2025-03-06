@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Entity.User;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -66,5 +67,10 @@ namespace Entity.Mod
         /// 导航属性，指向Mod的版本
         /// </summary>
         public List<ModVersionEntity> ModVersionEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Mod的订阅人
+        /// </summary>
+        public List<UserModSubscribeEntity> UserModSubscribeEntities { get; set; }
     }
 }

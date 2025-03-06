@@ -1,5 +1,7 @@
 ﻿using EF;
 using EF.Interface;
+using Entity.Approve;
+using Entity.Mod;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -77,6 +79,32 @@ namespace Service.Realization
                 Thread.Sleep(1000);
             }
             return null;
+        }
+
+        public bool SubscribeToMod(string userId, string modId)
+        {
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var subscription = new UserModSubscribeEntity
+            {
+                SubscribeId = Guid.NewGuid().ToString(),
+                UserId = userId,
+                ModId = modId,
+                SubscribedAt = DateTime.Now
+            };
+            context.UserModSubscribeEntity.Add(subscription);
+            return context.SaveChanges() > 0;
+        }
+
+        public List<ModEntity> UserAllSubscribeModPage(dynamic json, string UserId)
+        {
+            var Skip = Convert.ToInt32((string)json.Skip);
+            var Take = Convert.ToInt32((string)json.Take);
+            IQueryable<ModEntity> context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.UserModSubscribeEntities);
+            context = context.Where(x =>
+            x.UserModSubscribeEntities.Any(y => y.UserId == UserId) &&
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
+            return context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
         }
     }
 }

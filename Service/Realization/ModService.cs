@@ -1,5 +1,6 @@
 ﻿using EF;
 using EF.Interface;
+using Entity.Approve;
 using Entity.Mod;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -46,6 +47,37 @@ namespace Service.Realization
             }
             #endregion
             return Context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
+        }
+
+        public void ApproveModVersion(string modVersionId, string approverUserId, string status, string comments)
+        {
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var approval = new ApproveModVersionEntity
+            {
+                ApproveModVersionId = Guid.NewGuid().ToString(),
+                ModVersionId = modVersionId,
+                ApproverUserId = approverUserId,
+                ApprovedAt = DateTime.Now,
+                Status = status,
+                Comments = comments
+            };
+            context.ApproveModEntity.Add(approval);
+            context.SaveChanges();
+        }
+        public async Task ApproveModVersionAsync(string modVersionId, string approverUserId, string status, string comments)
+        {
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var approval = new ApproveModVersionEntity
+            {
+                ApproveModVersionId = Guid.NewGuid().ToString(),
+                ModVersionId = modVersionId,
+                ApproverUserId = approverUserId,
+                ApprovedAt = DateTime.Now,
+                Status = status,
+                Comments = comments
+            };
+            await context.ApproveModEntity.AddAsync(approval);
+            await context.SaveChangesAsync();
         }
     }
 }

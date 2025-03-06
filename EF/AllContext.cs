@@ -1,4 +1,5 @@
-﻿using Entity.Mod;
+﻿using Entity.Approve;
+using Entity.Mod;
 using Entity.Type;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
@@ -43,5 +44,7 @@ namespace EF
         public DbSet<ModPictureEntity> ModPictureEntity { get; set; }
         public DbSet<ModTypeEntity> ModTypeEntity { get; set; }
         public DbSet<ModVersionEntity> ModVersionEntity { get; set; }
+        public DbSet<UserModSubscribeEntity> UserModSubscribeEntity { get; set; }
+        public DbSet<ApproveModVersionEntity> ApproveModEntity { get; set; }
     }
 }

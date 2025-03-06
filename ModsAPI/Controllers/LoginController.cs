@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
+using Service.Realization;
 
 namespace ModsAPI.Controllers
 {
@@ -19,17 +20,21 @@ namespace ModsAPI.Controllers
         private readonly IUserService _IUserService;
         private readonly JwtHelper _JwtHelper;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
+        private readonly IAPILogService _IAPILogService;
+
         /// <summary>
         /// 构造函数依赖注入
         /// </summary>
         /// <param name="iUserService"></param>
         /// <param name="jwtHelper"></param>
         /// <param name="iHttpContextAccessor"></param>
-        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor)
+        /// <param name="iAPILogService"></param>
+        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService)
         {
             _IUserService = iUserService;
             _JwtHelper = jwtHelper;
             _IHttpContextAccessor = iHttpContextAccessor;
+            _IAPILogService = iAPILogService;
         }
 
         /// <summary>
@@ -41,6 +46,7 @@ namespace ModsAPI.Controllers
         [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
+            _IAPILogService.WriteLogAsync("UserLogin", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
 
             #region 验证一下传过来的是什么鬼东西
@@ -71,6 +77,7 @@ namespace ModsAPI.Controllers
         [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> CreateToken([FromBody] dynamic json)
         {
+            _IAPILogService.WriteLogAsync("CreateToken", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
 
             #region 验证一下传过来的是什么鬼东西
@@ -101,6 +108,7 @@ namespace ModsAPI.Controllers
         [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> UserRegister([FromBody] dynamic json)
         {
+            _IAPILogService.WriteLogAsync("UserRegister", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
 
             #region 验证一下传过来的是什么鬼东西
@@ -147,6 +155,8 @@ namespace ModsAPI.Controllers
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("Test", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             return "";
         }
     }
