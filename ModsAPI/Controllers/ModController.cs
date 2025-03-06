@@ -1,5 +1,6 @@
 ﻿using Entity;
 using Entity.Mod;
+using Entity.Type;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +56,16 @@ namespace ModsAPI.Controllers
             }
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json) };
+        }
+
+        /// <summary>
+        /// 获取所有mod类型
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost(Name = "GetAllModTypes")]
+        public ResultEntity<List<TypesEntity>> GetAllModTypes()
+        {
+            return new ResultEntity<List<TypesEntity>>() { ResultData = new TypesEntity().GetRoleList() };
         }
     }
 }

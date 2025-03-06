@@ -1,4 +1,5 @@
-﻿using Entity.Mod;
+﻿using Entity.File;
+using Entity.Mod;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -40,5 +41,10 @@ namespace Entity.User
         /// 角色id
         /// </summary>
         public List<string> UserRoleID { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Files
+        /// </summary>
+        public List<FilesEntity> FilesEntities { get; set; }
     }
 }
