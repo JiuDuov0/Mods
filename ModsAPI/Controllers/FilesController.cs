@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
+using Newtonsoft.Json;
 using Service.Interface;
 
 namespace ModsAPI.Controllers
@@ -40,7 +41,7 @@ namespace ModsAPI.Controllers
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost(Name = "UploadMod")]
         public async Task<ResultEntity<string>> UploadMod(IFormFile file)
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
@@ -104,9 +105,10 @@ namespace ModsAPI.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
+
                 result.ResultCode = 200;
                 result.ResultMsg = "文件上传成功";
-                result.ResultData = filePath;
+                result.ResultData = guid + filetype;
             }
             catch (Exception ex)
             {
@@ -116,5 +118,38 @@ namespace ModsAPI.Controllers
 
             return result;
         }
+        /// <summary>
+        /// 下载文件
+        /// </summary>
+        /// <param name="json">{"FileId":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "DownloadFile")]
+        public async Task<IActionResult> DownloadFile([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("FilesController/DownloadFile", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            string FileId = json.FileId;
+
+            var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + ".zip");
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound(new ResultEntity<string> { ResultCode = 404, ResultMsg = "文件未找到" });
+            }
+
+            var memory = new MemoryStream();
+            using (var stream = new FileStream(filePath, FileMode.Open))
+            {
+                await stream.CopyToAsync(memory);
+            }
+            memory.Position = 0;
+
+            var contentType = "application/x-zip-compressed";
+            return File(memory, contentType, Path.GetFileName(filePath));
+        }
+
+
     }
 }
