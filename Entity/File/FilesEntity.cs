@@ -36,7 +36,6 @@ namespace Entity.File
         /// <summary>
         /// 文件上传者
         /// </summary>
-        [ForeignKey("UserId")]
         public string? UserId { get; set; }
         /// <summary>
         /// 文件上传时间
@@ -46,6 +45,7 @@ namespace Entity.File
         /// <summary>
         /// 导航属性，指向用户
         /// </summary>
+        [ForeignKey("UserId")]
         public UserEntity? UserEntity { get; set; }
     }
 }

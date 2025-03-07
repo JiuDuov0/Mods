@@ -21,6 +21,7 @@ namespace ModsAPI.Controllers
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly JwtHelper _JwtHelper;
         private readonly IConfiguration _IConfiguration;
+        private readonly IFilesService _IFilesService;
 
         /// <summary>
         /// 构造函数依赖注入
@@ -29,12 +30,14 @@ namespace ModsAPI.Controllers
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="jwtHelper"></param>
         /// <param name="configuration"></param>
-        public FilesController(IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, IConfiguration configuration)
+        /// <param name="iFilesService"></param>
+        public FilesController(IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, IConfiguration configuration, IFilesService iFilesService)
         {
             _IAPILogService = iAPILogService;
             _IHttpContextAccessor = iHttpContextAccessor;
             _JwtHelper = jwtHelper;
             _IConfiguration = configuration;
+            _IFilesService = iFilesService;
         }
         /// <summary>
         /// 上传Mod文件
@@ -93,9 +96,6 @@ namespace ModsAPI.Controllers
                 UserId = UserId,
                 CreatedAt = DateTime.Now
             };
-            var savepath = _IConfiguration["FilePath"];
-            var filename = file.FileName;
-            var filesize = file.Length;
 
             try
             {
@@ -105,10 +105,17 @@ namespace ModsAPI.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
-
-                result.ResultCode = 200;
-                result.ResultMsg = "文件上传成功";
-                result.ResultData = guid + filetype;
+                if (_IFilesService.AddFiles(entity))
+                {
+                    result.ResultCode = 200;
+                    result.ResultMsg = "文件上传成功";
+                    result.ResultData = guid + filetype;
+                }
+                else
+                {
+                    result.ResultCode = 500;
+                    result.ResultMsg = "文件上传失败";
+                }
             }
             catch (Exception ex)
             {

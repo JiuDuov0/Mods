@@ -10,5 +10,6 @@ namespace Service.Interface
     public interface IFilesService
     {
         public bool AddFiles(FilesEntity filesEntity);
+        public FilesEntity GetFilesEntityById(string FileId);
     }
 }

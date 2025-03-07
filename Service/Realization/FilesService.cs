@@ -25,5 +25,10 @@ namespace Service.Realization
             context.Add(filesEntity);
             return context.SaveChanges() > 0;
         }
+
+        public FilesEntity GetFilesEntityById(string FileId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).FilesEntity.FirstOrDefault(x => x.FileId == FileId);
+        }
     }
 }

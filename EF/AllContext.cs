@@ -1,4 +1,5 @@
 ﻿using Entity.Approve;
+using Entity.File;
 using Entity.Mod;
 using Entity.Type;
 using Entity.User;
@@ -46,5 +47,6 @@ namespace EF
         public DbSet<ModVersionEntity> ModVersionEntity { get; set; }
         public DbSet<UserModSubscribeEntity> UserModSubscribeEntity { get; set; }
         public DbSet<ApproveModVersionEntity> ApproveModEntity { get; set; }
+        public DbSet<FilesEntity> FilesEntity { get; set; }
     }
 }
