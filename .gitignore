@@ -14,3 +14,4 @@
 /Service/obj
 /Service/bin/Debug/net8.0
 /ModsAPI/appsettings.json
+/ModsAPI/wwwroot/files
