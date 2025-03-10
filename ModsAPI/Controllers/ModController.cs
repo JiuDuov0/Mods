@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Service.Interface;
 
 namespace ModsAPI.Controllers
@@ -136,6 +137,31 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity> { ResultData = Mod };
             }
             return new ResultEntity<ModEntity> { ResultMsg = "创建版本失败", ResultData = null };
+        }
+
+        /// <summary>
+        /// Mod添加ModType
+        /// </summary>
+        /// <param name="json">[{"ModId":"","TypesId":""},{"ModId":"","TypesId":""}]</param>
+        /// <returns></returns>
+        [HttpPost(Name = "ModAddModType")]
+        [Authorize]
+        public ResultEntity<bool> ModAddModType([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+
+            JArray jArray = json;
+
+            #region 验证
+            if (jArray == null || jArray.Count == 0)
+            {
+                return new ResultEntity<bool>() { ResultMsg = "不能为空" };
+            }
+            #endregion
+            return new ResultEntity<bool>() { ResultData = _IModService.AddModTypes(jArray) };
         }
     }
 }

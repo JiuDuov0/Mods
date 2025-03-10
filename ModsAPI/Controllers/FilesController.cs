@@ -48,24 +48,24 @@ namespace ModsAPI.Controllers
         /// 上传Mod文件并提交审核
         /// </summary>
         /// <param name="file"></param>
-        /// <param name="ModVersionId">Mod版本Id</param>
+        /// <param name="VersionId">Mod版本Id</param>
         /// <returns></returns>
         [HttpPost(Name = "UploadMod")]
         [SwaggerOperation(Summary = "上传Mod文件", Description = "上传一个Mod文件和相关的JSON数据")]
-        public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含ModVersionId的JSON数据")] string ModVersionId)
+        public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含VersionId的JSON数据")] string VersionId)
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
 
-            if (string.IsNullOrWhiteSpace(ModVersionId))
+            if (string.IsNullOrWhiteSpace(VersionId))
             {
-                return new ResultEntity<string>() { ResultMsg = "ModVersionId不能为空" };
+                return new ResultEntity<string>() { ResultMsg = "VersionId不能为空" };
             }
-            else if (_IModService.GetByModVersionId(ModVersionId) == null)
+            else if (_IModService.GetByModVersionId(VersionId) == null)
             {
-                return new ResultEntity<string>() { ResultMsg = "ModVersionId错误" };
+                return new ResultEntity<string>() { ResultMsg = "VersionId错误" };
             }
             var result = new ResultEntity<string>();
             var guid = Guid.NewGuid().ToString();
@@ -73,7 +73,7 @@ namespace ModsAPI.Controllers
             var approveModVersionEntity = new ApproveModVersionEntity()
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
-                ModVersionId = ModVersionId,
+                VersionId = VersionId,
                 Status = "0",
             };
             var entity = new FilesEntity()

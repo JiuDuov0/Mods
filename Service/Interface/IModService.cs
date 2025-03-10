@@ -1,5 +1,6 @@
 ﻿using Entity.Approve;
 using Entity.Mod;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,5 +17,6 @@ namespace Service.Interface
         public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity);
         public bool AddModVersion(ModVersionEntity modVersionEntity);
         public ModVersionEntity GetByModVersionId(string modVersionId);
+        public bool AddModTypes(JArray array);
     }
 }

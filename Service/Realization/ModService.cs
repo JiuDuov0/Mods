@@ -58,7 +58,7 @@ namespace Service.Realization
             var approval = new ApproveModVersionEntity
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
-                ModVersionId = modVersionId,
+                VersionId = modVersionId,
                 ApproverUserId = approverUserId,
                 ApprovedAt = DateTime.Now,
                 Status = status,
@@ -73,7 +73,7 @@ namespace Service.Realization
             var approval = new ApproveModVersionEntity
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
-                ModVersionId = modVersionId,
+                VersionId = modVersionId,
                 ApproverUserId = approverUserId,
                 ApprovedAt = DateTime.Now,
                 Status = status,
@@ -119,6 +119,32 @@ namespace Service.Realization
         public ModVersionEntity GetByModVersionId(string modVersionId)
         {
             return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModVersionEntity.FirstOrDefault(x => x.VersionId == modVersionId);
+        }
+
+        public bool AddModTypes(JArray array)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var Transaction = Context.Database.BeginTransaction();
+            try
+            {
+                foreach (JObject item in array)
+                {
+                    Context.Add(new ModTypeEntity()
+                    {
+                        ModTypeId = Guid.NewGuid().ToString(),
+                        ModId = item["ModId"].ToString(),
+                        TypesId = item["TypesId"].ToString()
+                    });
+                }
+                Context.SaveChanges();
+                Transaction.Commit();
+                return true;
+            }
+            catch (Exception)
+            {
+                Transaction.Rollback();
+                return false;
+            }
         }
     }
 }

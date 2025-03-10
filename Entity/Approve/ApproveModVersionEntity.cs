@@ -22,7 +22,7 @@ namespace Entity.Approve
         /// <summary>
         /// Mod版本的唯一标识符
         /// </summary>
-        public string? ModVersionId { get; set; }
+        public string? VersionId { get; set; }
 
         /// <summary>
         /// 审批者的用户ID
