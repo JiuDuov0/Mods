@@ -1,4 +1,5 @@
 ﻿using Entity;
+using Entity.Approve;
 using Entity.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace ModsAPI.Controllers
 {
@@ -40,18 +42,41 @@ namespace ModsAPI.Controllers
             _IFilesService = iFilesService;
         }
         /// <summary>
-        /// 上传Mod文件
+        /// 上传Mod文件并提交审核
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="ModVersionId">Mod版本Id</param>
         /// <returns></returns>
         [HttpPost(Name = "UploadMod")]
-        public async Task<ResultEntity<string>> UploadMod(IFormFile file)
+        [SwaggerOperation(Summary = "上传Mod文件", Description = "上传一个Mod文件和相关的JSON数据")]
+        public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含ModVersionId的JSON数据")] string ModVersionId)
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+
+            //var sadfas = (string)json.ModVersionId;
+            //json = JsonConvert.DeserializeObject(Convert.ToString(json));
             var result = new ResultEntity<string>();
+            var guid = Guid.NewGuid().ToString();
+            var filetype = file.FileName.Substring(file.FileName.LastIndexOf('.'), file.FileName.Length - file.FileName.LastIndexOf('.'));
+            var approveModVersionEntity = new ApproveModVersionEntity()
+            {
+                ApproveModVersionId = Guid.NewGuid().ToString(),
+                ModVersionId = (string)ModVersionId,
+                Status = "0",
+            };
+            var entity = new FilesEntity()
+            {
+                FilesId = guid,
+                FilesType = filetype,
+                FilesName = file.FileName,
+                Size = file.Length.ToString(),
+                Path = _IConfiguration["FilePath"] + "\\" + guid + filetype,
+                UserId = UserId,
+                CreatedAt = DateTime.Now
+            };
 
             if (file == null || file.Length == 0)
             {
@@ -64,6 +89,7 @@ namespace ModsAPI.Controllers
                 if (UserRoleIDs.Contains("b156c735-fe7b-421a-4764-78867798ef42") || UserRoleIDs.Contains("45166589-67eb-4012-abcc-817a0fa12c0e"))
                 {
                     //有权限
+                    approveModVersionEntity.Status = "20";
                     if (file.Length > 1024 * 1024 * 10)
                     {
                         result.ResultCode = 400;
@@ -84,18 +110,6 @@ namespace ModsAPI.Controllers
                 result.ResultMsg = "文件格式错误";
                 return result;
             }
-            var guid = Guid.NewGuid().ToString();
-            var filetype = file.FileName.Substring(file.FileName.LastIndexOf('.'), file.FileName.Length - file.FileName.LastIndexOf('.'));
-            var entity = new FilesEntity()
-            {
-                FileId = guid,
-                FilesType = filetype,
-                FilesName = file.FileName,
-                Size = file.Length.ToString(),
-                Path = _IConfiguration["FilePath"] + "\\" + guid + filetype,
-                UserId = UserId,
-                CreatedAt = DateTime.Now
-            };
 
             try
             {
@@ -105,7 +119,7 @@ namespace ModsAPI.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
-                if (_IFilesService.AddFiles(entity))
+                if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
                 {
                     result.ResultCode = 200;
                     result.ResultMsg = "文件上传成功";
@@ -125,6 +139,7 @@ namespace ModsAPI.Controllers
 
             return result;
         }
+
         /// <summary>
         /// 下载文件
         /// </summary>
@@ -152,6 +167,9 @@ namespace ModsAPI.Controllers
                 await stream.CopyToAsync(memory);
             }
             memory.Position = 0;
+
+            //todo
+            //var entity = 
 
             var contentType = "application/x-zip-compressed";
             return File(memory, contentType, Path.GetFileName(filePath));

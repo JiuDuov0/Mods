@@ -31,7 +31,7 @@ namespace Service.Realization
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
             Types.RemoveAll(x => x == null || x == "");
-            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).Include(x => x.ModVersionEntities);
             #region 条件
             if (!string.IsNullOrWhiteSpace((string)json.Select))
             {
@@ -45,6 +45,9 @@ namespace Service.Realization
                     Context = Context.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
                 }
             }
+            Context = Context.Where(x =>
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
             return Context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
         }
@@ -78,6 +81,39 @@ namespace Service.Realization
             };
             await context.ApproveModEntity.AddAsync(approval);
             await context.SaveChangesAsync();
+        }
+
+        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var transaction = Context.Database.BeginTransaction();
+            try
+            {
+                Context.ModEntity.Add(modEntity);
+                Context.ModVersionEntity.Add(modVersionEntity);
+                Context.SaveChanges();
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                return false;
+            }
+        }
+
+        public bool AddModVersion(ModVersionEntity modVersionEntity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            Context.Add(modVersionEntity);
+            if (Context.SaveChanges() > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

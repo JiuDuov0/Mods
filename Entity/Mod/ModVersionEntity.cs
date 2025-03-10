@@ -34,19 +34,14 @@ namespace Entity.Mod
         public string? Description { get; set; }
 
         /// <summary>
-        /// Mod的下载链接
-        /// </summary>
-        public string? DownloadUrl { get; set; }
-
-        /// <summary>
         /// 版本的创建时间
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
         /// <summary>
         /// 版本的更新时间
         /// </summary>
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
         /// 版本的状态

@@ -67,5 +67,45 @@ namespace ModsAPI.Controllers
         {
             return new ResultEntity<List<TypesEntity>>() { ResultData = new TypesEntity().GetRoleList() };
         }
+
+        /// <summary>
+        /// 创建mod,并创建版本,类型,图片
+        /// </summary>
+        /// <param name="json">{"Name":"","Description":"","VideoUrl":"","ModVersionEntities":[{"VersionNumber":"","Description":""}]}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "CreateMod")]
+        [Authorize]
+        public ResultEntity<ModEntity> CreateMod([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            var ModId = Guid.NewGuid().ToString();
+            var ModVersion = new ModVersionEntity()
+            {
+                VersionId = Guid.NewGuid().ToString(),
+                ModId = ModId,
+                VersionNumber = (string)json.ModVersionEntities[0].VersionNumber,
+                Description = (string)json.ModVersionEntities[0].Description,
+                CreatedAt = DateTime.Now
+            };
+            var Mod = new ModEntity()
+            {
+                ModId = ModId,
+                Name = (string)json.Name,
+                Description = (string)json.Description,
+                CreatorUserId = UserId,
+                CreatedAt = DateTime.Now,
+                VideoUrl = (string)json.VideoUrl,
+                DownLoadCount = 0
+            };
+            if (_IModService.AddModAndModVersion(Mod, ModVersion))
+            {
+                Mod.ModVersionEntities = new List<ModVersionEntity> { ModVersion };
+                return new ResultEntity<ModEntity> { ResultData = Mod };
+            }
+            return new ResultEntity<ModEntity> { ResultMsg = "创建版本失败", ResultData = null };
+        }
     }
 }

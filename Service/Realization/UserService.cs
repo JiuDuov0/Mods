@@ -61,6 +61,10 @@ namespace Service.Realization
         {
             var WriteContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var ReadContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            if (ReadContext.UserEntity.FirstOrDefault(x => x.Mail == entity.Mail) != null)
+            {
+                return null;
+            }
             WriteContext.Add(entity);
             WriteContext.SaveChanges();
             //System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();

@@ -85,6 +85,7 @@ builder.Services.AddSwaggerGen(s =>
         Version = "V1",
         Description = "Swagger测试接口"
     });
+    //s.OperationFilter<SwaggerFileOperationFilter>();
     var file = Path.Combine(AppContext.BaseDirectory, "xml.xml");  // xml文档绝对路径
     var path = Path.Combine(AppContext.BaseDirectory, file); // xml文档绝对路径
     s.IncludeXmlComments(path, true); // true : 显示控制器层注释
@@ -115,8 +116,9 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1"));
 }
 app.UseRateLimiter();
 app.UseHttpsRedirection();

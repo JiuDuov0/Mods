@@ -16,7 +16,7 @@ namespace Entity.File
         /// 文件的唯一标识符
         /// </summary>
         [Key]
-        public string? FileId { get; set; }
+        public string? FilesId { get; set; }
         /// <summary>
         /// 文件类型
         /// </summary>

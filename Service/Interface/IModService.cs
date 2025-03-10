@@ -13,5 +13,7 @@ namespace Service.Interface
         public List<ModEntity> ModListPage(dynamic json);
         public void ApproveModVersion(string modVersionId, string approverUserId, string status, string comments);
         public Task ApproveModVersionAsync(string modVersionId, string approverUserId, string status, string comments);
+        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity);
+        public bool AddModVersion(ModVersionEntity modVersionEntity);
     }
 }

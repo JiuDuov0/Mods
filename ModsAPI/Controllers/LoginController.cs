@@ -140,8 +140,12 @@ namespace ModsAPI.Controllers
             };
             User = _IUserService.Register(User);
             if (User != null)
-            {
+            { 
                 return new ResultEntity<ResponseToken> { ResultData = _JwtHelper.CreateToken(User) };
+            }
+            else
+            {
+                return new ResultEntity<ResponseToken> { ResultMsg = "邮箱已注册" };
             }
             return new ResultEntity<ResponseToken> { ResultMsg = "信息错误" };
         }

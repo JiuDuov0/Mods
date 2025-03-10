@@ -1,4 +1,5 @@
-﻿using Entity.File;
+﻿using Entity.Approve;
+using Entity.File;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace Service.Interface
 {
     public interface IFilesService
     {
-        public bool AddFiles(FilesEntity filesEntity);
+        public bool AddFilesAndApprove(FilesEntity filesEntity,ApproveModVersionEntity approveModVersionEntity);
         public FilesEntity GetFilesEntityById(string FileId);
     }
 }
