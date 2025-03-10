@@ -115,5 +115,10 @@ namespace Service.Realization
                 return false;
             }
         }
+
+        public ModVersionEntity GetByModVersionId(string modVersionId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModVersionEntity.FirstOrDefault(x => x.VersionId == modVersionId);
+        }
     }
 }

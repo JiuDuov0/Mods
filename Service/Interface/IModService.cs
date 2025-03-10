@@ -15,5 +15,6 @@ namespace Service.Interface
         public Task ApproveModVersionAsync(string modVersionId, string approverUserId, string status, string comments);
         public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity);
         public bool AddModVersion(ModVersionEntity modVersionEntity);
+        public ModVersionEntity GetByModVersionId(string modVersionId);
     }
 }

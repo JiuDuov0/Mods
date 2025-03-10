@@ -1,4 +1,5 @@
 ﻿using Entity.Approve;
+using Entity.File;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -34,6 +35,11 @@ namespace Entity.Mod
         public string? Description { get; set; }
 
         /// <summary>
+        /// 版本的文件ID
+        /// </summary>
+        public string? FilesId { get; set; }
+
+        /// <summary>
         /// 版本的创建时间
         /// </summary>
         public DateTime? CreatedAt { get; set; }
@@ -53,6 +59,12 @@ namespace Entity.Mod
         /// </summary>
         [ForeignKey("ModId")]
         public ModEntity? Mod { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向所属的文件
+        /// </summary>
+        [ForeignKey("FilesId")]
+        public FilesEntity? Files { get; set; }
 
         /// <summary>
         /// 导航属性，指向所属的Mod版本审批信息

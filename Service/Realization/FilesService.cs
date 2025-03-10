@@ -2,6 +2,8 @@
 using EF.Interface;
 using Entity.Approve;
 using Entity.File;
+using Entity.Mod;
+using Microsoft.EntityFrameworkCore;
 using Service.Interface;
 using System;
 using System.Collections.Generic;
@@ -26,8 +28,8 @@ namespace Service.Realization
             var transaction = context.Database.BeginTransaction();
             try
             {
-                context.Add(filesEntity);
-                context.Add(approveModVersionEntity);
+                context.AddAsync(filesEntity);
+                context.AddAsync(approveModVersionEntity);
                 context.SaveChanges();
                 transaction.Commit();
                 return true;
@@ -42,6 +44,21 @@ namespace Service.Realization
         public FilesEntity GetFilesEntityById(string FileId)
         {
             return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).FilesEntity.FirstOrDefault(x => x.FilesId == FileId);
+        }
+
+        public ModEntity AddModDownLoadCount(string FileId)
+        {
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var modVersion = context.ModVersionEntity.FirstOrDefault(x => x.FilesId == FileId);
+            var mod = context.ModEntity.FirstOrDefault(x => x.ModId == modVersion.ModId);
+            mod.DownLoadCount = mod.DownLoadCount + 1;
+            context.ModEntity.Update(mod);
+            if (context.SaveChanges() > 0)
+            {
+                mod.ModVersionEntities = new List<ModVersionEntity>() { modVersion };
+                return mod;
+            }
+            return null;
         }
     }
 }

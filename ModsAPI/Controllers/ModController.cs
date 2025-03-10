@@ -55,6 +55,16 @@ namespace ModsAPI.Controllers
                 _IAPILogService.WriteLogAsync("ModController/ModListPage", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             }
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            if (string.IsNullOrWhiteSpace(json.Skip))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
+            }
+            if (string.IsNullOrWhiteSpace(json.Take))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
+            }
+            #endregion
             return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json) };
         }
 
@@ -69,7 +79,7 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
-        /// 创建mod,并创建版本,类型,图片
+        /// 创建mod,并创建版本
         /// </summary>
         /// <param name="json">{"Name":"","Description":"","VideoUrl":"","ModVersionEntities":[{"VersionNumber":"","Description":""}]}</param>
         /// <returns></returns>
@@ -81,6 +91,26 @@ namespace ModsAPI.Controllers
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.Name))
+            {
+                return new ResultEntity<ModEntity>() { ResultMsg = "无Mod名称" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Description))
+            {
+                return new ResultEntity<ModEntity>() { ResultMsg = "无Mod描述" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].VersionNumber))
+            {
+                return new ResultEntity<ModEntity>() { ResultMsg = "无版本号" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].Description))
+            {
+                return new ResultEntity<ModEntity>() { ResultMsg = "无版本描述" };
+            }
+            #endregion
+
             var ModId = Guid.NewGuid().ToString();
             var ModVersion = new ModVersionEntity()
             {

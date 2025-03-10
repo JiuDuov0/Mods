@@ -68,6 +68,10 @@ namespace ModsAPI.Controllers
             _IAPILogService.WriteLogAsync("UserController/ModSubscribe", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             string ModId = (string)json.ModId;
+            if (string.IsNullOrWhiteSpace(ModId))
+            {
+                return new ResultEntity<bool>() { ResultMsg = "ModId无效" };
+            }
             return new ResultEntity<bool> { ResultData = _IUserService.SubscribeToMod(UserId, ModId) };
         }
 
@@ -84,6 +88,16 @@ namespace ModsAPI.Controllers
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("UserController/UserAllSubscribeModPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.Skip))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Take))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
+            }
+            #endregion
             return new ResultEntity<List<ModEntity>> { ResultData = _IUserService.UserAllSubscribeModPage(json, UserId) };
         }
     }

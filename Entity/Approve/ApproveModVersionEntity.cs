@@ -47,7 +47,7 @@ namespace Entity.Approve
         /// <summary>
         /// 导航属性，指向所属的ModVersion
         /// </summary>
-        [ForeignKey("ModVersionId")]
+        [ForeignKey("VersionId")]
         public ModVersionEntity? ModVersion { get; set; }
 
         /// <summary>

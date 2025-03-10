@@ -1,4 +1,5 @@
-﻿using Entity.User;
+﻿using Entity.Mod;
+using Entity.User;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -47,5 +48,10 @@ namespace Entity.File
         /// </summary>
         [ForeignKey("UserId")]
         public UserEntity? UserEntity { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Mod版本
+        /// </summary>
+        public ModVersionEntity? ModVersionEntity { get; set; }
     }
 }

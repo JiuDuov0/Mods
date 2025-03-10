@@ -24,6 +24,7 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly IConfiguration _IConfiguration;
         private readonly IFilesService _IFilesService;
+        private readonly IModService _IModService;
 
         /// <summary>
         /// 构造函数依赖注入
@@ -33,13 +34,15 @@ namespace ModsAPI.Controllers
         /// <param name="jwtHelper"></param>
         /// <param name="configuration"></param>
         /// <param name="iFilesService"></param>
-        public FilesController(IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, IConfiguration configuration, IFilesService iFilesService)
+        /// <param name="iModService"></param>
+        public FilesController(IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, IConfiguration configuration, IFilesService iFilesService, IModService iModService)
         {
             _IAPILogService = iAPILogService;
             _IHttpContextAccessor = iHttpContextAccessor;
             _JwtHelper = jwtHelper;
             _IConfiguration = configuration;
             _IFilesService = iFilesService;
+            _IModService = iModService;
         }
         /// <summary>
         /// 上传Mod文件并提交审核
@@ -56,15 +59,21 @@ namespace ModsAPI.Controllers
             var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
 
-            //var sadfas = (string)json.ModVersionId;
-            //json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            if (string.IsNullOrWhiteSpace(ModVersionId))
+            {
+                return new ResultEntity<string>() { ResultMsg = "ModVersionId不能为空" };
+            }
+            else if (_IModService.GetByModVersionId(ModVersionId) == null)
+            {
+                return new ResultEntity<string>() { ResultMsg = "ModVersionId错误" };
+            }
             var result = new ResultEntity<string>();
             var guid = Guid.NewGuid().ToString();
             var filetype = file.FileName.Substring(file.FileName.LastIndexOf('.'), file.FileName.Length - file.FileName.LastIndexOf('.'));
             var approveModVersionEntity = new ApproveModVersionEntity()
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
-                ModVersionId = (string)ModVersionId,
+                ModVersionId = ModVersionId,
                 Status = "0",
             };
             var entity = new FilesEntity()
@@ -155,6 +164,11 @@ namespace ModsAPI.Controllers
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             string FileId = json.FileId;
 
+            if (string.IsNullOrWhiteSpace(FileId))
+            {
+                return null;
+            }
+
             var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + ".zip");
             if (!System.IO.File.Exists(filePath))
             {
@@ -168,11 +182,11 @@ namespace ModsAPI.Controllers
             }
             memory.Position = 0;
 
-            //todo
-            //var entity = 
+            var entity = _IFilesService.AddModDownLoadCount(FileId);
 
             var contentType = "application/x-zip-compressed";
-            return File(memory, contentType, Path.GetFileName(filePath));
+            var sadfsad = entity.Name + entity.ModVersionEntities[0].VersionNumber + ".zip";
+            return File(memory, contentType, entity.Name + entity.ModVersionEntities[0].VersionNumber + ".zip");
         }
 
 
