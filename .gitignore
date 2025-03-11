@@ -15,3 +15,11 @@
 /Service/bin/Debug/net8.0
 /ModsAPI/appsettings.json
 /ModsAPI/wwwroot/files
+/EF/bin/Release/net8.0
+/publish/wwwroot/files
+/publish
+/Redis/bin/Release/net8.0
+/Service/bin/Release/net8.0
+/ModsAPI/bin/Release/net8.0
+/ModsAPI/.config
+/Entity/bin/Release/net8.0
