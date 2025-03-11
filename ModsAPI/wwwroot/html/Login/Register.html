@@ -93,7 +93,10 @@
                 $.ajax({
                     url: '/api/Login/UserRegister',
                     type: 'POST',
-                    contentType: 'application/json',
+                    headers: {
+                        Accept: "application/json-patch+json"
+                    },
+                    contentType: 'application/json-patch+json',
                     data: JSON.stringify(formData),
                     success: function (data) {
                         if (data.ResultCode === 200) {
