@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用户注册</title>
+    <script src="../../js/jquery-3.7.1.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -80,35 +81,37 @@
             </div>
         </form>
     </div>
-    <script>document.getElementById('registerForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            var formData = {
-                LoginAccount: document.getElementById('loginAccount').value,
-                NickName: document.getElementById('nickName').value,
-                Password: document.getElementById('password').value
-            };
-            fetch('/api/Login/UserRegister', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.ResultCode === 200) {
-                    alert('注册成功');
-                    localStorage.setItem("token", data.ResultData.Token);
-                    localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
-                    window.location.href = '/wwwroot/html/Default/Index.html';
-                } else {
-                    alert('注册失败: ' + data.ResultMsg);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('注册失败');
+    <script>
+        $(document).ready(function () {
+            $('#registerForm').on('submit', function (event) {
+                event.preventDefault();
+                var formData = {
+                    LoginAccount: $('#loginAccount').val(),
+                    NickName: $('#nickName').val(),
+                    Password: $('#password').val()
+                };
+                $.ajax({
+                    url: '/api/Login/UserRegister',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (data) {
+                        if (data.ResultCode === 200) {
+                            alert('注册成功');
+                            localStorage.setItem("token", data.ResultData.Token);
+                            localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
+                            window.location.href = '/wwwroot/html/Default/Index.html';
+                        } else {
+                            alert('注册失败: ' + data.ResultMsg);
+                        }
+                    },
+                    error: function (error) {
+                        console.error('Error:', error);
+                        alert('注册失败');
+                    }
+                });
             });
-        });</script>
+        });
+    </script>
 </body>
 </html>

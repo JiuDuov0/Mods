@@ -225,5 +225,31 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "添加失败" };
             }
         }
+
+        /// <summary>
+        /// 获取我创建的Mod
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetMyCreateMod")]
+        [Authorize]
+        public ResultEntity<List<ModEntity>> GetMyCreateMod([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("UserController/UserAllSubscribeModPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.Skip))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Take))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
+            }
+            #endregion
+            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod(UserId) };
+        }
     }
 }

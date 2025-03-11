@@ -21,5 +21,6 @@ namespace Service.Interface
         public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take);
         public bool IsLoginUserMods(List<string> list,string UserId);
         public bool IsLoginUserMods(string VersionId, string UserId);
+        public List<ModEntity> GetMyCreateMod(string UserId);
     }
 }

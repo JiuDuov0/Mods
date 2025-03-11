@@ -2,7 +2,8 @@
 <!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
 <Project>
   <PropertyGroup>
-    <History>True|2025-03-11T07:32:57.5194517Z||;True|2025-03-11T15:31:57.7818147+08:00||;False|2025-03-11T15:30:40.3270570+08:00||;</History>
+    <History>True|2025-03-11T09:31:13.5058780Z||;True|2025-03-11T15:32:57.5194517+08:00||;True|2025-03-11T15:31:57.7818147+08:00||;False|2025-03-11T15:30:40.3270570+08:00||;</History>
     <LastFailureDetails />
+    <_PublishTargetUrl>E:\Code\Mods\publish</_PublishTargetUrl>
   </PropertyGroup>
 </Project>

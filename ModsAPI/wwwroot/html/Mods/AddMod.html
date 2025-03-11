@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>添加Mod</title>
+    <script src="../../js/jquery-3.7.1.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -92,38 +93,40 @@
             </div>
         </form>
     </div>
-    <script>document.getElementById('addModForm').addEventListener('submit', function(event) {
+    <script>
+        $('#addModForm').on('submit', function (event) {
             event.preventDefault();
             var formData = {
-                Name: document.getElementById('name').value,
-                Description: document.getElementById('description').value,
-                VideoUrl: document.getElementById('videoUrl').value,
+                Name: $('#name').val(),
+                Description: $('#description').val(),
+                VideoUrl: $('#videoUrl').val(),
                 ModVersionEntities: [{
-                    VersionNumber: document.getElementById('versionNumber').value,
-                    Description: document.getElementById('versionDescription').value
+                    VersionNumber: $('#versionNumber').val(),
+                    Description: $('#versionDescription').val()
                 }]
             };
-            fetch('/api/Mod/CreateMod', {
-                method: 'POST',
+            $.ajax({
+                url: '/api/Mod/CreateMod',
+                type: 'POST',
+                contentType: 'application/json',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.ResultCode === 200) {
-                    alert('Mod创建成功');
-                    window.location.href = '/wwwroot/html/Mods/AddVersionFile.html?VersionId=' + data.ResultData.ModVersionEntities[0].VersionId;
-                } else {
-                    alert('Mod创建失败: ' + data.ResultMsg);
+                data: JSON.stringify(formData),
+                success: function (data) {
+                    if (data.ResultCode === 200) {
+                        alert('Mod创建成功');
+                        window.location.href = '/wwwroot/html/Mods/AddVersionFile.html?VersionId=' + data.ResultData.ModVersionEntities[0].VersionId;
+                    } else {
+                        alert('Mod创建失败: ' + data.ResultMsg);
+                    }
+                },
+                error: function (error) {
+                    console.error('Error:', error);
+                    alert('Mod创建失败');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Mod创建失败');
             });
-        });</script>
+        });
+    </script>
 </body>
 </html>

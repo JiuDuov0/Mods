@@ -176,5 +176,10 @@ namespace Service.Realization
             var entity = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Where(x => x.ModVersionEntities.Any(y => y.VersionId == VersionId)).Where(x => x.CreatorUserId == UserId).FirstOrDefault();
             return entity == null;
         }
+
+        public List<ModEntity> GetMyCreateMod(string UserId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Where(x => x.CreatorUserId == UserId).ToList();
+        }
     }
 }
