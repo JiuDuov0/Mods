@@ -117,11 +117,10 @@ app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
-
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1"));
 }
-app.UseDeveloperExceptionPage();
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1"));
 
 app.UseRateLimiter();
 app.UseHttpsRedirection();
