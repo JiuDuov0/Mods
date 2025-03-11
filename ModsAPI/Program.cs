@@ -2,6 +2,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ModsAPI.Middlewares;
@@ -101,18 +102,18 @@ builder.Services.AddRateLimiter(_ => _
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
-// Configure the HTTP request pipeline.
-//app.UseFileServer(new FileServerOptions()
-//{
-//    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
-//    RequestPath = new PathString("/wwwroot"),
-//    EnableDirectoryBrowsing = true
-//});//静态文件访问
-//DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
-//defaultFilesOptions.DefaultFileNames.Clear();
-//defaultFilesOptions.DefaultFileNames.Add("/html/Login/Index.html");
-//app.UseDefaultFiles(defaultFilesOptions);
-//app.UseStaticFiles();
+//Configure the HTTP request pipeline.
+app.UseFileServer(new FileServerOptions()
+                  {
+                      FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
+                      RequestPath = new PathString("/wwwroot"),
+                      EnableDirectoryBrowsing = true
+                  });//静态文件访问
+DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
+defaultFilesOptions.DefaultFileNames.Clear();
+defaultFilesOptions.DefaultFileNames.Add("/html/Login/Index.html");
+app.UseDefaultFiles(defaultFilesOptions);
+app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
