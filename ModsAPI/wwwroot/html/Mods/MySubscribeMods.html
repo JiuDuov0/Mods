@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我订阅的Mods</title>
+    <script src="../../js/jquery-3.7.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .mod-list {
+            list-style: none;
+            padding: 0;
+        }
+
+            .mod-list li {
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+                cursor: pointer;
+            }
+
+                .mod-list li:hover {
+                    background-color: #f0f0f0;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>我订阅的Mods</h1>
+        <ul class="mod-list" id="modList"></ul>
+    </div>
+    <script>$(document).ready(function () {
+            $.ajax({
+                url: '/api/User/UserAllSubscribeModPage',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                data: JSON.stringify({ Skip: 0, Take: 10 }),
+                success: function (data) {
+                    if (data.ResultCode === 200) {
+                        var modList = $('#modList');
+                        $.each(data.ResultData, function (index, mod) {
+                            var li = $('<li></li>').text(mod.Name);
+                            li.data('modId', mod.ModId);
+                            li.on('click', function () {
+                                window.location.href = '/wwwroot/html/Mods/AddModVersion.html?ModId=' + $(this).data('modId');
+                            });
+                            modList.append(li);
+                        });
+                    } else {
+                        alert('获取订阅的Mods失败: ' + data.ResultMsg);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error:', error);
+                    alert('获取订阅的Mods失败');
+                }
+            });
+        });</script>
+</body>
+</html>
