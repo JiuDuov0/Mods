@@ -24,3 +24,5 @@
 /ModsAPI/.config
 /Entity/bin/Release/net8.0
 /publish.zip
+/ModsAPI/Properties/PublishProfiles/FolderProfile.pubxml.user
+/ModsAPI/ModsAPI.csproj.user
