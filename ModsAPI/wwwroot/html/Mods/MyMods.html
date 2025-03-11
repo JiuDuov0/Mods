@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的Mods</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .mod-list {
+            list-style: none;
+            padding: 0;
+        }
+
+            .mod-list li {
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+                cursor: pointer;
+            }
+
+                .mod-list li:hover {
+                    background-color: #f0f0f0;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>我的Mods</h1>
+        <ul class="mod-list" id="modList"></ul>
+    </div>
+    <script>document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/User/UserAllSubscribeModPage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({ Skip: 0, Take: 10 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ResultCode === 200) {
+                    var modList = document.getElementById('modList');
+                    data.ResultData.forEach(function(mod) {
+                        var li = document.createElement('li');
+                        li.textContent = mod.Name;
+                        li.dataset.modId = mod.ModId;
+                        li.addEventListener('click', function() {
+                            window.location.href = '/wwwroot/html/Mods/AddModVersion.html?ModId=' + this.dataset.modId;
+                        });
+                        modList.appendChild(li);
+                    });
+                } else {
+                    alert('获取Mods失败: ' + data.ResultMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('获取Mods失败');
+            });
+        });</script>
+</body>
+</html>

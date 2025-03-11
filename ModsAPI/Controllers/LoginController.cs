@@ -114,19 +114,19 @@ namespace ModsAPI.Controllers
             #region 验证一下传过来的是什么鬼东西
             if ((string)json.LoginAccount == "" || (string)json.LoginAccount == null)
             {
-                return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "请检查账号或密码" };
             }
             else if (!((string)json.LoginAccount).Contains('@') && !((string)json.LoginAccount).Contains('.'))
             {
-                return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "请检查账号或密码" };
             }
             if ((string)json.NickName == "" || (string)json.NickName == null)
             {
-                return new ResultEntity<ResponseToken> { ResultMsg = "请检查昵称" };
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "请检查昵称" };
             }
             if ((string)json.Password == "" || (string)json.Password == null)
             {
-                return new ResultEntity<ResponseToken> { ResultMsg = "请检查账号或密码" };
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "请检查账号或密码" };
             }
             #endregion
 
@@ -140,14 +140,14 @@ namespace ModsAPI.Controllers
             };
             User = _IUserService.Register(User);
             if (User != null)
-            { 
+            {
                 return new ResultEntity<ResponseToken> { ResultData = _JwtHelper.CreateToken(User) };
             }
             else
             {
-                return new ResultEntity<ResponseToken> { ResultMsg = "邮箱已注册" };
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "邮箱已注册" };
             }
-            return new ResultEntity<ResponseToken> { ResultMsg = "信息错误" };
+            return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "信息错误" };
         }
 
         /// <summary>

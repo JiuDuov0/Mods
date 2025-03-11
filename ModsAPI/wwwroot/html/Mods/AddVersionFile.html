@@ -1,0 +1,127 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>上传Mod版本文件</title>
+   <script src="../../js/jquery-3.7.1.min.js"></script>
+   <style>
+       body {
+           font-family: Arial, sans-serif;
+           background-color: #f2f2f2;
+           margin: 0;
+           padding: 0;
+       }
+
+       .container {
+           max-width: 600px;
+           margin: 50px auto;
+           background-color: #fff;
+           padding: 20px;
+           border-radius: 8px;
+           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+       }
+
+       h1 {
+           text-align: center;
+           color: #333;
+       }
+
+       .form-group {
+           margin-bottom: 15px;
+       }
+
+           .form-group label {
+               display: block;
+               margin-bottom: 5px;
+               color: #333;
+           }
+
+           .form-group input[type="text"],
+           .form-group input[type="file"] {
+               width: 100%;
+               padding: 10px;
+               border: 1px solid #ccc;
+               border-radius: 4px;
+           }
+
+           .form-group button {
+               width: 100%;
+               padding: 10px;
+               background-color: #4CAF50;
+               color: white;
+               border: none;
+               border-radius: 4px;
+               cursor: pointer;
+           }
+
+               .form-group button:hover {
+                   background-color: #45a049;
+               }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <h1>上传Mod版本文件</h1>
+       <form id="uploadVersionFileForm" action="/api/Files/UploadMod" method="post" enctype="multipart/form-data">
+           <div class="form-group">
+               <label for="versionId">版本ID</label>
+               <input type="text" id="versionId" name="VersionId" required>
+           </div>
+           <div class="form-group">
+               <label for="file">选择文件</label>
+               <input type="file" id="file" name="file" accept=".zip" required>
+           </div>
+           <div class="form-group">
+               <button type="submit">提交</button>
+           </div>
+       </form>
+   </div>
+   <script>
+       $(document).ready(function () {
+           $("#versionId").val(getUrlParam("VersionId"));
+           $("#versionId").attr("disabled", "disabled");
+       });
+
+       function getUrlParam(name) {
+           var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+           var r = window.location.search.substr(1).match(reg);
+           if (r != null) return decodeURI(r[2]); return null;
+       }
+
+       document.getElementById('uploadVersionFileForm').addEventListener('submit', function (event) {
+           var versionId = document.getElementById('versionId').value;
+           var file = document.getElementById('file').files[0];
+           if (!versionId || !file) {
+               alert('请填写所有字段并选择文件');
+               event.preventDefault();
+           }
+           event.preventDefault();
+           var formData = new FormData();
+           formData.append("VersionId", getUrlParam("VersionId"));
+           formData.append("file", file);
+
+           fetch('/api/Files/UploadMod', {
+               method: 'POST',
+               headers: {
+                   'Authorization': 'Bearer ' + localStorage.getItem('token')
+               },
+               body: formData
+           })
+               .then(response => response.json())
+               .then(data => {
+                   if (data.ResultCode === 200) {
+                       alert('Mod创建成功');
+                       //window.location.href = '/wwwroot/html/Mods/AddVersionFile.html?VersionId=' + data.ResultData.ModVersionEntities[0].VersionId;
+                   } else {
+                       alert('Mod创建失败: ' + data.ResultMsg);
+                   }
+               })
+               .catch(error => {
+                   console.error('Error:', error);
+                   alert('Mod创建失败');
+               });
+       });
+   </script>
+</body>
+</html>

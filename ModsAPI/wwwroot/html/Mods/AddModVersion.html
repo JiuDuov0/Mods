@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加Mod版本</title>
+    <script src="../../js/jquery-3.7.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                color: #333;
+            }
+
+            .form-group input[type="text"],
+            .form-group textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            .form-group textarea {
+                resize: vertical;
+            }
+
+            .form-group button {
+                width: 100%;
+                padding: 10px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+                .form-group button:hover {
+                    background-color: #45a049;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>添加Mod版本</h1>
+        <form id="addModVersionForm" action="/api/Mod/ModAddVersion" method="post">
+            <div class="form-group">
+                <label for="modId">Mod ID</label>
+                <input type="text" id="modId" name="modId" required>
+            </div>
+            <div class="form-group">
+                <label for="versionNumber">版本号</label>
+                <input type="text" id="versionNumber" name="versionNumber" required>
+            </div>
+            <div class="form-group">
+                <label for="description">版本描述</label>
+                <textarea id="description" name="description" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <button type="submit">提交</button>
+            </div>
+        </form>
+    </div>
+    <script>
+        $(document).ready(function () {
+            $("#modId").val(getUrlParam("ModId"));
+            $("#modId").attr("disabled", "disabled");
+        });
+
+        function getUrlParam(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return decodeURI(r[2]); return null;
+        }
+
+        document.getElementById('addModVersionForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            var formData = {
+                ModId: document.getElementById('modId').value,
+                VersionNumber: document.getElementById('versionNumber').value,
+                Description: document.getElementById('description').value
+            };
+            fetch('/api/Mod/ModAddVersion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ResultCode === 200) {
+                    alert('版本添加成功');
+                    window.location.href = '/wwwroot/html/Mods/AddVersionFile.html?VersionId=' + data.ResultData.VersionId;
+                } else {
+                    alert('版本添加失败: ' + data.ResultMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('版本添加失败');
+            });
+        });
+    </script>
+</body>
+</html>

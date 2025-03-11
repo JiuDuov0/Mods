@@ -28,6 +28,9 @@ namespace Service.Realization
             var transaction = context.Database.BeginTransaction();
             try
             {
+                var ModVersionEntity = context.ModVersionEntity.FirstOrDefault(x => x.VersionId == approveModVersionEntity.VersionId);
+                ModVersionEntity.FilesId = filesEntity.FilesId;
+                context.Update(ModVersionEntity);
                 context.AddAsync(filesEntity);
                 context.AddAsync(approveModVersionEntity);
                 context.SaveChanges();

@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                color: #333;
+            }
+
+            .form-group input[type="text"],
+            .form-group input[type="password"] {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            .form-group button {
+                width: 100%;
+                padding: 10px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+                .form-group button:hover {
+                    background-color: #45a049;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户注册</h1>
+        <form id="registerForm" action="/api/Login/UserRegister" method="post">
+            <div class="form-group">
+                <label for="loginAccount">邮箱</label>
+                <input type="text" id="loginAccount" name="loginAccount" required>
+            </div>
+            <div class="form-group">
+                <label for="nickName">昵称</label>
+                <input type="text" id="nickName" name="nickName" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">注册</button>
+            </div>
+        </form>
+    </div>
+    <script>document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = {
+                LoginAccount: document.getElementById('loginAccount').value,
+                NickName: document.getElementById('nickName').value,
+                Password: document.getElementById('password').value
+            };
+            fetch('/api/Login/UserRegister', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ResultCode === 200) {
+                    alert('注册成功');
+                    localStorage.setItem("token", data.ResultData.Token);
+                    localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
+                    window.location.href = '/wwwroot/html/Default/Index.html';
+                } else {
+                    alert('注册失败: ' + data.ResultMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('注册失败');
+            });
+        });</script>
+</body>
+</html>

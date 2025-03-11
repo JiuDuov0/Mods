@@ -19,5 +19,7 @@ namespace Service.Interface
         public ModVersionEntity GetByModVersionId(string modVersionId);
         public bool AddModTypes(JArray array);
         public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take);
+        public bool IsLoginUserMods(List<string> list,string UserId);
+        public bool IsLoginUserMods(string VersionId, string UserId);
     }
 }

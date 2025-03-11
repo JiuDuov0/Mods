@@ -61,11 +61,15 @@ namespace ModsAPI.Controllers
 
             if (string.IsNullOrWhiteSpace(VersionId))
             {
-                return new ResultEntity<string>() { ResultMsg = "VersionId不能为空" };
+                return new ResultEntity<string>() { ResultCode = 400, ResultMsg = "VersionId不能为空" };
             }
             else if (_IModService.GetByModVersionId(VersionId) == null)
             {
-                return new ResultEntity<string>() { ResultMsg = "VersionId错误" };
+                return new ResultEntity<string>() { ResultCode = 400, ResultMsg = "VersionId错误" };
+            }
+            else if (_IModService.IsLoginUserMods(VersionId, UserId))
+            {
+                return new ResultEntity<string>() { ResultCode = 400, ResultMsg = "非本人Mod" };
             }
             var result = new ResultEntity<string>();
             var guid = Guid.NewGuid().ToString();

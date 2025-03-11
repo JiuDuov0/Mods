@@ -8,6 +8,7 @@ using ModsAPI.tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
+using System.Text;
 
 namespace ModsAPI.Controllers
 {
@@ -160,8 +161,69 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<bool>() { ResultMsg = "不能为空" };
             }
+            var ModsIdList = new List<string>();
+            foreach (JObject item in jArray)
+            {
+                if (ModsIdList.FirstOrDefault(x => x == item["ModId"].ToString()) == null)
+                {
+                    ModsIdList.Add(item["ModId"].ToString());
+                }
+            }
+            if (!_IModService.IsLoginUserMods(ModsIdList, UserId))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "含有非本人Mod" };
+            }
             #endregion
             return new ResultEntity<bool>() { ResultData = _IModService.AddModTypes(jArray) };
+        }
+
+        /// <summary>
+        /// 添加mod版本
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "ModAddVersion")]
+        [Authorize]
+        public ResultEntity<ModVersionEntity> ModAddVersion([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModId))
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.VersionNumber))
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无VersionNumber" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Description))
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无Description" };
+            }
+            if (!_IModService.IsLoginUserMods(new List<string>() { (string)json.ModId }, UserId))
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "含有非本人Mod" };
+            }
+            #endregion
+            var entity = new ModVersionEntity()
+            {
+                VersionId = Guid.NewGuid().ToString(),
+                ModId = (string)json.ModId,
+                VersionNumber = (string)json.VersionNumber,
+                Description = (string)json.Description,
+                CreatedAt = DateTime.Now
+            };
+            if (_IModService.AddModVersion(entity))
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultData = entity };
+            }
+            else
+            {
+                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "添加失败" };
+            }
         }
     }
 }

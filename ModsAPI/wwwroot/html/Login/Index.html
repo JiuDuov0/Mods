@@ -42,6 +42,7 @@
             .login-container button {
                 width: 100%;
                 padding: 10px;
+                margin: 20px 0px 20px 0px;
                 background-color: #4CAF50;
                 color: white;
                 border: none;
@@ -78,19 +79,19 @@
                     if (data.ResultData == null) {
                         alert('账号或密码错误');
                     } else {
-                        localStorage.setItem(loginaccount + "token", data.ResultData.Token);
-                        localStorage.setItem(loginaccount + "refresh_Token", data.ResultData.Refresh_Token);
-                        // var myDate = new Date;
-                        // var h = myDate.getHours();
-                        // var m = myDate.getMinutes();
-                        //location.href = "../Default/Index.html?loginaccount=" + loginaccount + "&h=" + (h + 1) + "&m=" + m;
-                        location.href = "../../../wwwroot/html/Default/Index.html?loginaccount=" + loginaccount;
+                        localStorage.setItem("token", data.ResultData.Token);
+                        localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
+                        location.href = "../../../wwwroot/html/Default/Index.html";
                     }
                 },
                 error: function (err) {
                     $("#mess").hide();
                 }
             });
+        }
+
+        function Register() {
+            location.href = "../../../wwwroot/html/Login/Register.html";
         }
     </script>
 </head>
@@ -100,6 +101,7 @@
         <input type="text" id="LoginAccount" name="LoginAccount" placeholder="用户名" required>
         <input type="password" id="Password" name="Password" placeholder="密码" required>
         <button onclick="Login()">登录</button>
+        <button onclick="Register()">注册</button>
     </div>
 </body>
 </html>

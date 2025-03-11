@@ -151,5 +151,30 @@ namespace Service.Realization
         {
             return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).Where(x => x.Status == "0").Skip(Skip).Take(Take).ToList();
         }
+
+        public bool IsLoginUserMods(List<string> list, string UserId)
+        {
+            IQueryable<ModEntity> context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity;
+            foreach (var item in list)
+            {
+                context = context.Where(x => x.ModId == item);
+            }
+            var Mods = context.ToList();
+            List<ModEntity> querylist = Mods.FindAll(x => x.CreatorUserId != UserId).ToList();
+            if (querylist == null || querylist.Count == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool IsLoginUserMods(string VersionId, string UserId)
+        {
+            var entity = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Where(x => x.ModVersionEntities.Any(y => y.VersionId == VersionId)).Where(x => x.CreatorUserId == UserId).FirstOrDefault();
+            return entity == null;
+        }
     }
 }
