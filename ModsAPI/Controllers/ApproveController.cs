@@ -1,4 +1,5 @@
 ﻿using Entity;
+using Entity.Approve;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -71,6 +72,32 @@ namespace ModsAPI.Controllers
             #endregion
             _IModService.ApproveModVersionAsync(VersionId, UserId, Status, Comments);
             return new ResultEntity<string>() { ResultData = "审核成功" };
+        }
+
+        /// <summary>
+        /// 获取待审核Mod版本列表
+        /// </summary>
+        /// <param name="json">{"Skip":"","Take":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetApproveModVersionPageList")]
+        public ResultEntity<List<ApproveModVersionEntity>> GetApproveModVersionPageList([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            int Skip = 0, Take = 0;
+            if (string.IsNullOrWhiteSpace((string)json.Skip) && string.IsNullOrWhiteSpace((string)json.Take))
+            {
+                return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
+            }
+            if (int.TryParse((string)json.Skip, out Skip) && int.TryParse((string)json.Take, out Take))
+            {
+                return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
+            }
+            #endregion
+            return new ResultEntity<List<ApproveModVersionEntity>>() { ResultData = _IModService.GetApproveModVersionPageList(Skip, Take) };
         }
     }
 }

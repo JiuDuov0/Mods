@@ -146,5 +146,10 @@ namespace Service.Realization
                 return false;
             }
         }
+
+        public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).Where(x => x.Status == "0").Skip(Skip).Take(Take).ToList();
+        }
     }
 }
