@@ -2,6 +2,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -100,15 +101,29 @@ builder.Services.AddRateLimiter(_ => _
         options.QueueLimit = Convert.ToInt32(builder.Configuration["QueueLimit"]);// 队列中允许的最大请求数
     }));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddCors(cor =>
+{
+    var cors = builder.Configuration.GetSection("CorsUrls").GetChildren().Select(p => p.Value);
+    cor.AddPolicy("Cors", policy =>
+    {
+        policy.WithOrigins(cors.ToArray())//设置允许的请求头
+        .WithExposedHeaders("x-custom-header")//设置公开的响应头
+        .AllowAnyHeader()//允许所有请求头
+        .AllowAnyMethod()//允许任何方法
+        .AllowCredentials()//允许跨源凭据----服务器必须允许凭据
+        .SetIsOriginAllowed(_ => true).SetPreflightMaxAge(TimeSpan.FromSeconds(2520));
+    });
+});
 
 var app = builder.Build();
 //Configure the HTTP request pipeline.
+
 app.UseFileServer(new FileServerOptions()
-                  {
-                      FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
-                      RequestPath = new PathString("/wwwroot"),
-                      EnableDirectoryBrowsing = true
-                  });//静态文件访问
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
+    RequestPath = new PathString("/wwwroot"),
+    EnableDirectoryBrowsing = true
+});//静态文件访问
 DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
 defaultFilesOptions.DefaultFileNames.Clear();
 defaultFilesOptions.DefaultFileNames.Add("/html/Login/Index.html");
@@ -126,7 +141,7 @@ app.UseRateLimiter();
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
+app.UseCors("Cors");
 app.UseAuthentication();
 app.UseAuthorization();
 
