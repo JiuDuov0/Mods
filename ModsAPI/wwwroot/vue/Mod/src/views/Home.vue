@@ -100,7 +100,7 @@ export default {
         },
         fetchModTypes() {
             $.ajax({
-                url: this.$url + '/api/Mod/GetAllModTypes',
+                url: 'http://43.160.202.17:8099/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -127,7 +127,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: this.$url + '/api/Mod/ModListPage',
+                url: 'http://43.160.202.17:8099/api/Mod/ModListPage',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -181,7 +181,7 @@ export default {
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
             $.ajax({
-                url: this.$url + '/api/User/UserUnsubscribeMod',
+                url: 'http://43.160.202.17:8099/api/User/UserUnsubscribeMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -216,7 +216,7 @@ export default {
         },
         UserModSubscribe(modId) {
             $.ajax({
-                url: this.$url + '/api/User/ModSubscribe',
+                url: 'http://43.160.202.17:8099/api/User/ModSubscribe',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {

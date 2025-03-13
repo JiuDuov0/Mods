@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
 const home = import("../views/Home.vue")
-const about = import("../views/About.vue")
 const login = import("../views/Login.vue")
 const myCreateMods = import("../views/MyCreateMods.vue")
 const mySubscribeMods = import("../views/MySubscribeMods.vue")

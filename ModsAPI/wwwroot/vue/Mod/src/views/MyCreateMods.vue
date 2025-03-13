@@ -98,7 +98,7 @@ export default {
         },
         fetchModTypes() {
             $.ajax({
-                url: this.$url + '/api/Mod/GetAllModTypes',
+                url: 'http://43.160.202.17:8099/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -125,7 +125,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: this.$url + '/api/Mod/GetMyCreateMod',
+                url: 'http://43.160.202.17:8099/api/Mod/GetMyCreateMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
