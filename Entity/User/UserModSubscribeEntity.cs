@@ -24,6 +24,6 @@ namespace Entity.User
         [ForeignKey("ModId")]
         public ModEntity? Mod { get; set; }
 
-        public DateTime SubscribedAt { get; set; }
+        public DateTime? SubscribedAt { get; set; }
     }
 }

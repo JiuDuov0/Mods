@@ -2,6 +2,7 @@
 using EF.Interface;
 using Entity.Approve;
 using Entity.Mod;
+using Entity.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Newtonsoft.Json;
@@ -25,18 +26,19 @@ namespace Service.Realization
             _IDbContextServices = iDbContextServices;
         }
 
-        public List<ModEntity> ModListPage(dynamic json)
+        public List<ModEntity> ModListPage(dynamic json, string UserId)
         {
+            var task = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.Where(x => x.UserId == UserId).ToListAsync();
             int Skip = Convert.ToInt32(json.Skip);
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
             Types.RemoveAll(x => x == null || x == "");
-            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).Include(x => x.ModVersionEntities);
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
             #region 条件
-            if (!string.IsNullOrWhiteSpace((string)json.Select))
+            if (!string.IsNullOrWhiteSpace((string)json.Search))
             {
-                string Select = json.Select;
-                Context = Context.Where(x => x.Name.Contains(Select));
+                string Search = json.Search;
+                Context = Context.Where(x => x.Name.Contains(Search));
             }
             if (Types.Count > 0)
             {
@@ -49,7 +51,13 @@ namespace Service.Realization
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
-            return Context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
+            var list = Context.OrderByDescending(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
+            var Subscribes = task.Result;
+            foreach (var item in list)
+            {
+                item.IsMySubscribe = Subscribes.Any(x => x.ModId == item.ModId);
+            }
+            return list;
         }
 
         public void ApproveModVersion(string modVersionId, string approverUserId, string status, string comments)
@@ -177,9 +185,29 @@ namespace Service.Realization
             return entity == null;
         }
 
-        public List<ModEntity> GetMyCreateMod(string UserId)
+        public List<ModEntity> GetMyCreateMod(string UserId, dynamic json)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Where(x => x.CreatorUserId == UserId).ToList();
+            int Skip = Convert.ToInt32(json.Skip);
+            int Take = Convert.ToInt32(json.Take);
+            var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
+            Types.RemoveAll(x => x == null || x == "");
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
+            #region 条件
+            if (!string.IsNullOrWhiteSpace((string)json.Search))
+            {
+                string Search = json.Search;
+                Context = Context.Where(x => x.Name.Contains(Search));
+            }
+            if (Types.Count > 0)
+            {
+                foreach (var item in Types)
+                {
+                    Context = Context.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
+                }
+            }
+            Context = Context.Where(x => x.CreatorUserId == UserId);
+            #endregion
+            return Context.OrderByDescending(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
         }
     }
 }

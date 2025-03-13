@@ -39,10 +39,8 @@
                                 <img src="../assets/drg.png" alt="mod image" style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
                                 <p>{{ getShortDescription(mod.Description) }}</p>
-                                <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
-                                    type="primary">订阅</el-button>
-                                <el-button v-else @click="btnUnsubscribeClick(mod.ModId)"
-                                    type="primary">取消订阅</el-button>
+                                <el-button @click="" type="primary">上传新版本</el-button>
+                                <el-button @click="" type="primary">编辑Mod基本信息</el-button>
                             </el-card>
                         </el-col>
                     </el-row>
@@ -127,7 +125,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: this.$url + '/api/Mod/ModListPage',
+                url: this.$url + '/api/Mod/GetMyCreateMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -177,77 +175,6 @@ export default {
             }, options);
 
             observer.observe(this.$refs.bottomObserver);
-        },
-        btnUnsubscribeClick(ModId) {
-            // 处理取消订阅按钮点击事件
-            $.ajax({
-                url: this.$url + '/api/User/UserUnsubscribeMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                data: JSON.stringify({
-                    ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.info('取消订阅成功！');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == ModId) {
-                                item.IsMySubscribe = false;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    ElMessage.error('请求失败: ' + err);
-                    console.log(err);
-                }
-            });
-        },
-        UserModSubscribe(modId) {
-            $.ajax({
-                url: this.$url + '/api/User/ModSubscribe',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                data: JSON.stringify({
-                    ModId: modId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('订阅失败: ' + data.resultMsg);
-                    } else {
-                        ElMessage.success('订阅成功');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == modId) {
-                                item.IsMySubscribe = true;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    ElMessage.error('订阅失败: ' + err);
-                    console.log(err);
-                }
-            });
         },
         handleDropdownClick() {
             // 处理下拉菜单点击事件

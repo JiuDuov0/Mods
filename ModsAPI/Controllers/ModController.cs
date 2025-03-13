@@ -41,15 +41,16 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 分页获取Mod列表
         /// </summary>
-        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Select=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Select":"","Types":["",""]}</param>
+        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "ModListPage")]
         public ResultEntity<List<ModEntity>> ModListPage([FromBody] dynamic json)
         {
+            string UserId = null;
             if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()))
             {
                 var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-                var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+                UserId = _JwtHelper.GetTokenStr(token, "UserId");
                 _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             }
             else
@@ -58,16 +59,16 @@ namespace ModsAPI.Controllers
             }
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #region 验证
-            if (string.IsNullOrWhiteSpace(json.Skip))
+            if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
                 return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
             }
-            if (string.IsNullOrWhiteSpace(json.Take))
+            if (string.IsNullOrWhiteSpace((string)json.Take))
             {
                 return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json) };
+            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json, UserId) };
         }
 
         /// <summary>
@@ -229,7 +230,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获取我创建的Mod
         /// </summary>
-        /// <param name="json"></param>
+        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetMyCreateMod")]
         [Authorize]
@@ -249,7 +250,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod(UserId) };
+            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
         }
     }
 }

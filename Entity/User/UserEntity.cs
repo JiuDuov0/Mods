@@ -36,15 +36,16 @@ namespace Entity.User
         /// 创建时间
         /// </summary>
         public DateTime? CreatedAt { get; set; }
-        [NotMapped]
-        /// <summary>
-        /// 角色id
-        /// </summary>
-        public List<string> UserRoleID { get; set; }
 
         /// <summary>
         /// 导航属性，指向Files
         /// </summary>
         public List<FilesEntity> FilesEntities { get; set; }
+
+        /// <summary>
+        /// 角色id
+        /// </summary>
+        [NotMapped]
+        public List<string> UserRoleID { get; set; }
     }
 }

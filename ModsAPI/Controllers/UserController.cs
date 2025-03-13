@@ -78,7 +78,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 当前用户所有已订阅Mod列表
         /// </summary>
-        /// <param name="json">Skip:跳过多少条数据，Take:取出多少条数据 json示例：{"Skip":"0","Take":"10"}</param>
+        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Select=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Select":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "UserAllSubscribeModPage")]
         [Authorize]
@@ -99,6 +99,36 @@ namespace ModsAPI.Controllers
             }
             #endregion
             return new ResultEntity<List<ModEntity>> { ResultData = _IUserService.UserAllSubscribeModPage(json, UserId) };
+        }
+
+        /// <summary>
+        /// 取消订阅
+        /// </summary>
+        /// <param name="json">{"ModId":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "UserUnsubscribeMod")]
+        [Authorize]
+        public ResultEntity<bool> UserUnsubscribeMod([FromBody] dynamic json)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("UserController/UserAllSubscribeModPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #region 验证
+            string ModId = (string)json.ModId;
+            if (string.IsNullOrWhiteSpace(ModId))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultData = false, ResultMsg = "无ModId" };
+            }
+            #endregion
+            if (_IUserService.UserUnsubscribeMod(UserId, ModId))
+            {
+                return new ResultEntity<bool>() { ResultData = true };
+            }
+            else
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultData = false, ResultMsg = "取消订阅失败" };
+            }
         }
     }
 }

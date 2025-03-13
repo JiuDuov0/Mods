@@ -15,5 +15,6 @@ namespace Service.Interface
         public UserEntity? Register(UserEntity entity);
         public bool SubscribeToMod(string userId, string modId);
         public List<ModEntity> UserAllSubscribeModPage(dynamic json, string UserId);
+        public bool UserUnsubscribeMod(string UserId, string ModId);
     }
 }

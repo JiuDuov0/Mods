@@ -60,7 +60,7 @@ namespace ModsAPI.tools
 
             _RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
             _RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
-            return new ResponseToken() { Token = token, Refresh_Token = refreshToken };
+            return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName };
         }
 
         /// <summary>
@@ -248,6 +248,11 @@ namespace ModsAPI.tools
         /// 用于刷新token的刷新令牌
         /// </summary>
         public string Refresh_Token { get; set; }
+
+        /// <summary>
+        /// 昵称
+        /// </summary>
+        public string NickName { get; set; }
     }
 }
 

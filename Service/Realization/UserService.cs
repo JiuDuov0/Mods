@@ -110,5 +110,13 @@ namespace Service.Realization
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             return context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
         }
+
+        public bool UserUnsubscribeMod(string UserId, string ModId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
+            Context.UserModSubscribeEntity.Remove(entity);
+            return Context.SaveChanges() > 0;
+        }
     }
 }

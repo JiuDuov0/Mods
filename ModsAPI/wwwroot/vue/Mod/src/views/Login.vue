@@ -8,6 +8,7 @@
                     <el-input type="password" v-model="loginForm.password" placeholder="请输入密码"
                         style="margin-bottom: 16px;" />
                     <el-button type="primary" block @click="handleLogin">登录</el-button>
+                    <el-button type="primary" block @click="handleRegister">注册</el-button>
                 </div>
             </el-card>
         </el-col>
@@ -55,6 +56,7 @@ export default {
                     if (data.ResultData == null) {
                         ElMessage.error('登录失败: ' + data.resultMsg);
                     } else {
+                        localStorage.setItem("NickName", data.ResultData.NickName);
                         localStorage.setItem("token", data.ResultData.Token);
                         localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
                         router.push('/home');
@@ -65,6 +67,9 @@ export default {
                     console.log(err);
                 }
             });
+        },
+        handleRegister() {
+            router.push('/register');
         }
     }
 };
