@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import router from './router'; // 导入路由器
+import router from './router/index'; // 导入路由器
 import axios from 'axios'
 import $ from 'jquery'
 
