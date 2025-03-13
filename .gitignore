@@ -26,3 +26,4 @@
 /publish.zip
 /ModsAPI/Properties/PublishProfiles/FolderProfile.pubxml.user
 /ModsAPI/ModsAPI.csproj.user
+/ModsAPI/wwwroot/vue/Mod/dist.zip
