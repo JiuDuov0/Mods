@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import anti from 'ant-design-vue';
-import "ant-design-vue/dist/reset.css";
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
 import router from './router'; // 导入路由器
 import axios from 'axios'
 import $ from 'jquery'
@@ -13,5 +13,5 @@ app.config.globalProperties.$axios = axios; // 添加 axios 到全局属性
 app.config.globalProperties.$ = $; // 添加 jQuery 到全局属性
 app.config.globalProperties.$router = router // 添加路由器到全局属性
 app.use(router); // 使用路由器
-app.use(anti);
+app.use(ElementPlus);
 app.mount('#app');
