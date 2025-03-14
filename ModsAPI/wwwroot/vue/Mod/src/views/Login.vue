@@ -54,7 +54,7 @@ export default {
                 async: false,
                 success: function (data) {
                     if (data.ResultData == null) {
-                        ElMessage.error('登录失败: ' + data.resultMsg);
+                        ElMessage.error('登录失败: ' + data.ResultMsg);
                     } else {
                         localStorage.setItem("NickName", data.ResultData.NickName);
                         localStorage.setItem("token", data.ResultData.Token);

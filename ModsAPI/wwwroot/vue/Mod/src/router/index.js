@@ -1,10 +1,10 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-const home = import("../views/Home.vue")
-const login = import("../views/Login.vue")
-const myCreateMods = import("../views/MyCreateMods.vue")
-const mySubscribeMods = import("../views/MySubscribeMods.vue")
-const register = import("../views/Register.vue")
+const home = () => import('../views/Home.vue')
+const login = () => import('../views/Login.vue')
+const myCreateMods = () => import('../views/MyCreateMods.vue')
+const mySubscribeMods = () => import('../views/MySubscribeMods.vue')
+const register = () => import('../views/Register.vue')
 
 const routes = [
     { path: "/", name: "login", component: login },

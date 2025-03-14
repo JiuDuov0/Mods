@@ -112,7 +112,7 @@ export default {
                 async: false,
                 success: (data) => {
                     if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.resultMsg);
+                        ElMessage.error('获取失败: ' + data.ResultMsg);
                     } else {
                         this.modTypes = data.ResultData;
                     }
@@ -145,7 +145,7 @@ export default {
                 async: false,
                 success: (data) => {
                     if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.resultMsg);
+                        ElMessage.error('获取失败: ' + data.ResultMsg);
                     } else {
                         this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
                         this.skip += this.take; // 更新 skip 值
