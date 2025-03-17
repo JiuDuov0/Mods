@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
+using System.Threading.Tasks;
 
 namespace ModsAPI.Controllers
 {
@@ -43,12 +44,14 @@ namespace ModsAPI.Controllers
         /// <param name="json">VersionId:VersionId，Comments:审批意见，Status:状态{Approved = 20, Rejected = 10, Pending = 0} json示例：{"VersionId":"","Comments":"","Status":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "ApproveMod")]
-        public ResultEntity<string> ApproveMod([FromBody] dynamic json)
+        public async Task<ResultEntity<string>> ApproveMod([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             string VersionId = (string)json.VersionId;
             string Comments = (string)json.Comments;
             string Status = (string)json.Status;
@@ -70,7 +73,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<string>() { ResultMsg = "Status不正确" };
             }
             #endregion
-            _IModService.ApproveModVersionAsync(VersionId, UserId, Status, Comments);
+            await _IModService.ApproveModVersionAsync(VersionId, UserId, Status, Comments);
             return new ResultEntity<string>() { ResultData = "审核成功" };
         }
 
@@ -82,10 +85,12 @@ namespace ModsAPI.Controllers
         [HttpPost(Name = "GetApproveModVersionPageList")]
         public ResultEntity<List<ApproveModVersionEntity>> GetApproveModVersionPageList([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("ApproveController/GetApproveModVersionPageList", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             #region 验证
             int Skip = 0, Take = 0;
             if (string.IsNullOrWhiteSpace((string)json.Skip) && string.IsNullOrWhiteSpace((string)json.Take))

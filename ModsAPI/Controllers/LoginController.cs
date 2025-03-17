@@ -1,5 +1,6 @@
 ﻿using Entity;
 using Entity.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -47,8 +48,10 @@ namespace ModsAPI.Controllers
         [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
-            _IAPILogService.WriteLogAsync("UserLogin", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #region 记录访问
+            _IAPILogService.WriteLogAsync("LoginController/UserLogin", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
 
             #region 验证一下传过来的是什么鬼东西
             if ((string)json.LoginAccount == "" || (string)json.LoginAccount == null)
@@ -76,10 +79,15 @@ namespace ModsAPI.Controllers
         /// <returns></returns>
         [HttpPost(Name = "CreateToken")]
         [EnableRateLimiting("Concurrency")]
+        [Authorize]
         public ResultEntity<ResponseToken> CreateToken([FromBody] dynamic json)
         {
-            _IAPILogService.WriteLogAsync("CreateToken", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("LoginController/CreateToken", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
 
             #region 验证一下传过来的是什么鬼东西
             if ((string)json.LoginAccount == "" || (string)json.LoginAccount == null)
@@ -109,8 +117,10 @@ namespace ModsAPI.Controllers
         [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> UserRegister([FromBody] dynamic json)
         {
-            _IAPILogService.WriteLogAsync("UserRegister", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #region 记录访问
+            _IAPILogService.WriteLogAsync("LoginController/UserRegister", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
 
             #region 验证一下传过来的是什么鬼东西
             if ((string)json.LoginAccount == "" || (string)json.LoginAccount == null)
@@ -156,13 +166,17 @@ namespace ModsAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost(Name = "Test")]
+        [Authorize]
         public string Test()
         {
+            #region 记录访问
+            //让我康康谁请求的
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("LoginController/Test", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             var role = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("Test", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             return "";
         }
     }

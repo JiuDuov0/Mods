@@ -118,17 +118,17 @@ builder.Services.AddCors(cor =>
 var app = builder.Build();
 //Configure the HTTP request pipeline.
 
-app.UseFileServer(new FileServerOptions()
-{
-    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
-    RequestPath = new PathString("/wwwroot"),
-    EnableDirectoryBrowsing = true
-});//静态文件访问
-DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
-defaultFilesOptions.DefaultFileNames.Clear();
-defaultFilesOptions.DefaultFileNames.Add("/html/Login/Index.html");
-app.UseDefaultFiles(defaultFilesOptions);
-app.UseStaticFiles();
+//app.UseFileServer(new FileServerOptions()
+//{
+//    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot")),
+//    RequestPath = new PathString("/wwwroot"),
+//    EnableDirectoryBrowsing = true
+//});//静态文件访问
+//DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
+//defaultFilesOptions.DefaultFileNames.Clear();
+//defaultFilesOptions.DefaultFileNames.Add("/html/Login/Index.html");
+//app.UseDefaultFiles(defaultFilesOptions);
+//app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {

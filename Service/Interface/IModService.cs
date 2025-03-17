@@ -22,5 +22,7 @@ namespace Service.Interface
         public bool IsLoginUserMods(List<string> list, string UserId);
         public bool IsLoginUserMods(string VersionId, string UserId);
         public List<ModEntity> GetMyCreateMod(string UserId, dynamic json);
+        public ModEntity ModDetail(string ModId);
+        public ModEntity ModDetail(string UserId, string ModId);
     }
 }

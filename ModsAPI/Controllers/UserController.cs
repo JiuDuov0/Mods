@@ -47,10 +47,12 @@ namespace ModsAPI.Controllers
         [Authorize(Roles = "Developer")]
         public ResultEntity<List<UserEntity>> GetUserPage([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("UserController/GetUserPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             return new ResultEntity<List<UserEntity>>() { ResultData = _IUserService.GetPages(json) };
         }
 
@@ -63,10 +65,12 @@ namespace ModsAPI.Controllers
         [Authorize]
         public ResultEntity<bool> ModSubscribe([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("UserController/ModSubscribe", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             string ModId = (string)json.ModId;
             if (string.IsNullOrWhiteSpace(ModId))
             {
@@ -84,10 +88,12 @@ namespace ModsAPI.Controllers
         [Authorize]
         public ResultEntity<List<ModEntity>> UserAllSubscribeModPage([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             _IAPILogService.WriteLogAsync("UserController/UserAllSubscribeModPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             #region 验证
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
@@ -110,10 +116,12 @@ namespace ModsAPI.Controllers
         [Authorize]
         public ResultEntity<bool> UserUnsubscribeMod([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("UserController/UserAllSubscribeModPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("UserController/UserUnsubscribeMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
             #region 验证
             string ModId = (string)json.ModId;
             if (string.IsNullOrWhiteSpace(ModId))

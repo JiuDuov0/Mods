@@ -209,5 +209,15 @@ namespace Service.Realization
             #endregion
             return Context.OrderByDescending(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
         }
+
+        public ModEntity ModDetail(string ModId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).FirstOrDefault(x => x.ModId == ModId);
+        }
+
+        public ModEntity ModDetail(string UserId, string ModId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
+        }
     }
 }

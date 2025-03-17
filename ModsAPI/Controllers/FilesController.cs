@@ -54,10 +54,12 @@ namespace ModsAPI.Controllers
         [SwaggerOperation(Summary = "上传Mod文件", Description = "上传一个Mod文件和相关的JSON数据")]
         public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含VersionId的JSON数据")] string VersionId)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
-            _IAPILogService.WriteLogAsync("ApproveController/ApproveMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            await _IAPILogService.WriteLogAsync("FilesController/UploadMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
 
             if (string.IsNullOrWhiteSpace(VersionId))
             {
@@ -161,9 +163,11 @@ namespace ModsAPI.Controllers
         [HttpPost(Name = "DownloadFile")]
         public async Task<IActionResult> DownloadFile([FromBody] dynamic json)
         {
+            #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("FilesController/DownloadFile", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            await _IAPILogService.WriteLogAsync("FilesController/DownloadFile", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
 
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             string FileId = json.FileId;
