@@ -77,7 +77,7 @@ export default {
         modDetail() {
             // 处理获取 Mod 详情逻辑
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Mod/ModDetail',
+                url: 'http://43.160.202.17:8099/api/Mod/ModDetail',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {

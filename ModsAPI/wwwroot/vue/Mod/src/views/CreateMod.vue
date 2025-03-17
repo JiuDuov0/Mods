@@ -160,8 +160,13 @@ export default {
                         ElMessage.error('提交失败: ' + data.ResultMsg);
                     } else {
                         ElMessage.success('提交成功');
-                        //todo
-                        //router.push('/home');
+                        //todo test
+                        router.push({
+                            path: '/addVersionFile',
+                            query: {
+                                ModId: data.ResuleData.ModVersionEntities[0].VersionId
+                            }
+                        });
                     }
                 },
                 error: (err) => {
