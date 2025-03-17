@@ -6,6 +6,7 @@ const myCreateMods = () => import('../views/MyCreateMods.vue')
 const mySubscribeMods = () => import('../views/MySubscribeMods.vue')
 const register = () => import('../views/Register.vue')
 const modDetail = () => import('../views/ModDetail.vue')
+const createMod = () => import('../views/CreateMod.vue')
 
 const routes = [
     { path: "/", name: "login", component: login },
@@ -33,6 +34,11 @@ const routes = [
         path: "/modDetail",
         name: "modDetail",
         component: modDetail
+    },
+    {
+        path: "/createMod",
+        name: "createMod",
+        component: createMod
     },
 ]
 

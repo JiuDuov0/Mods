@@ -9,7 +9,8 @@
                         <el-dropdown-menu>
                             <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
                             <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleMyCreateMods">我上传的Mod</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
                         </el-dropdown-menu>
@@ -35,7 +36,7 @@
                 <el-col :span="18">
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="8" v-for="mod in modList" :key="mod.ModId">
-                            <el-card>
+                            <el-card @click="toModDetail(mod.ModId)">
                                 <img src="../assets/drg.png" alt="mod image" style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
                                 <p>{{ getShortDescription(mod.Description) }}</p>
@@ -120,7 +121,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('获取失败: ' + err);
+                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -154,7 +155,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('获取失败: ' + err);
+                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -200,7 +201,7 @@ export default {
                     if (data.ResultData == false || data.ResultData == null) {
                         ElMessage.error('取消订阅失败: ' + data.ResultMsg);
                     } else {
-                        ElMessage.info('取消订阅成功！');
+                        ElMessage.success('取消订阅成功！');
                         this.modList.forEach((item) => {
                             if (item.ModId == ModId) {
                                 item.IsMySubscribe = false;
@@ -209,7 +210,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('请求失败: ' + err);
+                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -244,7 +245,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('订阅失败: ' + err);
+                    ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -267,6 +268,10 @@ export default {
             // 处理我订阅的Mod点击事件
             router.push('/mySubscribeMods');
         },
+        handleCreateMod() {
+            // 处理发布新Mod点击事件
+            router.push('/createMod');
+        },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
@@ -274,6 +279,15 @@ export default {
             localStorage.removeItem('refresh_Token');
             localStorage.removeItem('NickName');
             router.push('/');
+        },
+        toModDetail(ModId) {
+            // 处理点击事件跳转到 Mod 详情页
+            router.push({
+                path: '/modDetail',
+                query: {
+                    ModId: ModId
+                }
+            });
         }
     }
 };

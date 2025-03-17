@@ -108,7 +108,7 @@ namespace Service.Realization
             x.UserModSubscribeEntities.Any(y => y.UserId == UserId) &&
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
-            return context.OrderBy(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
+            return context.OrderBy(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
         }
 
         public bool UserUnsubscribeMod(string UserId, string ModId)

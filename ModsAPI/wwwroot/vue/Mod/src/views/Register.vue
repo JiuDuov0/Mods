@@ -78,7 +78,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('注册失败: ' + err);
+                    ElMessage.error('注册失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });

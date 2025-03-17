@@ -63,7 +63,7 @@ export default {
                     }
                 },
                 error: function (err) {
-                    ElMessage.error('登录失败: ' + err);
+                    ElMessage.error('登录失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });

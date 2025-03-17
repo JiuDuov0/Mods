@@ -51,7 +51,7 @@ namespace Service.Realization
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
-            var list = Context.OrderByDescending(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
+            var list = Context.OrderByDescending(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
             var Subscribes = task.Result;
             foreach (var item in list)
             {
@@ -91,14 +91,31 @@ namespace Service.Realization
             await context.SaveChangesAsync();
         }
 
-        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity)
+        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity, List<ModTypeEntity> list)
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var transaction = Context.Database.BeginTransaction();
+            var insertlist = new List<ModTypeEntity>();
+            if (list.Count > 0)
+            {
+                var all = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).TypesEntity.ToList();
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var entity = all.FirstOrDefault(x => x.TypesId == list[i].TypesId);
+                    if (entity != null)
+                    {
+                        insertlist.Add(new ModTypeEntity { ModTypeId = Guid.NewGuid().ToString(), ModId = modEntity.ModId, TypesId = entity.TypesId });
+                    }
+                }
+            }
             try
             {
                 Context.ModEntity.Add(modEntity);
                 Context.ModVersionEntity.Add(modVersionEntity);
+                if (insertlist.Count > 0)
+                {
+                    Context.Add(insertlist);
+                }
                 Context.SaveChanges();
                 transaction.Commit();
                 return true;
@@ -207,15 +224,25 @@ namespace Service.Realization
             }
             Context = Context.Where(x => x.CreatorUserId == UserId);
             #endregion
-            return Context.OrderByDescending(x => x.DownLoadCount).Skip(Skip).Take(Take).ToList();
-        }
-
-        public ModEntity ModDetail(string ModId)
-        {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).FirstOrDefault(x => x.ModId == ModId);
+            return Context.OrderByDescending(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
         }
 
         public ModEntity ModDetail(string UserId, string ModId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            var entity = Context.ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefault(x => x.ModId == ModId);
+            var subscribe = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
+            if (entity != null)
+            {
+                var user = new UserEntity() { UserId = entity.CreatorEntity.UserId, NickName = entity.CreatorEntity.NickName };
+                entity.CreatorEntity = user;
+                entity.IsMySubscribe = subscribe != null;
+            }
+            entity.ModVersionEntities = entity.ModVersionEntities.OrderByDescending(x => x.CreatedAt).ToList();
+            return entity;
+        }
+
+        public ModEntity ModDetailUpd(string UserId, string ModId)
         {
             return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
         }

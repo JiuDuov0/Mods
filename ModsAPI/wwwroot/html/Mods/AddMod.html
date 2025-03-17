@@ -103,7 +103,8 @@
                 ModVersionEntities: [{
                     VersionNumber: $('#versionNumber').val(),
                     Description: $('#versionDescription').val()
-                }]
+                }],
+                ModTypeEntities:[]
             };
             $.ajax({
                 url: '/api/Mod/CreateMod',

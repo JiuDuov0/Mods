@@ -9,6 +9,7 @@
                         <el-dropdown-menu>
                             <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
                             <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleMyCreateMods">我上传的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
@@ -117,7 +118,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('获取失败: ' + err);
+                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -151,7 +152,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('获取失败: ' + err);
+                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -204,7 +205,7 @@ export default {
                     }
                 },
                 error: (err) => {
-                    ElMessage.error('请求失败: ' + err);
+                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
             });
@@ -226,6 +227,10 @@ export default {
         handleSubscribeMod() {
             // 处理我订阅的Mod点击事件
             router.push('/myCreateMods');
+        },
+        handleCreateMod() {
+            // 处理发布新Mod点击事件
+            router.push('/createMod');
         },
         handleLogout() {
             // 处理退出登录点击事件

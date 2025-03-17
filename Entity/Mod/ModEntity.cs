@@ -31,6 +31,7 @@ namespace Entity.Mod
         /// <summary>
         /// Mod的创建者用户ID
         /// </summary>
+        [InverseProperty("UserId")]
         public string? CreatorUserId { get; set; }
 
         /// <summary>
@@ -51,7 +52,7 @@ namespace Entity.Mod
         /// <summary>
         /// 下载次数
         /// </summary>
-        public Int64? DownLoadCount { get; set; }
+        public Int64? DownloadCount { get; set; }
 
         /// <summary>
         /// 导航属性，指向Mod的图片
@@ -72,6 +73,12 @@ namespace Entity.Mod
         /// 导航属性，指向Mod的订阅人
         /// </summary>
         public List<UserModSubscribeEntity> UserModSubscribeEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性 指向创建者
+        /// </summary>
+        [ForeignKey("CreatorUserId")]
+        public UserEntity? CreatorEntity { get; set; }
 
         /// <summary>
         /// 是否订阅了本mod

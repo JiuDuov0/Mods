@@ -54,7 +54,7 @@ namespace Service.Realization
             var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var modVersion = context.ModVersionEntity.FirstOrDefault(x => x.FilesId == FileId);
             var mod = context.ModEntity.FirstOrDefault(x => x.ModId == modVersion.ModId);
-            mod.DownLoadCount = mod.DownLoadCount + 1;
+            mod.DownloadCount = mod.DownloadCount + 1;
             context.ModEntity.Update(mod);
             if (context.SaveChanges() > 0)
             {

@@ -43,6 +43,11 @@ namespace Entity.User
         public List<FilesEntity> FilesEntities { get; set; }
 
         /// <summary>
+        /// 导航属性，指向Mod
+        /// </summary>
+        public List<ModEntity> ModEntities { get; set; }
+
+        /// <summary>
         /// 角色id
         /// </summary>
         [NotMapped]

@@ -130,7 +130,6 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无版本描述" };
             }
             #endregion
-
             var ModId = Guid.NewGuid().ToString();
             var ModVersion = new ModVersionEntity()
             {
@@ -140,6 +139,11 @@ namespace ModsAPI.Controllers
                 Description = (string)json.ModVersionEntities[0].Description,
                 CreatedAt = DateTime.Now
             };
+            var ListTypes = new List<ModTypeEntity>();
+            if (((JArray)json.ModTypeEntities).HasValues)
+            {
+                ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
+            }
             var Mod = new ModEntity()
             {
                 ModId = ModId,
@@ -148,9 +152,9 @@ namespace ModsAPI.Controllers
                 CreatorUserId = UserId,
                 CreatedAt = DateTime.Now,
                 VideoUrl = (string)json.VideoUrl,
-                DownLoadCount = 0
+                DownloadCount = 0
             };
-            if (_IModService.AddModAndModVersion(Mod, ModVersion))
+            if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes))
             {
                 Mod.ModVersionEntities = new List<ModVersionEntity> { ModVersion };
                 return new ResultEntity<ModEntity> { ResultData = Mod };
@@ -304,7 +308,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
             }
             #endregion
-            return new ResultEntity<ModEntity> { ResultData = _IModService.ModDetail((string)json.ModId) };
+            return new ResultEntity<ModEntity> { ResultData = _IModService.ModDetail(UserId, (string)json.ModId) };
         }
 
         /// <summary>
@@ -328,7 +332,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
             }
             #endregion
-            var entity = _IModService.ModDetail((string)json.ModId);
+            var entity = _IModService.ModDetailUpd(UserId, (string)json.ModId);
             if (entity == null)
             {
                 return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "非本人Mod！" };
