@@ -119,7 +119,7 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed")
+            else if (file.ContentType != "application/x-zip-compressed"|| file.ContentType != "application/zip")//前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
