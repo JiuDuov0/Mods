@@ -36,8 +36,9 @@
                 <el-col :span="18">
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="8" v-for="mod in modList" :key="mod.ModId">
-                            <el-card @click="toModDetail(mod.ModId)">
-                                <img src="../assets/drg.png" alt="mod image" style="width: 100%;">
+                            <el-card>
+                                <img @click="toModDetail(mod.ModId)" src="../assets/drg.png" alt="mod image"
+                                    style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
                                 <p>{{ getShortDescription(mod.Description) }}</p>
                                 <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"

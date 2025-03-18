@@ -27,6 +27,12 @@
                                 disabled />
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
+                            <div>教程为B站视频链接</div>
+                            <div>示例:https://player.bilibili.com/player.html?aid={aid}&cid={cid}&page=1</div>
+                            <div>在浏览器输入以下链接：</div>
+                            <div>https://api.bilibili.com/x/web-interface/view?bvid=BV号</div>
+                            <div>获取aid与cid，替换上面的{aid}与{cid} </div>
+                            <el-input v-model="modForm.VideoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
                             <el-select v-model="modForm.tags" multiple placeholder="请选择标签"
                                 style="margin-bottom: 16px; width: 100%;">
                                 <el-option v-for="tag in tags" :key="tag.TypesId" :label="tag.TypeName"
@@ -45,6 +51,7 @@
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
+import { th } from 'element-plus/es/locale/index.mjs';
 
 export default {
     name: 'UpdateModInfo',
@@ -53,6 +60,7 @@ export default {
             modForm: {
                 name: '', // Mod 名称（不可编辑）
                 description: '', // Mod 描述
+                VideoUrl: '', // Mod 视频链接
                 tags: [] // Mod 类型（多选框）
             },
             tags: [], // 存储所有可选的 Mod 类型
@@ -106,6 +114,7 @@ export default {
                     } else {
                         this.modForm.name = data.ResultData.Name;
                         this.modForm.description = data.ResultData.Description;
+                        this.modForm.VideoUrl = data.ResultData.VideoUrl;
                         this.modForm.tags = data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
                     }
                 },
@@ -124,6 +133,7 @@ export default {
             const formData = {
                 ModId: this.$route.query.ModId,
                 Description: this.modForm.description,
+                VideoUrl: this.modForm.VideoUrl,
                 ModTypeEntities: this.modForm.tags.map((tag) => ({ TypesId: tag }))
             };
 

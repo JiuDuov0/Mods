@@ -115,7 +115,7 @@ namespace Service.Realization
                 Context.ModVersionEntity.Add(modVersionEntity);
                 if (insertlist.Count > 0)
                 {
-                    Context.Add(insertlist);
+                    Context.ModTypeEntity.AddRange(insertlist);
                 }
                 Context.SaveChanges();
                 transaction.Commit();

@@ -32,9 +32,6 @@
                             <div>在浏览器输入以下链接：</div>
                             <div>https://api.bilibili.com/x/web-interface/view?bvid=BV号</div>
                             <div>获取aid与cid，替换上面的{aid}与{cid} </div>
-                            <i class="el-icon-info"></i>
-                            <i class="el-icon-info"></i>
-                            <i class="el-icon-info"></i>
                             <el-input v-model="modForm.videoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.version" placeholder="请输入版本号" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.versionDescription" placeholder="请输入版本描述"
@@ -137,7 +134,7 @@ export default {
             };
             this.modForm.tags.forEach(tag => {
                 formData.ModTypeEntities.push({
-                    ModTypeId: tag
+                    TypesId: tag
                 });
             });
 
