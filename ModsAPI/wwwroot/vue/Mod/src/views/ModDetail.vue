@@ -55,7 +55,7 @@ export default {
             videoUrl: '',
             description: '',
             isSubscribed: false,
-            modAuthor: '作者名称',
+            modAuthor: '',
             downloads: "",
             subscribers: "",
             createdAt: "",

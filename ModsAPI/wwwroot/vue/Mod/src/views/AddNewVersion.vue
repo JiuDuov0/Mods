@@ -22,13 +22,14 @@
             <el-row type="flex" justify="center" align="middle" style="height: 100vh;">
                 <el-col :span="12">
                     <el-card>
-                        <h1 style="text-align: center; margin-bottom: 24px;">上传版本文件</h1>
-                        <el-upload class="upload-demo" action="" :auto-upload="false" :before-upload="beforeUpload"
-                            :on-change="handleFileChange" :file-list="fileList" accept=".zip">
-                            <el-button type="primary">选择文件</el-button>
-                            <div slot="tip" class="el-upload__tip">仅支持 .zip 格式文件</div>
-                        </el-upload>
-                        <el-button type="primary" block @click="submit">提交</el-button>
+                        <h1 style="text-align: center; margin-bottom: 24px;">添加新版本</h1>
+                        <div>
+                            <el-input v-model="versionForm.version" placeholder="请输入版本号" maxlength="10"
+                                style="margin-bottom: 16px;" />
+                            <el-input type="textarea" v-model="versionForm.description" placeholder="请输入版本描述"
+                                style="margin-bottom: 16px;" />
+                            <el-button type="primary" block @click="submitVersion">提交</el-button>
+                        </div>
                     </el-card>
                 </el-col>
             </el-row>
@@ -39,64 +40,65 @@
 <script>
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
+import $ from 'jquery';
 
 export default {
-    name: 'AddVersionFile',
+    name: 'AddNewVersion',
     data() {
         return {
             NickName: '',
-            fileList: [], // 存储选中的文件
-            VersionId: this.$route.query.VersionId // 从路由参数获取版本 ID
+            ModId: this.$route.query.ModId, // 从路由参数获取 Mod ID
+            versionForm: {
+                version: '',
+                description: ''
+            }
         };
     },
     mounted() {
         this.NickName = localStorage.getItem('NickName');
     },
     methods: {
-        beforeUpload(file) {
-            const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
-            if (!isZip) {
-                ElMessage.error('仅支持 .zip 格式文件');
+        submitVersion() {
+            if (!this.versionForm.version || this.versionForm.version.length > 10) {
+                ElMessage.error('请输入有效的版本号（10字以内）');
+                return;
             }
-            return isZip;
-        },
-        handleFileChange(file, fileList) {
-            // 仅存储最后选择的文件
-            this.fileList = [file];
-        },
-        submit() {
-            if (!this.fileList.length) {
-                ElMessage.error('请选择文件');
+            if (!this.versionForm.description) {
+                ElMessage.error('请输入版本描述');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('VersionId', this.VersionId);
-            formData.append('file', this.fileList[0].raw);
-
-            fetch('http://43.160.202.17:8099/api/Files/UploadMod', {
-                method: 'POST',
+            $.ajax({
+                url: 'http://43.160.202.17:8099/api/Mod/ModAddVersion', // 替换为实际的 API URL
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 },
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
+                data: JSON.stringify({
+                    ModId: this.ModId,
+                    VersionNumber: this.versionForm.version,
+                    Description: this.versionForm.description
+                }),
+                success: (data) => {
                     if (data.ResultCode === 200) {
-                        ElMessage.success('文件上传成功');
-                        this.fileList = []; // 清空文件列表
-                        setTimeout(() => {
-                            router.push('/home');
-                        }, 2000);
+                        ElMessage.success('版本添加成功');
+                        this.versionForm.version = '';
+                        this.versionForm.description = '';
+                        router.push({
+                            path: '/addVersionFile',
+                            query: {
+                                VersionId: data.ResultData.VersionId
+                            }
+                        });
                     } else {
-                        ElMessage.error('文件上传失败: ' + data.ResultMsg);
+                        ElMessage.error('版本添加失败: ' + data.ResultMsg);
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    ElMessage.error('文件上传失败');
-                });
+                },
+                error: (err) => {
+                    ElMessage.error('版本添加失败: ' + err.responseText);
+                }
+            });
         },
         handleDropdownClick() {
             // 处理下拉菜单点击事件

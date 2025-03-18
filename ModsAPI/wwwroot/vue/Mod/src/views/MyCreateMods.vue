@@ -40,8 +40,9 @@
                                 <img src="../assets/drg.png" alt="mod image" style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
                                 <p>{{ getShortDescription(mod.Description) }}</p>
-                                <el-button @click="" type="primary">发布新版本</el-button>
-                                <el-button @click="" type="primary">编辑Mod基本信息</el-button>
+                                <el-button @click="AddNewVersion(mod.ModId)" type="primary">发布新版本</el-button>
+                                <el-button @click="UpdateModInfo(mod.ModId)" type="primary">编辑Mod基本信息</el-button>
+                                <el-button @click="DeleteMod(mod.ModId)" type="primary">删除Mod</el-button>
                             </el-card>
                         </el-col>
                     </el-row>
@@ -56,6 +57,7 @@
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
+import UpdateModInfo from './UpdateModInfo.vue';
 
 export default {
     name: 'Home',
@@ -177,6 +179,61 @@ export default {
 
             observer.observe(this.$refs.bottomObserver);
         },
+        AddNewVersion(ModId) {
+            router.push({
+                path: '/addNewVersion',
+                query: {
+                    ModId: ModId
+                }
+            });
+        },
+        UpdateModInfo(ModId) {
+            router.push({
+                path: '/updateModInfo',
+                query: {
+                    ModId: ModId
+                }
+            });
+        },
+        DeleteMod(ModId) {
+            this.$confirm('确定要删除这个 Mod 吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                $.ajax({
+                    url: 'http://43.160.202.17:8099/api/Mod/DeleteMod',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    data: JSON.stringify({
+                        ModId: ModId
+                    }),
+                    cache: false,
+                    dataType: "json",
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    async: false,
+                    success: (data) => {
+                        if (data.ResultData == false || data.ResultData == null) {
+                            ElMessage.error('删除失败: ' + data.ResultMsg);
+                        } else {
+                            ElMessage.success('删除成功！');
+                            router.push('/myCreateMods');
+                        }
+                    },
+                    error: (err) => {
+                        ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
+                        console.log(err);
+                    }
+                });
+            }).catch(() => {
+                ElMessage.info('已取消删除');
+            });
+        },
         handleDropdownClick() {
             // 处理下拉菜单点击事件
         },
@@ -230,5 +287,11 @@ export default {
 
 .checkbox-item {
     margin-bottom: 10px;
+}
+
+.el-button {
+    margin-top: 10px;
+    width: 100%;
+    margin-left: 0px;
 }
 </style>

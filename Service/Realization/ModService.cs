@@ -35,6 +35,7 @@ namespace Service.Realization
             Types.RemoveAll(x => x == null || x == "");
             IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
             #region 条件
+            Context = Context.Where(x => x.SoftDeleted == false);
             if (!string.IsNullOrWhiteSpace((string)json.Search))
             {
                 string Search = json.Search;
@@ -230,7 +231,7 @@ namespace Service.Realization
         public ModEntity ModDetail(string UserId, string ModId)
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
-            var entity = Context.ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefault(x => x.ModId == ModId);
+            var entity = Context.ModEntity.IgnoreQueryFilters().Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefault(x => x.ModId == ModId);
             var subscribe = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
             if (entity != null)
             {
@@ -244,7 +245,68 @@ namespace Service.Realization
 
         public ModEntity ModDetailUpd(string UserId, string ModId)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
+        }
+
+        public bool? UpdateModInfo(ModEntity entity, string UserId)
+        {
+            var WriteContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var Transaction = WriteContext.Database.BeginTransaction();
+            var mod = WriteContext.ModEntity.FirstOrDefault(x => x.ModId == entity.ModId);
+            var modtypes = WriteContext.ModTypeEntity.Where(x => x.ModId == entity.ModId).ToList();
+            var types = WriteContext.TypesEntity.ToList();
+            mod.Description = entity.Description;
+            mod.UpdatedAt = DateTime.Now;
+            mod.VideoUrl = entity.VideoUrl;
+            var list = new List<ModTypeEntity>();
+            foreach (var item in entity.ModTypeEntities)
+            {
+                var type = types.FirstOrDefault(x => x.TypesId == item.TypesId);
+                if (type != null)
+                {
+                    list.Add(new ModTypeEntity { ModTypeId = Guid.NewGuid().ToString(), ModId = entity.ModId, TypesId = item.TypesId });
+                }
+            }
+            try
+            {
+                WriteContext.Update(mod);
+                WriteContext.RemoveRange(modtypes);
+                WriteContext.ModTypeEntity.AddRange(list);
+                WriteContext.SaveChanges();
+                Transaction.Commit();
+            }
+            catch (Exception)
+            {
+                Transaction.Rollback();
+                return false;
+                //throw;
+            }
+            return true;
+        }
+
+        public bool? DeleteMod(string ModId, string UserId)
+        {
+            var WriteContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var Transaction = WriteContext.Database.BeginTransaction();
+            try
+            {
+                var mod = WriteContext.ModEntity.FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
+                if (mod == null)
+                {
+                    return null;
+                }
+                mod.SoftDeleted = true;
+                //todo 删除文件
+                WriteContext.Update(mod);
+                WriteContext.SaveChanges();
+                Transaction.Commit();
+            }
+            catch (Exception)
+            {
+                Transaction.Rollback();
+                return false;
+            }
+            return true;
         }
     }
 }

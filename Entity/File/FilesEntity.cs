@@ -43,6 +43,8 @@ namespace Entity.File
         /// </summary>
         public DateTime? CreatedAt { get; set; }
 
+        public bool SoftDeleted { get; set; }
+
         /// <summary>
         /// 导航属性，指向用户
         /// </summary>

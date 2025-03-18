@@ -54,6 +54,8 @@ namespace Entity.Mod
         /// </summary>
         public Int64? DownloadCount { get; set; }
 
+        public bool SoftDeleted { get; set; }
+
         /// <summary>
         /// 导航属性，指向Mod的图片
         /// </summary>

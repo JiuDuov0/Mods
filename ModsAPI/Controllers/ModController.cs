@@ -339,5 +339,84 @@ namespace ModsAPI.Controllers
             }
             return new ResultEntity<ModEntity> { ResultData = entity };
         }
+
+        /// <summary>
+        /// 更新Mod信息
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "UpdateModInfo")]
+        [Authorize]
+        public ResultEntity<bool> UpdateModInfo([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            var ListTypes = new List<ModTypeEntity>();
+            if (((JArray)json.ModTypeEntities).HasValues)
+            {
+                ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
+            }
+            var mod = new ModEntity()
+            {
+                ModId = (string)json.ModId,
+                Description = (string)json.Description,
+                VideoUrl = (string)json.VideoUrl,
+                ModTypeEntities = ListTypes
+            };
+            var UpdateRelult = _IModService.UpdateModInfo(mod, UserId);
+            if (UpdateRelult == null)
+            {
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
+            }
+            if ((bool)UpdateRelult)
+            {
+                return new ResultEntity<bool> { ResultMsg = "更新成功" };
+            }
+            else
+            {
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "更新失败" };
+            }
+            return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "更新失败" };
+        }
+
+        /// <summary>
+        /// 删除Mod
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "DeleteMod")]
+        [Authorize]
+        public ResultEntity<bool> DeleteMod([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModId))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModId" };
+            }
+            #endregion
+            var res = _IModService.DeleteMod((string)json.ModId, UserId);
+            if (res == null)
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "非本人Mod" };
+            }
+            if ((bool)res)
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "删除成功" };
+            }
+            else
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "删除失败" };
+            }
+        }
     }
 }

@@ -37,6 +37,8 @@ namespace EF
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UserEntity>().HasKey(x => x.UserId);
+            modelBuilder.Entity<ModEntity>().HasQueryFilter(p => !p.SoftDeleted);
+            modelBuilder.Entity<FilesEntity>().HasQueryFilter(p => !p.SoftDeleted);
         }
         public DbSet<UserEntity> UserEntity { get; set; }
         public DbSet<UserRoleEntity> UserRoleEntity { get; set; }

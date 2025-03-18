@@ -63,5 +63,11 @@ namespace Service.Realization
             }
             return null;
         }
+
+        public ModEntity CheckMod(string FileId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            return Context.ModEntity.Include(x => x.ModVersionEntities).Where(x => x.ModVersionEntities.Any(y => y.FilesId == FileId)).FirstOrDefault();
+        }
     }
 }

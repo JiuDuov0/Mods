@@ -24,5 +24,7 @@ namespace Service.Interface
         public List<ModEntity> GetMyCreateMod(string UserId, dynamic json);
         public ModEntity ModDetail(string UserId, string ModId);
         public ModEntity ModDetailUpd(string UserId, string ModId);
+        public bool? UpdateModInfo(ModEntity entity,string UserId);
+        public bool? DeleteMod(string ModId, string UserId);
     }
 }

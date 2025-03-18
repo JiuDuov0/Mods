@@ -8,6 +8,8 @@ const register = () => import('../views/Register.vue')
 const modDetail = () => import('../views/ModDetail.vue')
 const createMod = () => import('../views/CreateMod.vue')
 const addVersionFile = () => import('../views/AddVersionFile.vue')
+const addNewVersion = () => import('../views/AddNewVersion.vue')
+const updateModInfo = () => import('../views/UpdateModInfo.vue')
 
 const routes = [
     { path: "/", name: "login", component: login },
@@ -45,6 +47,16 @@ const routes = [
         path: "/addVersionFile",
         name: "addVersionFile",
         component: addVersionFile
+    },
+    {
+        path: "/addNewVersion",
+        name: "addNewVersion",
+        component: addNewVersion
+    },
+    {
+        path: "/updateModInfo",
+        name: "updateModInfo",
+        component: updateModInfo
     },
 ]
 

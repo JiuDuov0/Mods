@@ -174,9 +174,12 @@ namespace ModsAPI.Controllers
 
             if (string.IsNullOrWhiteSpace(FileId))
             {
-                return null;
+                return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "无FileId" });
             }
-
+            if (_IFilesService.CheckMod(FileId) == null)
+            {
+                return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "作者已删除" });
+            }
             var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + ".zip");
             if (!System.IO.File.Exists(filePath))
             {
@@ -193,7 +196,6 @@ namespace ModsAPI.Controllers
             var entity = _IFilesService.AddModDownLoadCount(FileId);
 
             var contentType = "application/x-zip-compressed";
-            var sadfsad = entity.Name + entity.ModVersionEntities[0].VersionNumber + ".zip";
             return File(memory, contentType, entity.Name + entity.ModVersionEntities[0].VersionNumber + ".zip");
         }
 

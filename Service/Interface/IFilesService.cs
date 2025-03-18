@@ -14,5 +14,6 @@ namespace Service.Interface
         public bool AddFilesAndApprove(FilesEntity filesEntity,ApproveModVersionEntity approveModVersionEntity);
         public FilesEntity GetFilesEntityById(string FileId);
         public ModEntity AddModDownLoadCount(string FileId);
+        public ModEntity CheckMod(string FileId);
     }
 }
