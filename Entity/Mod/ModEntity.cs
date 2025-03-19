@@ -83,9 +83,20 @@ namespace Entity.Mod
         public UserEntity? CreatorEntity { get; set; }
 
         /// <summary>
+        /// 导航属性，指向Mod的评分
+        /// </summary>
+        public List<ModPointEntity> ModPointEntities { get; set; }
+
+        /// <summary>
         /// 是否订阅了本mod
         /// </summary>
         [NotMapped]
         public bool? IsMySubscribe { get; set; }
+
+        /// <summary>
+        /// 平均分
+        /// </summary>
+        [NotMapped]
+        public double? AVGPoint { get; set; }
     }
 }

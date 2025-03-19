@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ModsAPI.Controllers
 {
@@ -286,7 +287,7 @@ namespace ModsAPI.Controllers
         /// <param name="json">{"ModId":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "ModDetail")]
-        public ResultEntity<ModEntity> ModDetail([FromBody] dynamic json)
+        public async Task<ResultEntity<ModEntity>> ModDetail([FromBody] dynamic json)
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
@@ -308,7 +309,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
             }
             #endregion
-            return new ResultEntity<ModEntity> { ResultData = _IModService.ModDetail(UserId, (string)json.ModId) };
+            return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetail(UserId, (string)json.ModId) };
         }
 
         /// <summary>
@@ -417,6 +418,142 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "删除失败" };
             }
+        }
+
+        /// <summary>
+        /// 添加Mod评分
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "AddModPoint")]
+        [Authorize]
+        public ResultEntity<bool> AddModPoint([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/AddModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModId))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModId" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Point))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无Point" };
+            }
+            #endregion
+            var entity = new ModPointEntity()
+            {
+                ModPointId = Guid.NewGuid().ToString(),
+                ModId = (string)json.ModId,
+                UserId = UserId,
+                Point = (int)json.Point
+            };
+            return new ResultEntity<bool> { ResultData = _IModService.AddModPoint(entity) };
+        }
+
+        /// <summary>
+        /// 获得Mod评分
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetModPointByModId")]
+        [Authorize]
+        public ResultEntity<ModPointEntity> GetModPointByModId([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/GetModPointByModId", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModId))
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
+            }
+            #endregion
+            return new ResultEntity<ModPointEntity> { ResultData = _IModService.GetModPointEntity((string)json.ModId, UserId) };
+        }
+
+        /// <summary>
+        /// 更新Mod评分
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "UpdateModPoint")]
+        [Authorize]
+        public ResultEntity<ModPointEntity> UpdateModPoint([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/UpdateModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModPointId))
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModPointId" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.ModId))
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Point))
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无Point" };
+            }
+            int point = 0;
+            if (!int.TryParse((string)json.Point, out point))
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "Point不是数字" };
+            }
+            if (point > 5)
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "Point不大于5" };
+            }
+            #endregion
+            var entity = new ModPointEntity()
+            {
+                ModPointId = (string)json.ModPointId,
+                UserId = (string)json.UserId,
+                ModId = (string)json.ModId,
+                Point = (int)json.Point
+            };
+            var result = _IModService.UpdateModPointEntity(entity);
+            if (result == null)
+            {
+                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "更新失败" };
+            }
+            return new ResultEntity<ModPointEntity>() { ResultData = result };
+        }
+
+        /// <summary>
+        /// 删除Mod评分
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "DeleteModPoint")]
+        [Authorize]
+        public ResultEntity<bool> DeleteModPoint([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync("ModController/DeleteModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.ModPointId))
+            {
+                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModPointId" };
+            }
+            #endregion
+            return new ResultEntity<bool> { ResultData = _IModService.DeleteModPoint((string)json.ModPointId) };
         }
     }
 }

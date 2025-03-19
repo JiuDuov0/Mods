@@ -50,5 +50,6 @@ namespace EF
         public DbSet<UserModSubscribeEntity> UserModSubscribeEntity { get; set; }
         public DbSet<ApproveModVersionEntity> ApproveModEntity { get; set; }
         public DbSet<FilesEntity> FilesEntity { get; set; }
+        public DbSet<ModPointEntity> ModPointEntity { get; set; }
     }
 }

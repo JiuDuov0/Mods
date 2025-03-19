@@ -22,9 +22,14 @@ namespace Service.Interface
         public bool IsLoginUserMods(List<string> list, string UserId);
         public bool IsLoginUserMods(string VersionId, string UserId);
         public List<ModEntity> GetMyCreateMod(string UserId, dynamic json);
-        public ModEntity ModDetail(string UserId, string ModId);
+        public Task<ModEntity> ModDetail(string UserId, string ModId);
         public ModEntity ModDetailUpd(string UserId, string ModId);
-        public bool? UpdateModInfo(ModEntity entity,string UserId);
+        public bool? UpdateModInfo(ModEntity entity, string UserId);
         public bool? DeleteMod(string ModId, string UserId);
+        public bool AddModPoint(ModPointEntity entity);
+        public ModPointEntity UpdateModPointEntity(ModPointEntity entity);
+        public bool DeleteModPoint(string ModId, string UserId);
+        public bool DeleteModPoint(string ModPointId);
+        public ModPointEntity? GetModPointEntity(string ModId, string UserId);
     }
 }

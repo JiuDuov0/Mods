@@ -20,7 +20,7 @@
         </el-header>
         <el-main>
             <el-row>
-                <el-col :span="6">
+                <el-col :span="6" style="margin-right: 1%;margin-left: -1%;">
                     <el-card>
                         <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
                         <h3>Mod 类型</h3>
@@ -40,7 +40,10 @@
                                 <img @click="toModDetail(mod.ModId)" src="../assets/drg.png" alt="mod image"
                                     style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
-                                <p>{{ getShortDescription(mod.Description) }}</p>
+
+                                <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName }}</el-tag>
+                                <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
+                                <div class="line"></div>
                                 <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
                                     type="primary">订阅</el-button>
                                 <el-button v-else @click="btnUnsubscribeClick(mod.ModId)"
@@ -313,5 +316,30 @@ export default {
 
 .checkbox-item {
     margin-bottom: 10px;
+}
+
+.el-button {
+    width: 100%;
+    color: black;
+    background-color: #e4e7ed;
+    border-style: solid;
+    border-color: #e4e7ed;
+}
+
+.el-tag {
+    margin-right: 1%;
+    margin-bottom: 1%;
+    margin-top: 1%;
+    background-color: #e4e7ed;
+    color: black;
+    border-color: #e4e7ed;
+}
+
+.line {
+    width: 100%;
+    height: 1px;
+    background-color: #e4e7ed;
+    margin-top: 3%;
+    margin-bottom: 3%;
 }
 </style>

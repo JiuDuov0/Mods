@@ -33,7 +33,7 @@ namespace Service.Realization
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
             Types.RemoveAll(x => x == null || x == "");
-            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
             #region 条件
             Context = Context.Where(x => x.SoftDeleted == false);
             if (!string.IsNullOrWhiteSpace((string)json.Search))
@@ -228,11 +228,12 @@ namespace Service.Realization
             return Context.OrderByDescending(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
         }
 
-        public ModEntity ModDetail(string UserId, string ModId)
+        public async Task<ModEntity> ModDetail(string UserId, string ModId)
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
-            var entity = Context.ModEntity.IgnoreQueryFilters().Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefault(x => x.ModId == ModId);
-            var subscribe = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
+            var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
+            var entity = await Context.ModEntity.IgnoreQueryFilters().Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefaultAsync(x => x.ModId == ModId);
+            var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
             if (entity != null)
             {
                 var user = new UserEntity() { UserId = entity.CreatorEntity.UserId, NickName = entity.CreatorEntity.NickName };
@@ -240,6 +241,10 @@ namespace Service.Realization
                 entity.IsMySubscribe = subscribe != null;
             }
             entity.ModVersionEntities = entity.ModVersionEntities.OrderByDescending(x => x.CreatedAt).ToList();
+            if (avg != null)
+            {
+                entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
+            }
             return entity;
         }
 
@@ -307,6 +312,63 @@ namespace Service.Realization
                 return false;
             }
             return true;
+        }
+
+        public bool AddModPoint(ModPointEntity entity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            Context.ModPointEntity.Add(entity);
+            return Context.SaveChanges() > 0;
+        }
+
+        public ModPointEntity UpdateModPointEntity(ModPointEntity entity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var old = Context.ModPointEntity.FirstOrDefault(x => x.ModPointId == entity.ModPointId);
+            if (old == null)
+            {
+                return null;
+            }
+            if (old.UserId != entity.UserId)
+            {
+                return null;
+            }
+            else
+            {
+                old.Point = entity.Point;
+            }
+            Context.ModPointEntity.Update(old);
+            Context.SaveChanges();
+            return entity;
+        }
+
+        public bool DeleteModPoint(string ModId, string UserId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.ModPointEntity.FirstOrDefault(x => x.ModId == ModId && x.UserId == UserId);
+            if (entity == null)
+            {
+                return false;
+            }
+            Context.ModPointEntity.Remove(entity);
+            return Context.SaveChanges() > 0;
+        }
+
+        public bool DeleteModPoint(string ModPointId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.ModPointEntity.FirstOrDefault(x => x.ModPointId == ModPointId);
+            if (entity == null)
+            {
+                return false;
+            }
+            Context.ModPointEntity.Remove(entity);
+            return Context.SaveChanges() > 0;
+        }
+
+        public ModPointEntity? GetModPointEntity(string ModId, string UserId)
+        {
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModPointEntity.FirstOrDefault(x => x.ModId == ModId && x.UserId == UserId);
         }
     }
 }

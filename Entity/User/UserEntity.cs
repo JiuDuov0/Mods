@@ -48,6 +48,11 @@ namespace Entity.User
         public List<ModEntity> ModEntities { get; set; }
 
         /// <summary>
+        /// 导航属性，指向Mod评分
+        /// </summary>
+        public List<ModPointEntity> ModPointEntities { get; set; }
+
+        /// <summary>
         /// 角色id
         /// </summary>
         [NotMapped]
