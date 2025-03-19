@@ -52,7 +52,7 @@ export default {
                 return;
             }
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Login/UserRegister',
+                url: 'https://modcat.top:8089/api/Login/UserRegister',
                 type: "POST",
                 data: JSON.stringify({
                     LoginAccount: this.registerForm.mail,

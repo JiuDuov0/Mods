@@ -74,7 +74,7 @@ export default {
             formData.append('VersionId', this.VersionId);
             formData.append('file', this.fileList[0].raw);
 
-            fetch('http://43.160.202.17:8099/api/Files/UploadMod', {
+            fetch('https://modcat.top:8089/api/Files/UploadMod', {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')

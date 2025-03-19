@@ -69,7 +69,7 @@ export default {
             }
 
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/ModAddVersion', // 替换为实际的 API URL
+                url: 'https://modcat.top:8089/api/Mod/ModAddVersion', // 替换为实际的 API URL
                 type: 'POST',
                 contentType: 'application/json; charset=utf-8',
                 headers: {

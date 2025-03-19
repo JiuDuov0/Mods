@@ -101,7 +101,7 @@ export default {
         },
         fetchModTypes() {
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/GetAllModTypes',
+                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -128,7 +128,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/GetMyCreateMod',
+                url: 'https://modcat.top:8089/api/Mod/GetMyCreateMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -202,7 +202,7 @@ export default {
                 type: 'warning'
             }).then(() => {
                 $.ajax({
-                    url: 'http://43.160.202.17:8099/api/Mod/DeleteMod',
+                    url: 'https://modcat.top:8089/api/Mod/DeleteMod',
                     type: "POST",
                     contentType: "application/json; charset=utf-8",
                     headers: {

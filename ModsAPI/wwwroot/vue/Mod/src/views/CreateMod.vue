@@ -79,7 +79,7 @@ export default {
     methods: {
         fetchTags() {
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/GetAllModTypes',
+                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -139,7 +139,7 @@ export default {
             });
 
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/CreateMod',
+                url: 'https://modcat.top:8089/api/Mod/CreateMod',
                 type: "POST",
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",

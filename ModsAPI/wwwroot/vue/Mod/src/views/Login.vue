@@ -39,7 +39,7 @@ export default {
             }
 
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Login/UserLogin',
+                url: 'https://modcat.top:8089/api/Login/UserLogin',
                 type: "POST",
                 data: JSON.stringify({
                     LoginAccount: this.loginForm.username,

@@ -77,7 +77,7 @@ export default {
         modDetail() {
             // 处理获取 Mod 详情逻辑
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/Mod/ModDetail',
+                url: 'https://modcat.top:8089/api/Mod/ModDetail',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -124,7 +124,7 @@ export default {
         },
         handleSubscribe(ModId) {
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/User/ModSubscribe',
+                url: 'https://modcat.top:8089/api/User/ModSubscribe',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -156,7 +156,7 @@ export default {
         handleUnsubscribe(ModId) {
             // 处理取消订阅逻辑
             $.ajax({
-                url: 'http://43.160.202.17:8099/api/User/UserUnsubscribeMod',
+                url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
