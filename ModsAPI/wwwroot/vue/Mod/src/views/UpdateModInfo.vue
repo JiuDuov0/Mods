@@ -2,7 +2,7 @@
     <el-container>
         <el-header>
             <div class="account-info">
-                <el-avatar src="../src/assets/head.jpg"></el-avatar>
+                <el-avatar :src="headurl"></el-avatar>
                 <el-dropdown>
                     <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
                     <template #dropdown>
@@ -52,6 +52,7 @@ import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import { th } from 'element-plus/es/locale/index.mjs';
+import head from '../assets/head.jpg';
 
 export default {
     name: 'UpdateModInfo',
@@ -63,6 +64,7 @@ export default {
                 VideoUrl: '', // Mod 视频链接
                 tags: [] // Mod 类型（多选框）
             },
+            headurl: head,
             tags: [], // 存储所有可选的 Mod 类型
             NickName: ''
         };
@@ -91,6 +93,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取标签失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -119,6 +122,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取 Mod 详情失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -154,6 +158,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('提交失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -201,9 +206,14 @@ export default {
 }
 
 .account-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
     display: flex;
     align-items: center;
     cursor: pointer;
+    z-index: 1000;
+    padding: 10px;
 }
 
 .username {

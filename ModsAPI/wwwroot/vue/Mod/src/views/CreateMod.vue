@@ -1,23 +1,5 @@
 <template>
     <el-container>
-        <el-header>
-            <div class="account-info">
-                <el-avatar src="../src/assets/head.jpg"></el-avatar>
-                <el-dropdown>
-                    <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
-                    <template #dropdown>
-                        <el-dropdown-menu>
-                            <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
-            </div>
-        </el-header>
         <el-main>
             <el-row type="flex" justify="center" align="middle" style="height: 100vh;">
                 <el-col :span="12">
@@ -27,12 +9,8 @@
                             <el-input v-model="modForm.name" placeholder="请输入 Mod 名称" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
-                            <div>教程为B站视频链接</div>
-                            <div>示例:https://player.bilibili.com/player.html?aid={aid}&cid={cid}&page=1</div>
-                            <div>在浏览器输入以下链接：</div>
-                            <div>https://api.bilibili.com/x/web-interface/view?bvid=BV号</div>
-                            <div>获取aid与cid，替换上面的{aid}与{cid} </div>
-                            <el-input v-model="modForm.videoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
+                            <div>示例://player.bilibili.com/player.html?bvid={bvid}&autoplay=false&danmaku=false</div>
+                            <el-input v-model="modForm.PicUrl" placeholder="请输入图片链接" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.version" placeholder="请输入版本号" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.versionDescription" placeholder="请输入版本描述"
                                 style="margin-bottom: 16px;" />
@@ -47,6 +25,22 @@
                 </el-col>
             </el-row>
         </el-main>
+        <div class="account-info">
+            <el-avatar :src="headurl"></el-avatar>
+            <el-dropdown>
+                <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
+                <template #dropdown>
+                    <el-dropdown-menu>
+                        <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
+                        <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+                        <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
+                        <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
+                        <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
+                        <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
+                    </el-dropdown-menu>
+                </template>
+            </el-dropdown>
+        </div>
     </el-container>
 </template>
 
@@ -55,6 +49,7 @@ import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import { th } from 'element-plus/es/locale/index.mjs';
+import head from '../assets/head.jpg';
 
 export default {
     name: 'CreateMod',
@@ -63,12 +58,13 @@ export default {
             modForm: {
                 name: '',
                 description: '',
-                videoUrl: '',
                 version: '',
                 versionDescription: '',
+                PicUrl: '',
                 tags: []
             },
             tags: [],
+            headurl: head,
             NickName: ""
         };
     },
@@ -99,6 +95,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -119,6 +116,10 @@ export default {
             }
             if (!this.modForm.versionDescription) {
                 ElMessage.error('请输入版本描述');
+                return;
+            }
+            if (this.modForm.tags.length == 0) {
+                ElMessage.error('请选择标签');
                 return;
             }
 
@@ -166,6 +167,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('提交失败 ');
                     console.log(err);
                 }
@@ -231,10 +233,16 @@ export default {
 }
 
 .account-info {
+    position: fixed;
+    bottom: 20px;
+    /* 距离页面底部 20px */
+    left: 20px;
+    /* 距离页面左侧 20px */
     display: flex;
     align-items: center;
     cursor: pointer;
-    /* 添加鼠标指针样式 */
+    z-index: 1000;
+    padding: 10px;
 }
 
 .username {

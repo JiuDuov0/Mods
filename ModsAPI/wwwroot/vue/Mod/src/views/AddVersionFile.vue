@@ -2,7 +2,7 @@
     <el-container>
         <el-header>
             <div class="account-info">
-                <el-avatar src="../src/assets/head.jpg"></el-avatar>
+                <el-avatar :src="headurl"></el-avatar>
                 <el-dropdown>
                     <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
                     <template #dropdown>
@@ -39,12 +39,14 @@
 <script>
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
+import head from '../assets/head.jpg';
 
 export default {
     name: 'AddVersionFile',
     data() {
         return {
             NickName: '',
+            headurl: head,
             fileList: [], // 存储选中的文件
             VersionId: this.$route.query.VersionId // 从路由参数获取版本 ID
         };
@@ -143,9 +145,14 @@ export default {
 }
 
 .account-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
     display: flex;
     align-items: center;
     cursor: pointer;
+    z-index: 1000;
+    padding: 10px;
 }
 
 .username {

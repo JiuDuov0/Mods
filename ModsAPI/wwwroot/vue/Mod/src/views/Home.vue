@@ -1,27 +1,24 @@
 <template>
     <el-container>
-        <el-header>
-            <div class="account-info">
-                <el-avatar src="../src/assets/head.jpg"></el-avatar>
-                <el-dropdown>
-                    <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
-                    <template #dropdown>
-                        <el-dropdown-menu>
-                            <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
-                            <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
-            </div>
-        </el-header>
         <el-main>
-            <el-row>
-                <el-col :span="6" style="margin-right: 1%;margin-left: -1%;">
-                    <el-card>
+            <el-row style="position: fixed;z-index: 3000;left: 0%;top:0;width: 101%;">
+                <el-col>
+                    <el-card style="border-color: white;max-height: 60%;">
+                        <div style="display: flex; align-items: center; margin-top: -2%;">
+                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
+                                style="width: 50px; height: 50px; margin-right: 10px;border-radius:20%;">
+                            <h2>深岩银河</h2>
+                            <el-button type="text" @click="handleCreateMod"
+                                style="margin-left: auto; background-color: black; color: white;width: 7%;">
+                                发布Mod
+                            </el-button>
+                        </div>
+                    </el-card>
+                </el-col>
+            </el-row>
+            <el-row class="card-sel">
+                <el-col :span="6" class="col-sel">
+                    <el-card class="el-card-sel">
                         <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
                         <h3>Mod 类型</h3>
                         <el-checkbox-group v-model="selectedTypes">
@@ -36,7 +33,7 @@
                 <el-col :span="18">
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="8" v-for="mod in modList" :key="mod.ModId">
-                            <el-card>
+                            <el-card class="el-card-table">
                                 <img @click="toModDetail(mod.ModId)" src="../assets/drg.png" alt="mod image"
                                     style="width: 100%;">
                                 <h3>{{ mod.Name }}</h3>
@@ -53,6 +50,22 @@
                     </el-row>
                     <div ref="bottomObserver" style="height: 1px;"></div>
                 </el-col>
+                <div class="account-info">
+                    <el-avatar :src="headurl"></el-avatar>
+                    <el-dropdown>
+                        <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
+                </div>
             </el-row>
         </el-main>
     </el-container>
@@ -62,6 +75,7 @@
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
+import head from '../assets/head.jpg';
 
 export default {
     name: 'Home',
@@ -72,6 +86,7 @@ export default {
             modTypes: [],
             modList: [],
             NickName: "",
+            headurl: head,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
@@ -125,6 +140,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -159,6 +175,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -214,6 +231,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -249,6 +267,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -298,20 +317,9 @@ export default {
 </script>
 
 <style scoped>
-.account-info {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    /* 添加鼠标指针样式 */
-}
-
-.account-info .username {
-    margin-left: 10px;
-    font-size: 18px;
-}
-
 .el-card {
     margin-bottom: 20px;
+    border-radius: 2%;
 }
 
 .checkbox-item {
@@ -341,5 +349,42 @@ export default {
     background-color: #e4e7ed;
     margin-top: 3%;
     margin-bottom: 3%;
+}
+
+.el-card-table {
+    height: 95%;
+}
+
+.el-card-sel {
+    position: fixed;
+    z-index: 2000;
+    left: 1%;
+    width: 24%;
+}
+
+.account-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    z-index: 1000;
+    padding: 10px;
+}
+
+.username {
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+.card-sel {
+    margin-top: 3%;
+}
+
+.col-sel {
+    margin-right: 1%;
+    margin-left: -1%;
 }
 </style>

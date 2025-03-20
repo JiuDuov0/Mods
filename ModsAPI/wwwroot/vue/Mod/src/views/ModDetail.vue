@@ -143,6 +143,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -173,6 +174,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     console.log(err);
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                 }
@@ -204,6 +206,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -236,6 +239,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -275,6 +279,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }
@@ -303,6 +308,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
                 }

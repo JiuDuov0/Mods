@@ -2,7 +2,7 @@
     <el-container>
         <el-header>
             <div class="account-info">
-                <el-avatar src="../src/assets/head.jpg"></el-avatar>
+                <el-avatar :src="headurl"></el-avatar>
                 <el-dropdown>
                     <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
                     <template #dropdown>
@@ -41,12 +41,14 @@
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import $ from 'jquery';
+import head from '../assets/head.jpg';
 
 export default {
     name: 'AddNewVersion',
     data() {
         return {
             NickName: '',
+            headurl: head,
             ModId: this.$route.query.ModId, // 从路由参数获取 Mod ID
             versionForm: {
                 version: '',
@@ -96,6 +98,7 @@ export default {
                     }
                 },
                 error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
                     ElMessage.error('版本添加失败: ' + err.responseText);
                 }
             });
@@ -145,9 +148,14 @@ export default {
 }
 
 .account-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
     display: flex;
     align-items: center;
     cursor: pointer;
+    z-index: 1000;
+    padding: 10px;
 }
 
 .username {

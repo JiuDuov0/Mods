@@ -52,7 +52,7 @@ namespace Service.Realization
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
-            var list = Context.OrderByDescending(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
+            var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
             var Subscribes = task.Result;
             foreach (var item in list)
             {
@@ -225,7 +225,7 @@ namespace Service.Realization
             }
             Context = Context.Where(x => x.CreatorUserId == UserId);
             #endregion
-            return Context.OrderByDescending(x => x.DownloadCount).Skip(Skip).Take(Take).ToList();
+            return Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
         }
 
         public async Task<ModEntity> ModDetail(string UserId, string ModId)
