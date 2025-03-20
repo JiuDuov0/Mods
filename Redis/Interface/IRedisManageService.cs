@@ -28,6 +28,15 @@ namespace Redis.Interface
         /// <param name="key"></param>
         /// <returns></returns>
         TEntity Get<TEntity>(string key, int DB = 0);
+
+        /// <summary>
+        /// 异步获取序列化值
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="DB"></param>
+        /// <returns></returns>
+        Task<TEntity> GetAsync<TEntity>(string key, int DB = 0);
         /// <summary>
         /// 判断Key是否存在
         /// </summary>

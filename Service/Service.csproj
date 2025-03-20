@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EF\EF.csproj" />
     <ProjectReference Include="..\Entity\Entity.csproj" />
+    <ProjectReference Include="..\Redis\Redis.csproj" />
   </ItemGroup>
 
 </Project>

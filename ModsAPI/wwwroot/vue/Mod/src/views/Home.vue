@@ -4,9 +4,9 @@
             <el-row style="position: fixed;z-index: 3000;left: 0%;top:0;width: 101%;">
                 <el-col>
                     <el-card style="border-color: white;max-height: 60%;">
-                        <div style="display: flex; align-items: center; margin-top: -2%;">
+                        <div style="display: flex; align-items: center; margin-top: -1%;">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
-                                style="width: 50px; height: 50px; margin-right: 10px;border-radius:20%;">
+                                style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
                             <h2>深岩银河</h2>
                             <el-button type="text" @click="handleCreateMod"
                                 style="margin-left: auto; background-color: black; color: white;width: 7%;">

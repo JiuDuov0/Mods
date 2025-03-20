@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Redis.Interface;
 using StackExchange.Redis;
 using System;
@@ -81,11 +83,11 @@ namespace Redis.Realization
             {
                 if (ts == null)
                 {
-                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value), new TimeSpan(24, 0, 0));
+                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), new TimeSpan(24, 0, 0));
                 }
                 else
                 {
-                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value), (TimeSpan)ts);
+                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), (TimeSpan)ts);
                 }
             }
         }
@@ -119,8 +121,22 @@ namespace Redis.Realization
             var value = _redisConnection.GetDatabase(DB).StringGet(key);
             if (value.HasValue)
             {
+                string sadf = value.ToString();
                 //需要用的反序列化，将Redis存储的Byte[]，进行反序列化
                 return JsonConvert.DeserializeObject<TEntity>(value);
+            }
+            else
+            {
+                return default(TEntity);
+            }
+        }
+
+        public async Task<TEntity> GetAsync<TEntity>(string key, int DB = 0)
+        {
+            var value = await _redisConnection.GetDatabase(DB).StringGetAsync(key);
+            if (value.HasValue)
+            {
+                return JsonConvert.DeserializeObject<TEntity>(JObject.Parse(value).ToString());
             }
             else
             {
@@ -200,11 +216,11 @@ namespace Redis.Realization
             {
                 if (cacheTime == null)
                 {
-                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value), new TimeSpan(24, 0, 0));
+                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), new TimeSpan(24, 0, 0));
                 }
                 else
                 {
-                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value), (TimeSpan)cacheTime);
+                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), (TimeSpan)cacheTime);
                 }
             }
         }

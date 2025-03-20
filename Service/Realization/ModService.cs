@@ -7,11 +7,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using Redis.Interface;
 using Service.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,13 +23,44 @@ namespace Service.Realization
     public class ModService : IModService
     {
         private readonly ICreateDBContextService _IDbContextServices;
+        private readonly IRedisManageService _IRedisManageService;
 
-        public ModService(ICreateDBContextService iDbContextServices)
+        public ModService(ICreateDBContextService iDbContextServices, IRedisManageService redisManageService)
         {
             _IDbContextServices = iDbContextServices;
+            _IRedisManageService = redisManageService;
         }
 
         public List<ModEntity> ModListPage(dynamic json, string UserId)
+        {
+            int Skip = Convert.ToInt32(json.Skip);
+            int Take = Convert.ToInt32(json.Take);
+            var Types = ((JArray)json.Types).ToObject<List<string>>();
+            Types.RemoveAll(x => x == null || x == "");
+            var RedisModList = _IRedisManageService.Get<List<ModEntity>>("ModListPage", 1);
+            var RedisUserModSubscribe = _IRedisManageService.Get<List<UserModSubscribeEntity>>("SetUserModSubscribe" + UserId, 1);
+            if (Skip + Take > 1000)
+            {
+                return EFGetList(json, UserId);
+            }
+            if (RedisModList == null)
+            {
+                Task.Run(()=> SetModPageListToRedisAsync());
+
+                return EFGetList(json, UserId);
+            }
+            if (!string.IsNullOrWhiteSpace((string)json.Search))
+            {
+                return EFGetList(json, UserId);
+            }
+            if (Types.Count > 0)
+            {
+                return EFGetList(json, UserId);
+            }
+            return ModPageListRedis(RedisModList, json, UserId, RedisUserModSubscribe, Types).Result;
+        }
+
+        private List<ModEntity> EFGetList(dynamic json, string UserId)
         {
             var task = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.Where(x => x.UserId == UserId).ToListAsync();
             int Skip = Convert.ToInt32(json.Skip);
@@ -56,10 +90,64 @@ namespace Service.Realization
             var Subscribes = task.Result;
             foreach (var item in list)
             {
+                item.ModTypeEntities.ForEach(x => x.Types.ModTypeEntities = null);
                 item.IsMySubscribe = Subscribes.Any(x => x.ModId == item.ModId);
             }
             return list;
         }
+
+        private async Task<List<ModEntity>> ModPageListRedis(List<ModEntity> mods, dynamic json, string UserId, List<UserModSubscribeEntity> userModSubscribeEntities, List<string> Types)
+        {
+            if (userModSubscribeEntities == null || userModSubscribeEntities.Count == 0)
+            {
+                userModSubscribeEntities = await SetUserModSubscribeToRedisAsync(UserId);
+            }
+            int Skip = Convert.ToInt32(json.Skip);
+            int Take = Convert.ToInt32(json.Take);
+            var query = mods.Where(x => { return true; });
+            #region 条件
+            if (!string.IsNullOrWhiteSpace((string)json.Search))
+            {
+                string Search = json.Search;
+                query = query.Where(x => x.Name.Contains(Search));
+            }
+            if (Types.Count > 0)
+            {
+                foreach (var item in Types)
+                {
+                    query = query.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
+                }
+            }
+            query = query.Where(x =>
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
+            #endregion
+            var list = query.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
+            foreach (var item in list)
+            {
+                item.ModTypeEntities.ForEach(x => x.Types.ModTypeEntities = null);
+                item.ModVersionEntities = null;
+                item.IsMySubscribe = userModSubscribeEntities.Any(x => x.ModId == item.ModId);
+            }
+            return list;
+        }
+        private async Task SetModPageListToRedisAsync()
+        {
+            var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
+            await _IRedisManageService.SetAsync("ModListPage", list, new TimeSpan(0, 30, 0), 1);
+        }
+
+        private async Task<List<UserModSubscribeEntity>> SetUserModSubscribeToRedisAsync(string UserId)
+        {
+            var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.Where(x => x.UserId == UserId).ToListAsync();
+            if (string.IsNullOrWhiteSpace(UserId))
+            {
+                return list;
+            }
+            await _IRedisManageService.SetAsync("SetUserModSubscribe" + UserId, list, new TimeSpan(0, 2, 0), 1);
+            return list;
+        }
+
 
         public void ApproveModVersion(string modVersionId, string approverUserId, string status, string comments)
         {
