@@ -57,6 +57,11 @@ namespace Entity.Mod
         public bool SoftDeleted { get; set; }
 
         /// <summary>
+        /// 图片地址
+        /// </summary>
+        public string? PicUrl { get; set; }
+
+        /// <summary>
         /// 导航属性，指向Mod的图片
         /// </summary>
         public List<ModPictureEntity> ModPictureEntities { get; set; }

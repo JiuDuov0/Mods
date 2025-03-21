@@ -8,8 +8,10 @@ using ModsAPI.tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
+using System;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace ModsAPI.Controllers
 {
@@ -131,6 +133,24 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无版本描述" };
             }
             #endregion
+
+            #region Get方法
+            string Get(string url, string content)
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
+                        return client.GetStringAsync(url + content).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+            }
+            #endregion
             var ModId = Guid.NewGuid().ToString();
             var ModVersion = new ModVersionEntity()
             {
@@ -155,12 +175,29 @@ namespace ModsAPI.Controllers
                 VideoUrl = (string)json.VideoUrl,
                 DownloadCount = 0
             };
+            if (!string.IsNullOrWhiteSpace(Mod.VideoUrl))
+            {
+                if (!Mod.VideoUrl.Contains("autoplay=false"))
+                {
+                    Mod.VideoUrl = Mod.VideoUrl + "&autoplay=false";
+                }
+                if (Mod.VideoUrl.Contains("?bvid="))
+                {
+                    var bvid = HttpUtility.ParseQueryString(new Uri("http:"+Mod.VideoUrl).Query)["bvid"];
+                    var res = Get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid, "");
+                    if (res != null)
+                    {
+                        Mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
+                    }
+                }
+            }
             if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes))
             {
                 Mod.ModVersionEntities = new List<ModVersionEntity> { ModVersion };
                 return new ResultEntity<ModEntity> { ResultData = Mod };
             }
             return new ResultEntity<ModEntity> { ResultMsg = "创建版本失败", ResultData = null };
+
         }
 
         /// <summary>

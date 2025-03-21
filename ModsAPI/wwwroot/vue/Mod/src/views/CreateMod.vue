@@ -10,7 +10,7 @@
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
                             <div>示例://player.bilibili.com/player.html?bvid={bvid}&autoplay=false&danmaku=false</div>
-                            <el-input v-model="modForm.PicUrl" placeholder="请输入图片链接" style="margin-bottom: 16px;" />
+                            <el-input v-model="modForm.videoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.version" placeholder="请输入版本号" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.versionDescription" placeholder="请输入版本描述"
                                 style="margin-bottom: 16px;" />
@@ -61,6 +61,7 @@ export default {
                 version: '',
                 versionDescription: '',
                 PicUrl: '',
+                videoUrl: '',
                 tags: []
             },
             tags: [],

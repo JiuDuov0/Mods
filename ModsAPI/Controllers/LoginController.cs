@@ -9,6 +9,7 @@ using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
 using Service.Realization;
+using System.Web;
 
 namespace ModsAPI.Controllers
 {
@@ -177,7 +178,31 @@ namespace ModsAPI.Controllers
             #endregion
             var roleid = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
             var role = _JwtHelper.GetTokenStr(token, "UserId");
-            return "";
+
+
+            //string Get(string url, string content)
+            //{
+            //    try
+            //    {
+            //        using (HttpClient client = new HttpClient())
+            //        {
+            //            client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
+            //            return client.GetStringAsync(url + content).Result;
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        return null;
+            //    }
+            //}
+            //var collection = HttpUtility.ParseQueryString(new Uri("https://api.bilibili.com/x/web-interface/view?bvid=BV1NJ411g7Ui").Query);
+            //var bvid = collection["bvid"];
+
+            //Get("https://api.bilibili.com/x/web-interface/view?bvid=BV1NJ411g7Ui", "");
+
+
+
+            return null;
         }
     }
 }
