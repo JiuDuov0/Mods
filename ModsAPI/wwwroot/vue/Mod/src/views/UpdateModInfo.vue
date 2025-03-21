@@ -27,11 +27,7 @@
                                 disabled />
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
-                            <div>教程为B站视频链接</div>
-                            <div>示例:https://player.bilibili.com/player.html?aid={aid}&cid={cid}&page=1</div>
-                            <div>在浏览器输入以下链接：</div>
-                            <div>https://api.bilibili.com/x/web-interface/view?bvid=BV号</div>
-                            <div>获取aid与cid，替换上面的{aid}与{cid} </div>
+                            <div>示例://player.bilibili.com/player.html?bvid={bvid}&autoplay=false&danmaku=false</div>
                             <el-input v-model="modForm.VideoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
                             <el-select v-model="modForm.tags" multiple placeholder="请选择标签"
                                 style="margin-bottom: 16px; width: 100%;">
