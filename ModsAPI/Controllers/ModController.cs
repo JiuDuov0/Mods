@@ -183,7 +183,12 @@ namespace ModsAPI.Controllers
                 }
                 if (Mod.VideoUrl.Contains("?bvid="))
                 {
-                    var bvid = HttpUtility.ParseQueryString(new Uri("http:"+Mod.VideoUrl).Query)["bvid"];
+                    var url = Mod.VideoUrl;
+                    if (!Mod.VideoUrl.Contains("http"))
+                    {
+                        url = "http:" + Mod.VideoUrl;
+                    }
+                    var bvid = HttpUtility.ParseQueryString(new Uri(url).Query)["bvid"];
                     var res = Get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid, "");
                     if (res != null)
                     {
@@ -410,6 +415,46 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
             }
+
+            #region Get方法
+            string Get(string url, string content)
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
+                        return client.GetStringAsync(url + content).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+            }
+            #endregion
+            if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
+            {
+                if (!mod.VideoUrl.Contains("autoplay=false"))
+                {
+                    mod.VideoUrl = mod.VideoUrl + "&autoplay=false";
+                }
+                if (mod.VideoUrl.Contains("?bvid="))
+                {
+                    var url = mod.VideoUrl;
+                    if (!mod.VideoUrl.Contains("http"))
+                    {
+                        url = "http:" + mod.VideoUrl;
+                    }
+                    var bvid = HttpUtility.ParseQueryString(new Uri(url).Query)["bvid"];
+                    var res = Get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid, "");
+                    if (res != null)
+                    {
+                        mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
+                    }
+                }
+            }
+
             if ((bool)UpdateRelult)
             {
                 return new ResultEntity<bool> { ResultMsg = "更新成功" };
