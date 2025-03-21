@@ -45,7 +45,7 @@ namespace Service.Realization
             }
             if (RedisModList == null)
             {
-                Task.Run(()=> SetModPageListToRedisAsync());
+                Task.Run(() => SetModPageListToRedisAsync());
 
                 return EFGetList(json, UserId);
             }
@@ -297,7 +297,7 @@ namespace Service.Realization
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
             Types.RemoveAll(x => x == null || x == "");
-            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities);
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
             #region 条件
             if (!string.IsNullOrWhiteSpace((string)json.Search))
             {

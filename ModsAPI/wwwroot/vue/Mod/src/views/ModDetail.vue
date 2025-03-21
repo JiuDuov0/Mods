@@ -8,8 +8,8 @@
                 <el-col :span="23">
                     <h2>{{ Name }}</h2>
                 </el-col>
-                <el-col :span="16">
-                    <iframe width="100%" height="400" :src="videoUrl" frameborder="0" allowfullscreen></iframe>
+                <el-col :span="19">
+                    <iframe width="100%" height="700rem" :src="videoUrl" frameborder="0" allowfullscreen></iframe>
 
                     <el-card style="margin-top: 20px;">
                         <h3>Mod描述</h3>
@@ -17,7 +17,7 @@
                         <!-- {{ description }} -->
                     </el-card>
                 </el-col>
-                <el-col :span="8" class="sticky-subscribe">
+                <el-col :span="5" class="sticky-subscribe">
                     <el-button type="primary" block @click="handleSubscribe(ModId)" v-if="!isSubscribed">订阅</el-button>
                     <el-button type="danger" block @click="handleUnsubscribe(ModId)" v-else>取消订阅</el-button>
                     <el-card style="margin-top: 20px;">
@@ -29,13 +29,29 @@
                         <p><el-rate v-model="AVGPoint" disabled show-score text-color="#ff9900"></el-rate>
                         </p>
                     </el-card>
-                    <el-card style="margin-top: 20px;">
+                    <el-card style="margin-top: 20px;" @click="showVersionDetails">
                         <h3>最新版本</h3>
                         <p>版本号: {{ latestVersion.version }}</p>
                         <p>版本描述: {{ latestVersion.description }}</p>
                         <p>更新时间: {{ latestVersion.CreatedAt }}</p>
                         <!-- <el-button type="primary" block @click="downloadLatestVersion(ModId)">下载</el-button> -->
                     </el-card>
+                    <el-dialog title="版本详细信息" v-model="versionDialogVisible" width="80%">
+                        <el-table :data="versionDetails" style="width: 100%">
+                            <el-table-column prop="VersionNumber" label="版本号" width="150"></el-table-column>
+                            <el-table-column prop="Description" label="描述"></el-table-column>
+                            <el-table-column prop="CreatedAt" label="更新时间" width="200"></el-table-column>
+                            <el-table-column prop="FilesId" label="下载" width="200">
+                                <template #default="scope">
+                                    <el-button v-if="scope.row.FilesId" type="primary" block
+                                        @click="handleDownload(scope.row.FilesId)">下载</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <span slot="footer" class="dialog-footer">
+                            <el-button @click="versionDialogVisible = false">关闭</el-button>
+                        </span>
+                    </el-dialog>
                 </el-col>
             </el-row>
         </el-main>
@@ -88,6 +104,8 @@ export default {
             },
             ModId: this.$route.query.ModId,
             entity: null,
+            versionDialogVisible: false, // 控制弹窗显示
+            versionDetails: [],
             rating: 5, // 当前评分
             AVGPoint: 0.0, // 平均评分
             pointentity: null,
@@ -139,7 +157,9 @@ export default {
                         this.latestVersion.description = data.ResultData.ModVersionEntities[0].Description;
                         this.latestVersion.FilesId = data.ResultData.ModVersionEntities[0].FilesId;
                         this.latestVersion.CreatedAt = data.ResultData.ModVersionEntities[0].CreatedAt;
-                        this.AVGPoint = data.ResultData.AVGPoint;
+                        if (data.ResultData.AVGPoint != null) {
+                            this.AVGPoint = data.ResultData.AVGPoint;
+                        }
                     }
                 },
                 error: (err) => {
@@ -179,6 +199,14 @@ export default {
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                 }
             });
+        },
+        showVersionDetails() {
+            if (this.entity && this.entity.ModVersionEntities) {
+                this.versionDetails = this.entity.ModVersionEntities; // 加载版本数据
+                this.versionDialogVisible = true; // 显示弹窗
+            } else {
+                ElMessage.error('暂无版本详细信息');
+            }
         },
         handleSubscribe(ModId) {
             $.ajax({
@@ -314,6 +342,34 @@ export default {
                 }
             });
         },
+        handleDownload(FileId) {
+            console.log(FileId);
+            $.ajax({
+                url: 'https://modcat.top:8089/api/Files/DownloadFile',
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                data: JSON.stringify({
+                    FileId: FileId
+                }),
+                success: (data) => {
+                    const blob = new Blob(["\ufeff", data], { type: 'application/x-zip-compressed' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = blobUrl;
+                    a.target = '_blank';
+                    a.click();
+                },
+                error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
+                    ElMessage.error('下载失败: ' + err.responseJSON.ResultMsg);
+                    console.log(err);
+                }
+            });
+        },
         goBack() {
             router.go(-1);
         }
@@ -369,8 +425,8 @@ export default {
 
 .sticky-subscribe {
     position: fixed;
-    z-index: 1000;
-    right: 1%;
+    z-index: 500;
+    right: 0.3%;
     width: 35%;
 }
 

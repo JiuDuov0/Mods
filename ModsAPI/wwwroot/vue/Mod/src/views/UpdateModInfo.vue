@@ -212,7 +212,7 @@ export default {
     display: flex;
     align-items: center;
     cursor: pointer;
-    z-index: 1000;
+    z-index: 500;
     padding: 10px;
 }
 

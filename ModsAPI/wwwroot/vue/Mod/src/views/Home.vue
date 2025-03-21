@@ -1,9 +1,9 @@
 <template>
     <el-container>
         <el-main>
-            <el-row style="position: fixed;z-index: 3000;left: 0%;top:0;width: 101%;">
+            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;">
                 <el-col>
-                    <el-card style="border-color: white;max-height: 60%;">
+                    <el-card style="border-color: white;max-height: 60%;padding: 0px;height: 55%;">
                         <div style="display: flex; align-items: center; margin-top: -1%;">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
                                 style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
@@ -17,7 +17,7 @@
                 </el-col>
             </el-row>
             <el-row class="card-sel">
-                <el-col :span="6" class="col-sel">
+                <el-col :span="3" class="col-sel">
                     <el-card class="el-card-sel">
                         <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
                         <h3>Mod 类型</h3>
@@ -30,15 +30,21 @@
                         </el-checkbox-group>
                     </el-card>
                 </el-col>
-                <el-col :span="18">
+                <el-col :span="21">
                     <el-row :gutter="20" ref="modListContainer">
-                        <el-col :span="8" v-for="mod in modList" :key="mod.ModId">
+                        <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
                             <el-card class="el-card-table">
                                 <img @click="toModDetail(mod.ModId)" src="../assets/drg.png" alt="mod image"
                                     style="width: 100%;">
-                                <h3>{{ mod.Name }}</h3>
+                                <nobr>
+                                    <h3>{{ mod.Name }}</h3>
+                                </nobr>
 
-                                <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName }}</el-tag>
+                                <div style="max-height: 4rem; height: 2rem;">
+                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
+                                    }}</el-tag>
+                                </div>
+
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
                                 <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
@@ -82,7 +88,7 @@ export default {
     data() {
         return {
             skip: 0,
-            take: 9,
+            take: 18,
             modTypes: [],
             modList: [],
             NickName: "",
@@ -357,9 +363,9 @@ export default {
 
 .el-card-sel {
     position: fixed;
-    z-index: 2000;
+    z-index: 500;
     left: 1%;
-    width: 24%;
+    width: 11.5%;
 }
 
 .account-info {
@@ -369,7 +375,7 @@ export default {
     display: flex;
     align-items: center;
     cursor: pointer;
-    z-index: 1000;
+    z-index: 500;
     padding: 10px;
 }
 
