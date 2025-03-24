@@ -17,20 +17,7 @@
                 </el-col>
             </el-row>
             <el-row class="card-sel">
-                <el-col :span="3" class="col-sel">
-                    <el-card class="el-card-sel">
-                        <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
-                        <h3>Mod 类型</h3>
-                        <el-checkbox-group v-model="selectedTypes">
-                            <div v-for="type in modTypes" :key="type.TypesId" class="checkbox-item">
-                                <el-checkbox :label="type.TypesId">
-                                    {{ type.TypeName }}
-                                </el-checkbox>
-                            </div>
-                        </el-checkbox-group>
-                    </el-card>
-                </el-col>
-                <el-col :span="21">
+                <el-col>
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
                             <el-card class="el-card-table">
@@ -40,17 +27,15 @@
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
 
-                                <div style="max-height: 4rem; height: 2rem;">
+                                <!-- <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
                                     }}</el-tag>
-                                </div>
+                                </div> -->
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
-                                <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
-                                    type="primary">订阅</el-button>
-                                <el-button v-else @click="btnUnsubscribeClick(mod.ModId)"
-                                    type="primary">取消订阅</el-button>
+                                <el-button @click="UserModSubscribe(mod.ModId)" type="primary">批准</el-button>
+                                <el-button @click="btnUnsubscribeClick(mod.ModId)" type="primary">驳回</el-button>
                             </el-card>
                         </el-col>
                     </el-row>
@@ -65,12 +50,8 @@
                                 <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
                                 <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
 
-                                <el-dropdown-item v-if="Role === 'Auditors'"
-                                    @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
-                                <el-dropdown-item v-if="Role === 'Developer'"
-                                    @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
-                                <el-dropdown-item v-if="Role === 'Developer'"
-                                    @click.native="handleProfile">添加审核人</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleProfile">添加审核人</el-dropdown-item>
 
                                 <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                                 <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
@@ -102,8 +83,8 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
-            defaulturl: drg,
             Role: localStorage.getItem('Role'),
+            defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
@@ -112,8 +93,6 @@ export default {
     },
     mounted() {
         this.NickName = localStorage.getItem('NickName');
-        //this.Role = localStorage.getItem('Role');
-        this.fetchModTypes();
         this.fetchModList();
         this.setupIntersectionObserver();
     },
@@ -136,37 +115,9 @@ export default {
             this.modList = []; // 清空当前 modList
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
-        fetchModTypes() {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modTypes = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
-                }
-            });
-        },
         fetchModList() {
             $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/ModListPage',
+                url: 'https://127.0.0.1:7114/api/Approve/GetApproveModVersionPageList',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -174,9 +125,7 @@ export default {
                 },
                 data: JSON.stringify({
                     Skip: this.skip,
-                    Take: this.take,
-                    Types: this.selectedTypes, // 传递选中的类型
-                    Search: this.select // 传递搜索输入内容
+                    Take: this.take
                 }),
                 cache: false,
                 dataType: "json",
@@ -188,7 +137,7 @@ export default {
                     if (data.ResultData == null) {
                         ElMessage.error('获取失败: ' + data.ResultMsg);
                     } else {
-                        this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
+                        this.modList = this.modList.concat(data.ResultData);
                         this.skip += this.take; // 更新 skip 值
                     }
                 },
@@ -298,7 +247,6 @@ export default {
             // 处理点击事件返回主页
             router.push('/home');
         },
-        handleapproveModVersion() { router.push('/approveModVersion'); },
         handleProfile() {
             // 处理个人资料点击事件
         },
@@ -314,6 +262,7 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleapproveModVersion() { router.push('/approveModVersion'); },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');

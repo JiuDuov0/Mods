@@ -57,6 +57,7 @@ export default {
                         ElMessage.error('登录失败: ' + data.ResultMsg);
                     } else {
                         localStorage.setItem("NickName", data.ResultData.NickName);
+                        localStorage.setItem("Role", data.ResultData.Role);
                         localStorage.setItem("token", data.ResultData.Token);
                         localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
                         router.push('/home');

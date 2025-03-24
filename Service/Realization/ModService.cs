@@ -263,7 +263,7 @@ namespace Service.Realization
 
         public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).Where(x => x.Status == "0").Skip(Skip).Take(Take).ToList();
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).ThenInclude(x => x.Mod).Where(x => x.Status == "0").OrderByDescending(x=>x.CreatedAt).Skip(Skip).Take(Take).ToList();
         }
 
         public bool IsLoginUserMods(List<string> list, string UserId)

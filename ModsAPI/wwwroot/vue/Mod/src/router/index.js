@@ -10,6 +10,7 @@ const createMod = () => import('../views/CreateMod.vue')
 const addVersionFile = () => import('../views/AddVersionFile.vue')
 const addNewVersion = () => import('../views/AddNewVersion.vue')
 const updateModInfo = () => import('../views/UpdateModInfo.vue')
+const approveModVersion = () => import('../views/ApproveModVersion.vue')
 
 const routes = [
     { path: "/", name: "login", component: login },
@@ -57,6 +58,11 @@ const routes = [
         path: "/updateModInfo",
         name: "updateModInfo",
         component: updateModInfo
+    },
+    {
+        path: "/approveModVersion",
+        name: "approveModVersion",
+        component: approveModVersion
     },
 ]
 

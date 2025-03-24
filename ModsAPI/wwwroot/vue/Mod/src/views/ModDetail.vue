@@ -96,6 +96,7 @@ export default {
             subscribers: "",
             createdAt: "",
             tags: [],
+            Role: localStorage.getItem('Role'),
             latestVersion: {
                 version: '',
                 description: '',

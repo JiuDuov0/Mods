@@ -97,7 +97,7 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
             }
-            if (int.TryParse((string)json.Skip, out Skip) && int.TryParse((string)json.Take, out Take))
+            if (!int.TryParse((string)json.Skip, out Skip) && !int.TryParse((string)json.Take, out Take))
             {
                 return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
             }

@@ -45,6 +45,11 @@ namespace Entity.Approve
         public string? Comments { get; set; }
 
         /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime? CreatedAt { get; set; }
+
+        /// <summary>
         /// 导航属性，指向所属的ModVersion
         /// </summary>
         [ForeignKey("VersionId")]

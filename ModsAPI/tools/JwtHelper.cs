@@ -35,9 +35,11 @@ namespace ModsAPI.tools
                 new Claim("Days","1"),
             };
             var roleslist = new RoleEntity().GetRoleList();
+            var rolenames = string.Empty;
             foreach (var item in userInfo.UserRoleID)
             {
                 var rolename = roleslist.Find(x => x.Id == item);
+                rolenames += rolename.RoleName;
                 claims.Add(new Claim(ClaimTypes.Role, rolename.RoleName));
             }
 
@@ -60,7 +62,7 @@ namespace ModsAPI.tools
 
             _RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
             _RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
-            return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName };
+            return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName, Role = rolenames };
         }
 
         /// <summary>
@@ -253,6 +255,8 @@ namespace ModsAPI.tools
         /// 昵称
         /// </summary>
         public string NickName { get; set; }
+
+        public string? Role { get; set; }
     }
 }
 

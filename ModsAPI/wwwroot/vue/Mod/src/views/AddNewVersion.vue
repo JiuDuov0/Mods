@@ -9,6 +9,14 @@
                         <el-dropdown-menu>
                             <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
                             <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+
+                            <el-dropdown-item v-if="Role === 'Auditors'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleProfile">添加审核人</el-dropdown-item>
+
                             <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
@@ -49,6 +57,7 @@ export default {
         return {
             NickName: '',
             headurl: head,
+            Role: localStorage.getItem('Role'),
             ModId: this.$route.query.ModId, // 从路由参数获取 Mod ID
             versionForm: {
                 version: '',

@@ -59,6 +59,14 @@
                         <el-dropdown-menu>
                             <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
                             <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+
+                            <el-dropdown-item v-if="Role === 'Auditors'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleProfile">添加审核人</el-dropdown-item>
+
                             <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
@@ -89,6 +97,7 @@ export default {
             NickName: "",
             headurl: head,
             defaulturl: drg,
+            Role: localStorage.getItem('Role'),
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
