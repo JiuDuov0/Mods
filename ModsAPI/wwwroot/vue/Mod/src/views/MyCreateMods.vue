@@ -34,13 +34,14 @@
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
                             <el-card>
-                                <img src="../assets/drg.png" alt="mod image" style="width: 100%;">
+                                <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
+                                    :src="mod.PicUrl || defaulturl" style="width: 100%;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <el-button @click="AddNewVersion(mod.ModId)" type="primary">发布新版本</el-button>
@@ -78,6 +79,7 @@ import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import UpdateModInfo from './UpdateModInfo.vue';
 import head from '../assets/head.jpg';
+import drg from '../assets/drg.png';
 
 export default {
     name: 'Home',
@@ -89,6 +91,7 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
+            defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用

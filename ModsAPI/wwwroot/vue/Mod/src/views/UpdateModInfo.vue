@@ -27,8 +27,8 @@
                                 disabled />
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
-                            <div>示例://player.bilibili.com/player.html?bvid={bvid}&autoplay=false&danmaku=false</div>
-                            <el-input v-model="modForm.VideoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
+                            <el-input v-model="modForm.VideoUrl" placeholder="请输入BV号" style="margin-bottom: 16px;" />
+                            <el-input v-model="modForm.PicUrl" placeholder="请输入封面URL" style="margin-bottom: 16px;" />
                             <el-select v-model="modForm.tags" multiple placeholder="请选择标签"
                                 style="margin-bottom: 16px; width: 100%;">
                                 <el-option v-for="tag in tags" :key="tag.TypesId" :label="tag.TypeName"
@@ -56,6 +56,7 @@ export default {
         return {
             modForm: {
                 name: '', // Mod 名称（不可编辑）
+                PicUrl: '', // Mod 封面
                 description: '', // Mod 描述
                 VideoUrl: '', // Mod 视频链接
                 tags: [] // Mod 类型（多选框）
@@ -113,7 +114,8 @@ export default {
                     } else {
                         this.modForm.name = data.ResultData.Name;
                         this.modForm.description = data.ResultData.Description;
-                        this.modForm.VideoUrl = data.ResultData.VideoUrl;
+                        this.modForm.VideoUrl = data.ResultData.VideoUrl.substring(39, data.ResultData.VideoUrl.indexOf('&'));
+                        this.modForm.PicUrl = data.ResultData.PicUrl;
                         this.modForm.tags = data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
                     }
                 },
@@ -134,6 +136,7 @@ export default {
                 ModId: this.$route.query.ModId,
                 Description: this.modForm.description,
                 VideoUrl: this.modForm.VideoUrl,
+                PicUrl: this.modForm.PicUrl,
                 ModTypeEntities: this.modForm.tags.map((tag) => ({ TypesId: tag }))
             };
 

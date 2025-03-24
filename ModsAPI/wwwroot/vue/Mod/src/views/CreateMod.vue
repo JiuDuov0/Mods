@@ -9,8 +9,8 @@
                             <el-input v-model="modForm.name" placeholder="请输入 Mod 名称" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.description" placeholder="请输入 Mod 描述"
                                 style="margin-bottom: 16px;" />
-                            <div>示例://player.bilibili.com/player.html?bvid={bvid}&autoplay=false&danmaku=false</div>
-                            <el-input v-model="modForm.videoUrl" placeholder="请输入视频链接" style="margin-bottom: 16px;" />
+                            <el-input v-model="modForm.videoUrl" placeholder="请输入视频BV号" style="margin-bottom: 16px;" />
+                            <el-input v-model="modForm.PicUrl" placeholder="请输入封面URL" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.version" placeholder="请输入版本号" style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.versionDescription" placeholder="请输入版本描述"
                                 style="margin-bottom: 16px;" />
@@ -132,6 +132,7 @@ export default {
                     VersionNumber: this.modForm.version,
                     Description: this.modForm.versionDescription
                 }],
+                PicUrl: this.modForm.PicUrl,
                 ModTypeEntities: []
             };
             this.modForm.tags.forEach(tag => {

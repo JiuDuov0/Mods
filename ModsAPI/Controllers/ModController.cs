@@ -134,23 +134,6 @@ namespace ModsAPI.Controllers
             }
             #endregion
 
-            #region Get方法
-            string Get(string url, string content)
-            {
-                try
-                {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
-                        return client.GetStringAsync(url + content).Result;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return null;
-                }
-            }
-            #endregion
             var ModId = Guid.NewGuid().ToString();
             var ModVersion = new ModVersionEntity()
             {
@@ -173,28 +156,41 @@ namespace ModsAPI.Controllers
                 CreatorUserId = UserId,
                 CreatedAt = DateTime.Now,
                 VideoUrl = (string)json.VideoUrl,
+                PicUrl = (string)json.PicUrl,
                 DownloadCount = 0
             };
+            #region Get方法获取视频封面信息
+            string Get(string url, string content)
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
+                        return client.GetStringAsync(url + content).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+            }
+            #endregion
             if (!string.IsNullOrWhiteSpace(Mod.VideoUrl))
             {
-                if (!Mod.VideoUrl.Contains("autoplay=false"))
+                var res = Get($"https://api.bilibili.com/x/web-interface/view?bvid={Mod.VideoUrl}", "");
+                if (res == null)
                 {
-                    Mod.VideoUrl = Mod.VideoUrl + "&autoplay=false";
+                    return new ResultEntity<ModEntity>() { ResultCode = 400, ResultMsg = "BV号不正确" };
                 }
-                if (Mod.VideoUrl.Contains("?bvid="))
+                else
                 {
-                    var url = Mod.VideoUrl;
-                    if (!Mod.VideoUrl.Contains("http"))
-                    {
-                        url = "http:" + Mod.VideoUrl;
-                    }
-                    var bvid = HttpUtility.ParseQueryString(new Uri(url).Query)["bvid"];
-                    var res = Get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid, "");
-                    if (res != null)
+                    if (string.IsNullOrWhiteSpace(Mod.PicUrl))
                     {
                         Mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
                     }
                 }
+                Mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={Mod.VideoUrl}&autoplay=false&danmaku=false";
             }
             if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes))
             {
@@ -416,7 +412,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
             }
 
-            #region Get方法
+            #region Get方法获取视频封面信息
             string Get(string url, string content)
             {
                 try
@@ -435,24 +431,19 @@ namespace ModsAPI.Controllers
             #endregion
             if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
             {
-                if (!mod.VideoUrl.Contains("autoplay=false"))
+                var res = Get($"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}", "");
+                if (res == null)
                 {
-                    mod.VideoUrl = mod.VideoUrl + "&autoplay=false";
+                    return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "BV号不正确" };
                 }
-                if (mod.VideoUrl.Contains("?bvid="))
+                else
                 {
-                    var url = mod.VideoUrl;
-                    if (!mod.VideoUrl.Contains("http"))
-                    {
-                        url = "http:" + mod.VideoUrl;
-                    }
-                    var bvid = HttpUtility.ParseQueryString(new Uri(url).Query)["bvid"];
-                    var res = Get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid, "");
-                    if (res != null)
+                    if (string.IsNullOrWhiteSpace(mod.PicUrl))
                     {
                         mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
                     }
                 }
+                mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
             }
 
             if ((bool)UpdateRelult)
