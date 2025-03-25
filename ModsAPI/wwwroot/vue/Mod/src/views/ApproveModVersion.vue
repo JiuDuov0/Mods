@@ -1,10 +1,10 @@
 <template>
     <el-container>
         <el-main>
-            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;height: 7%;">
-                <el-col style="height: 100%;">
-                    <el-card style="border-color: white;padding: 0px;padding: 0px;height: 93%;margin: 0px;">
-                        <div style="display: flex; align-items: center; margin-top: -2%;">
+            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;">
+                <el-col>
+                    <el-card style="border-color: white;max-height: 60%;padding: 0px;height: 55%;">
+                        <div style="display: flex; align-items: center; margin-top: -1%;">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
                                 style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
                             <h2>深岩银河</h2>
