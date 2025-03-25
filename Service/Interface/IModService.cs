@@ -18,11 +18,12 @@ namespace Service.Interface
         public bool AddModVersion(ModVersionEntity modVersionEntity);
         public ModVersionEntity GetByModVersionId(string modVersionId);
         public bool AddModTypes(JArray array);
-        public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take);
+        public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take, string Search);
         public bool IsLoginUserMods(List<string> list, string UserId);
         public bool IsLoginUserMods(string VersionId, string UserId);
         public List<ModEntity> GetMyCreateMod(string UserId, dynamic json);
         public Task<ModEntity> ModDetail(string UserId, string ModId);
+        public Task<ModEntity> ModDetailAllModVersion(string UserId, string ModId);
         public ModEntity ModDetailUpd(string UserId, string ModId);
         public bool? UpdateModInfo(ModEntity entity, string UserId);
         public bool? DeleteMod(string ModId, string UserId);

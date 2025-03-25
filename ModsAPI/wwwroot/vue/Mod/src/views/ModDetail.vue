@@ -44,7 +44,7 @@
                             <el-table-column prop="FilesId" label="下载" width="200">
                                 <template #default="scope">
                                     <el-button v-if="scope.row.FilesId" type="primary" block
-                                        @click="handleDownload(scope.row.FilesId)">下载</el-button>
+                                        @click="handleDownload(scope.row.FilesId, scope.row.VersionNumber)">下载</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -343,26 +343,41 @@ export default {
                 }
             });
         },
-        handleDownload(FileId) {
-            console.log(FileId);
+        handleDownload(FileId, VersionNumber) {
+            if (!FileId) {
+                ElMessage.error('文件 ID 不存在，无法下载');
+                return;
+            }
             $.ajax({
                 url: 'https://modcat.top:8089/api/Files/DownloadFile',
                 type: "POST",
-                contentType: "application/json; charset=utf-8",
+                contentType: "application/json-patch+json",
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 },
                 data: JSON.stringify({
                     FileId: FileId
                 }),
-                success: (data) => {
-                    const blob = new Blob(["\ufeff", data], { type: 'application/x-zip-compressed' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = blobUrl;
-                    a.target = '_blank';
-                    a.click();
+                xhrFields: {
+                    responseType: 'blob' // 使浏览器将响应视为二进制数据
+                },
+                success: (data, status, xhr) => {
+                    var blob = new Blob([data], { type: 'application/x-zip-compressed' });
+                    var link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                    var fileName = this.entity.Name + VersionNumber + '.zip';
+                    //未知情况，xhr.getResponseHeader('Content-Disposition')返回null
+                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+                        var matches = /filename=([^;]+)/.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            fileName = matches[1].trim();
+                        }
+                    }
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 },
                 error: (err) => {
                     if (err.status == "401") { router.push('/'); }

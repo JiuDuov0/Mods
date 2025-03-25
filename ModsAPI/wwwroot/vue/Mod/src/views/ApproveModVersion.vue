@@ -1,10 +1,10 @@
 <template>
     <el-container>
         <el-main>
-            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;">
-                <el-col>
-                    <el-card style="border-color: white;max-height: 60%;padding: 0px;height: 55%;">
-                        <div style="display: flex; align-items: center; margin-top: -1%;">
+            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;height: 7%;">
+                <el-col style="height: 100%;">
+                    <el-card style="border-color: white;padding: 0px;padding: 0px;height: 93%;margin: 0px;">
+                        <div style="display: flex; align-items: center; margin-top: -2%;">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
                                 style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
                             <h2>深岩银河</h2>
@@ -17,14 +17,19 @@
                 </el-col>
             </el-row>
             <el-row class="card-sel">
-                <el-col>
+                <el-col :span="3" class="col-sel">
+                    <el-card class="el-card-sel">
+                        <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
+                    </el-card>
+                </el-col>
+                <el-col :span="21">
                     <el-row :gutter="20" ref="modListContainer">
                         <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
                             <el-card class="el-card-table">
-                                <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
+                                <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModVersion.Mod.ModId)"
                                     :src="mod.PicUrl || defaulturl" style="width: 100%;">
                                 <nobr>
-                                    <h3>{{ mod.Name }}</h3>
+                                    <h3>{{ mod.ModVersion.Mod.Name }}</h3>
                                 </nobr>
 
                                 <!-- <div style="max-height: 4rem; height: 2rem;">
@@ -34,8 +39,8 @@
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
-                                <el-button @click="UserModSubscribe(mod.ModId)" type="primary">批准</el-button>
-                                <el-button @click="btnUnsubscribeClick(mod.ModId)" type="primary">驳回</el-button>
+                                <el-button @click="ApproveModVersion(mod.VersionId)" type="primary">批准</el-button>
+                                <el-button @click="RefuseModVersion(mod.VersionId)" type="primary">驳回</el-button>
                             </el-card>
                         </el-col>
                     </el-row>
@@ -51,7 +56,7 @@
                                 <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
 
                                 <el-dropdown-item @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
-                                <el-dropdown-item @click.native="handleProfile">添加审核人</el-dropdown-item>
+                                <el-dropdown-item @click.native="handleroleAuthorization">添加审核人</el-dropdown-item>
 
                                 <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                                 <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
@@ -117,7 +122,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Approve/GetApproveModVersionPageList',
+                url: 'https://modcat.top:8089/api/Approve/GetApproveModVersionPageList',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -125,7 +130,8 @@ export default {
                 },
                 data: JSON.stringify({
                     Skip: this.skip,
-                    Take: this.take
+                    Take: this.take,
+                    Search: this.select
                 }),
                 cache: false,
                 dataType: "json",
@@ -167,53 +173,18 @@ export default {
 
             observer.observe(this.$refs.bottomObserver);
         },
-        btnUnsubscribeClick(ModId) {
-            // 处理取消订阅按钮点击事件
+        RefuseModVersion(VersionId) {
             $.ajax({
-                url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
+                url: 'https://modcat.top:8089/api/Approve/ApproveMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 },
                 data: JSON.stringify({
-                    ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('取消订阅成功！');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == ModId) {
-                                item.IsMySubscribe = false;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
-                }
-            });
-        },
-        UserModSubscribe(modId) {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/User/ModSubscribe',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                data: JSON.stringify({
-                    ModId: modId
+                    VersionId: VersionId,
+                    Comments: "驳回",
+                    Status: "10",
                 }),
                 cache: false,
                 dataType: "json",
@@ -223,14 +194,48 @@ export default {
                 async: false,
                 success: (data) => {
                     if (data.ResultData == null) {
-                        ElMessage.error('订阅失败: ' + data.ResultMsg);
+                        ElMessage.error('审核失败: ' + data.ResultMsg);
+                    } else if (data.ResultData === "审核成功") {
+                        ElMessage.success('审核成功');
+                        this.fetchModList();
                     } else {
-                        ElMessage.success('订阅成功');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == modId) {
-                                item.IsMySubscribe = true;
-                            }
-                        });
+                        ElMessage.error('审核失败');
+                    }
+                },
+                error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
+                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
+                    console.log(err);
+                }
+            });
+        },
+        ApproveModVersion(VersionId) {
+            $.ajax({
+                url: 'https://modcat.top:8089/api/Approve/ApproveMod',
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                data: JSON.stringify({
+                    VersionId: VersionId,
+                    Comments: "通过",
+                    Status: "20",
+                }),
+                cache: false,
+                dataType: "json",
+                xhrFields: {
+                    withCredentials: true
+                },
+                async: false,
+                success: (data) => {
+                    if (data.ResultData == null) {
+                        ElMessage.error('审核失败: ' + data.ResultMsg);
+                    } else if (data.ResultData === "审核成功") {
+                        ElMessage.success('审核成功');
+                        this.fetchModList();
+                    } else {
+                        ElMessage.error('审核失败');
                     }
                 },
                 error: (err) => {
@@ -263,6 +268,7 @@ export default {
             router.push('/createMod');
         },
         handleapproveModVersion() { router.push('/approveModVersion'); },
+        handleroleAuthorization() { router.push('/roleAuthorization'); },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
@@ -300,6 +306,8 @@ export default {
     background-color: #e4e7ed;
     border-style: solid;
     border-color: #e4e7ed;
+    margin-left: 0px;
+    margin-top: 5px;
 }
 
 .el-tag {

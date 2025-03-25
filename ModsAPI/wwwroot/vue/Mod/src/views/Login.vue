@@ -4,7 +4,7 @@
             <el-card>
                 <h1 style="text-align: center; margin-bottom: 24px;">登录</h1>
                 <div>
-                    <el-input v-model="loginForm.username" placeholder="请输入用户名" style="margin-bottom: 16px;" />
+                    <el-input v-model="loginForm.username" placeholder="请输入登入邮箱" style="margin-bottom: 16px;" />
                     <el-input type="password" v-model="loginForm.password" placeholder="请输入密码"
                         style="margin-bottom: 16px;" />
                     <el-button type="primary" block @click="handleLogin">登录</el-button>

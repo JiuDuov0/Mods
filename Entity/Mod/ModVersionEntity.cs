@@ -69,6 +69,6 @@ namespace Entity.Mod
         /// <summary>
         /// 导航属性，指向所属的Mod版本审批信息
         /// </summary>
-        public List<ApproveModVersionEntity> ApproveModVersionEntity { get; set; }
+        public ApproveModVersionEntity ApproveModVersionEntity { get; set; }
     }
 }

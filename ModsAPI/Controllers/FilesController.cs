@@ -8,6 +8,7 @@ using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Security.Claims;
 
 namespace ModsAPI.Controllers
 {
@@ -58,6 +59,7 @@ namespace ModsAPI.Controllers
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
             var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
+            var Role = _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
             await _IAPILogService.WriteLogAsync("FilesController/UploadMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
@@ -80,8 +82,16 @@ namespace ModsAPI.Controllers
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
                 VersionId = VersionId,
-                Status = "0",
+                CreatedAt = DateTime.Now,
+                Status = "0"
             };
+            if (Role.Contains("Dev") || Role.Contains("Aud"))
+            {
+                approveModVersionEntity.UserId = UserId;
+                approveModVersionEntity.Comments = "本人权限审批";
+                approveModVersionEntity.ApprovedAt = DateTime.Now;
+                approveModVersionEntity.Status = "20";
+            }
             var entity = new FilesEntity()
             {
                 FilesId = guid,
@@ -196,7 +206,9 @@ namespace ModsAPI.Controllers
             var entity = _IFilesService.AddModDownLoadCount(FileId);
 
             var contentType = "application/x-zip-compressed";
-            return File(memory, contentType, entity.Name + entity.ModVersionEntities[0].VersionNumber + ".zip");
+            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}.zip";
+            Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
+            return File(memory, contentType);
         }
 
 

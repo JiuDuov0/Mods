@@ -1,10 +1,10 @@
 <template>
     <el-container>
         <el-main>
-            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;">
-                <el-col>
-                    <el-card style="border-color: white;max-height: 60%;padding: 0px;height: 55%;">
-                        <div style="display: flex; align-items: center; margin-top: -1%;">
+            <el-row style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;height: 7%;">
+                <el-col style="height: 100%;">
+                    <el-card style="border-color: white;padding: 0px;padding: 0px;height: 93%;margin: 0px;">
+                        <div style="display: flex; align-items: center; margin-top: -2%;">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
                                 style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
                             <h2>深岩银河</h2>
@@ -41,7 +41,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <el-button @click="btnUnsubscribeClick(mod.ModId)" type="primary">取消订阅</el-button>
@@ -65,7 +65,7 @@
                             <el-dropdown-item v-if="Role === 'Developer'"
                                 @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
                             <el-dropdown-item v-if="Role === 'Developer'"
-                                @click.native="handleProfile">添加审核人</el-dropdown-item>
+                                @click.native="handleroleAuthorization">添加审核人</el-dropdown-item>
 
                             <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                             <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
@@ -268,6 +268,8 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleapproveModVersion() { router.push('/approveModVersion'); },
+        handleroleAuthorization() { router.push('/roleAuthorization'); },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');

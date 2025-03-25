@@ -1,4 +1,5 @@
-﻿using Entity.File;
+﻿using Entity.Approve;
+using Entity.File;
 using Entity.Mod;
 using System;
 using System.Collections.Generic;
@@ -51,6 +52,11 @@ namespace Entity.User
         /// 导航属性，指向Mod评分
         /// </summary>
         public List<ModPointEntity> ModPointEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向ApproveModVersion
+        /// </summary>
+        public List<ApproveModVersionEntity> ApproveModVersionEntities { get; set; }
 
         /// <summary>
         /// 角色id

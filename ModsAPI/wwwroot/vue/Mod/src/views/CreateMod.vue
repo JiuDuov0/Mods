@@ -39,7 +39,7 @@
                         <el-dropdown-item v-if="Role === 'Developer'"
                             @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
                         <el-dropdown-item v-if="Role === 'Developer'"
-                            @click.native="handleProfile">添加审核人</el-dropdown-item>
+                            @click.native="handleroleAuthorization">添加审核人</el-dropdown-item>
 
                         <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                         <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
@@ -216,6 +216,8 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleapproveModVersion() { router.push('/approveModVersion'); },
+        handleroleAuthorization() { router.push('/roleAuthorization'); },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');

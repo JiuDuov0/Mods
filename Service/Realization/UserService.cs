@@ -21,6 +21,39 @@ namespace Service.Realization
             _IDbContextServices = iDbContextServices;
         }
 
+        public bool AddUserRole(UserRoleEntity entity)
+        {
+            entity.Id = Guid.NewGuid().ToString();
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            Context.UserRoleEntity.Add(entity);
+            return Context.SaveChanges() > 0;
+        }
+
+        public bool DeleteUserRole(string Id)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.UserRoleEntity.FirstOrDefault(x => x.Id == Id);
+            if (entity != null)
+            {
+                Context.UserRoleEntity.Remove(entity);
+            }
+            return Context.SaveChanges() > 0;
+        }
+
+        public UserRoleEntity UpdateUserRole(UserRoleEntity entity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var existingEntity = Context.UserRoleEntity.FirstOrDefault(x => x.Id == entity.Id);
+            if (existingEntity != null)
+            {
+                existingEntity.UserId = entity.UserId;
+                existingEntity.RoleId = entity.RoleId;
+                Context.UserRoleEntity.Update(existingEntity);
+                Context.SaveChanges();
+            }
+            return existingEntity;
+        }
+
         public List<UserEntity> GetPages(dynamic json)
         {
             int skip = Convert.ToInt32(json.Skip);
@@ -29,6 +62,33 @@ namespace Service.Realization
             //条件
             //entity.Where(x => x.UserId == "");
             return entity.Skip(skip).Take(take).ToList();
+        }
+
+        public List<UserRoleEntity> GetUserRolePages(dynamic json)
+        {
+            int Take = Convert.ToInt32(json.Take);
+            int Skip = Convert.ToInt32(json.Skip);
+            string Mail = Convert.ToString(json.Mail);
+            string RoleId = Convert.ToString(json.RoleId);
+            IQueryable<UserRoleEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserRoleEntity.Include(x => x.UserEntity);
+            #region 条件
+            if (!string.IsNullOrWhiteSpace(Mail))
+            {
+                Context = Context.Where(x => x.UserEntity.Mail.Contains(Mail));
+            }
+            if (!string.IsNullOrWhiteSpace(RoleId))
+            {
+                Context = Context.Where(x => x.RoleId == RoleId);
+            }
+            #endregion
+            var list = Context.Skip(Skip).Take(Take).ToList();
+            #region 过滤
+            foreach (var item in list)
+            {
+                item.UserEntity.Password = null;
+            }
+            #endregion
+            return list;
         }
 
         public UserEntity Login(string Account, string Password)
@@ -106,7 +166,7 @@ namespace Service.Realization
             IQueryable<ModEntity> context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
             context = context.Where(x =>
             x.UserModSubscribeEntities.Any(y => y.UserId == UserId) &&
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             return context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
         }

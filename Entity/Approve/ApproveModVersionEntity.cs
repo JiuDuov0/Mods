@@ -27,7 +27,7 @@ namespace Entity.Approve
         /// <summary>
         /// 审批者的用户ID
         /// </summary>
-        public string? ApproverUserId { get; set; }
+        public string? UserId { get; set; }
 
         /// <summary>
         /// 审批时间
@@ -58,7 +58,7 @@ namespace Entity.Approve
         /// <summary>
         /// 导航属性，指向审批者
         /// </summary>
-        [ForeignKey("ApproverUserId")]
-        public UserEntity? Approver { get; set; }
+        [ForeignKey("UserId")]
+        public UserEntity? User { get; set; }
     }
 }

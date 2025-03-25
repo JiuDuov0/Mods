@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Entity.Role;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -13,5 +14,11 @@ namespace Entity.User
         public string? Id { get; set; }
         public string? UserId { get; set; }
         public string? RoleId { get; set; }
+
+        [ForeignKey("UserId")]
+        public UserEntity UserEntity { get; set; }
+
+        [NotMapped]
+        public RoleEntity RoleEntity { get; set; }
     }
 }

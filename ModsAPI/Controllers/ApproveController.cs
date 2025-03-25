@@ -68,7 +68,7 @@ namespace ModsAPI.Controllers
             {
                 return new ResultEntity<string>() { ResultMsg = "Status不能为空" };
             }
-            else if (Status != "20" || Status != "10")
+            else if (Status != "20" && Status != "10")
             {
                 return new ResultEntity<string>() { ResultMsg = "Status不正确" };
             }
@@ -92,17 +92,17 @@ namespace ModsAPI.Controllers
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
             #region 验证
-            int Skip = 0, Take = 0;
+            int Skip = (int)json.Skip; int Take = (int)json.Take;
             if (string.IsNullOrWhiteSpace((string)json.Skip) && string.IsNullOrWhiteSpace((string)json.Take))
             {
                 return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
             }
-            if (!int.TryParse((string)json.Skip, out Skip) && !int.TryParse((string)json.Take, out Take))
-            {
-                return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
-            }
+            //if (!int.TryParse((string)json.Skip, out Skip) && !int.TryParse((string)json.Take, out Take))
+            //{
+            //    return new ResultEntity<List<ApproveModVersionEntity>>() { ResultMsg = "缺少参数" };
+            //}
             #endregion
-            return new ResultEntity<List<ApproveModVersionEntity>>() { ResultData = _IModService.GetApproveModVersionPageList(Skip, Take) };
+            return new ResultEntity<List<ApproveModVersionEntity>>() { ResultData = _IModService.GetApproveModVersionPageList(Skip, Take,(string)json.Search) };
         }
     }
 }

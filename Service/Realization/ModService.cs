@@ -83,7 +83,7 @@ namespace Service.Realization
                 }
             }
             Context = Context.Where(x =>
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
             var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
@@ -119,7 +119,7 @@ namespace Service.Realization
                 }
             }
             query = query.Where(x =>
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Any(z => z.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) ||
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
             var list = query.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
@@ -156,7 +156,7 @@ namespace Service.Realization
             {
                 ApproveModVersionId = Guid.NewGuid().ToString(),
                 VersionId = modVersionId,
-                ApproverUserId = approverUserId,
+                UserId = approverUserId,
                 ApprovedAt = DateTime.Now,
                 Status = status,
                 Comments = comments
@@ -167,16 +167,15 @@ namespace Service.Realization
         public async Task ApproveModVersionAsync(string modVersionId, string approverUserId, string status, string comments)
         {
             var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
-            var approval = new ApproveModVersionEntity
+            var entity = await context.ApproveModEntity.FirstOrDefaultAsync(x => x.VersionId == modVersionId);
+            if (entity != null)
             {
-                ApproveModVersionId = Guid.NewGuid().ToString(),
-                VersionId = modVersionId,
-                ApproverUserId = approverUserId,
-                ApprovedAt = DateTime.Now,
-                Status = status,
-                Comments = comments
-            };
-            await context.ApproveModEntity.AddAsync(approval);
+                entity.UserId = approverUserId;
+                entity.ApprovedAt = DateTime.Now;
+                entity.Status = status;
+                entity.Comments = comments;
+                context.ApproveModEntity.Update(entity);
+            }
             await context.SaveChangesAsync();
         }
 
@@ -261,9 +260,14 @@ namespace Service.Realization
             }
         }
 
-        public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take)
+        public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take, string Search)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).ThenInclude(x => x.Mod).Where(x => x.Status == "0").OrderByDescending(x=>x.CreatedAt).Skip(Skip).Take(Take).ToList();
+            IQueryable<ApproveModVersionEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).ThenInclude(x => x.Mod).Where(x => x.Status == "0");
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                Context = Context.Where(x => x.ModVersion.Mod.Name.Contains(Search));
+            }
+            return Context.OrderByDescending(x => x.CreatedAt).Take(Take).Skip(Skip).ToList();
         }
 
         public bool IsLoginUserMods(List<string> list, string UserId)
@@ -320,7 +324,51 @@ namespace Service.Realization
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
             var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
-            var entity = await Context.ModEntity.IgnoreQueryFilters().Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.CreatorEntity).FirstOrDefaultAsync(x => x.ModId == ModId);
+            var entity = await Context.ModEntity.IgnoreQueryFilters()
+                .Include(x => x.ModVersionEntities)
+                .ThenInclude(x => x.ApproveModVersionEntity)
+                .Include(x => x.ModTypeEntities)
+                .ThenInclude(x => x.Types)
+                .Include(x => x.CreatorEntity)
+                .Where(x => x.SoftDeleted == false)
+                .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                .FirstOrDefaultAsync(x => x.ModId == ModId);
+
+            var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
+            if (entity != null)
+            {
+                var user = new UserEntity() { UserId = entity.CreatorEntity.UserId, NickName = entity.CreatorEntity.NickName };
+                entity.CreatorEntity = user;
+                entity.IsMySubscribe = subscribe != null;
+
+                // 过滤 ModVersionEntities 只包含 Status == "20" 的实体
+                entity.ModVersionEntities = entity.ModVersionEntities
+                    .Where(x => x.ApproveModVersionEntity.Status == "20")
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToList();
+            }
+
+            if (avg != null)
+            {
+                entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
+            }
+            return entity;
+        }
+
+        public async Task<ModEntity> ModDetailAllModVersion(string UserId, string ModId)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
+            var entity = await Context.ModEntity.IgnoreQueryFilters()
+                .Include(x => x.ModVersionEntities)
+                .ThenInclude(x => x.ApproveModVersionEntity)
+                .Include(x => x.ModTypeEntities)
+                .ThenInclude(x => x.Types)
+                .Include(x => x.CreatorEntity)
+                .Where(x => x.SoftDeleted == false)
+                .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                .FirstOrDefaultAsync(x => x.ModId == ModId);
+
             var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
             if (entity != null)
             {
@@ -328,7 +376,7 @@ namespace Service.Realization
                 entity.CreatorEntity = user;
                 entity.IsMySubscribe = subscribe != null;
             }
-            entity.ModVersionEntities = entity.ModVersionEntities.OrderByDescending(x => x.CreatedAt).ToList();
+
             if (avg != null)
             {
                 entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
@@ -351,6 +399,7 @@ namespace Service.Realization
             mod.Description = entity.Description;
             mod.UpdatedAt = DateTime.Now;
             mod.VideoUrl = entity.VideoUrl;
+            mod.PicUrl = entity.PicUrl;
             var list = new List<ModTypeEntity>();
             foreach (var item in entity.ModTypeEntities)
             {

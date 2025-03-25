@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
 using System;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -329,10 +330,13 @@ namespace ModsAPI.Controllers
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
+            string token = null;
+            string UserRoleIDs = null;
             if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()))
             {
-                var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+                token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
                 UserId = _JwtHelper.GetTokenStr(token, "UserId");
+                UserRoleIDs = _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
                 _IAPILogService.WriteLogAsync("ModController/ModDetail", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             }
             else
@@ -347,6 +351,11 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
             }
             #endregion
+            //根据角色返回不同的内容
+            if (!string.IsNullOrWhiteSpace(UserRoleIDs) && (UserRoleIDs.Contains("Developer")|| UserRoleIDs.Contains("Auditors")))
+            {
+                return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetailAllModVersion(UserId, (string)json.ModId) };
+            }
             return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetail(UserId, (string)json.ModId) };
         }
 
@@ -404,14 +413,9 @@ namespace ModsAPI.Controllers
                 ModId = (string)json.ModId,
                 Description = (string)json.Description,
                 VideoUrl = (string)json.VideoUrl,
+                PicUrl = (string)json.PicUrl,
                 ModTypeEntities = ListTypes
             };
-            var UpdateRelult = _IModService.UpdateModInfo(mod, UserId);
-            if (UpdateRelult == null)
-            {
-                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
-            }
-
             #region Get方法获取视频封面信息
             string Get(string url, string content)
             {
@@ -445,6 +449,11 @@ namespace ModsAPI.Controllers
                 }
                 mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
             }
+            var UpdateRelult = _IModService.UpdateModInfo(mod, UserId);
+            if (UpdateRelult == null)
+            {
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
+            }
 
             if ((bool)UpdateRelult)
             {
@@ -469,7 +478,7 @@ namespace ModsAPI.Controllers
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("ModController/DeleteMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
             #region 验证

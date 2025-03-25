@@ -11,6 +11,7 @@ const addVersionFile = () => import('../views/AddVersionFile.vue')
 const addNewVersion = () => import('../views/AddNewVersion.vue')
 const updateModInfo = () => import('../views/UpdateModInfo.vue')
 const approveModVersion = () => import('../views/ApproveModVersion.vue')
+const roleAuthorization = () => import('../views/RoleAuthorization.vue')
 
 const routes = [
     { path: "/", name: "login", component: login },
@@ -63,6 +64,11 @@ const routes = [
         path: "/approveModVersion",
         name: "approveModVersion",
         component: approveModVersion
+    },
+    {
+        path: "/roleAuthorization",
+        name: "roleAuthorization",
+        component: roleAuthorization
     },
 ]
 

@@ -138,5 +138,68 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<bool>() { ResultCode = 400, ResultData = false, ResultMsg = "取消订阅失败" };
             }
         }
+
+        /// <summary>
+        /// 获取有角色的人
+        /// </summary>
+        /// <param name="json">{"Skip":"0","Take":"10","Mail":"","RoleId":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetAllUserRole")]
+        [Authorize(Roles = "Developer")]
+        public ResultEntity<List<UserRoleEntity>> GetAllUserRole([FromBody] dynamic json)
+        {
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            return new ResultEntity<List<UserRoleEntity>>() { ResultData = _IUserService.GetUserRolePages(json) };
+        }
+
+        /// <summary>
+        /// 添加用户角色
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "AddUserRole")]
+        [Authorize(Roles = "Developer")]
+        public ResultEntity<bool> AddUserRole([FromBody] dynamic json)
+        {
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            var entity = new UserRoleEntity()
+            {
+                UserId = (string)json.Mail,
+                RoleId = (string)json.RoleId
+            };
+            return new ResultEntity<bool>() { ResultData = _IUserService.AddUserRole(entity) };
+        }
+
+        /// <summary>
+        /// 更新用户角色
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "UpdateUserRole")]
+        [Authorize(Roles = "Developer")]
+        public ResultEntity<UserRoleEntity> UpdateUserRole([FromBody] dynamic json)
+        {
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            var entity = new UserRoleEntity()
+            {
+                Id = (string)json.Id,
+                UserId = (string)json.Mail,
+                RoleId = (string)json.RoleId
+            };
+            return new ResultEntity<UserRoleEntity>() { ResultData = _IUserService.UpdateUserRole(entity) };
+        }
+
+        /// <summary>
+        /// 删除用户角色
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "DeleteUserRole")]
+        [Authorize(Roles = "Developer")]
+        public ResultEntity<bool> DeleteUserRole([FromBody] dynamic json)
+        {
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            return new ResultEntity<bool>() { ResultData = _IUserService.DeleteUserRole((string)json.Id) };
+        }
     }
 }
