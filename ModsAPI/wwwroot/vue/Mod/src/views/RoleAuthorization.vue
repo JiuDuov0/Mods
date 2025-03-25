@@ -3,17 +3,18 @@
     <h1>角色授权管理</h1>
     <el-table :data="userRoles" style="width: 100%">
       <el-table-column prop="UserId" label="用户ID" width="180"></el-table-column>
+      <el-table-column prop="UserEntity.Mail" label="用户邮箱" width="180"></el-table-column>
       <el-table-column prop="RoleId" label="角色ID" width="180"></el-table-column>
       <el-table-column label="操作" width="180">
-        <template slot-scope="scope">
-          <el-button @click="editUserRole(scope.row)" type="primary" size="small">编辑</el-button>
-          <el-button @click="deleteUserRole(scope.row.Id)" type="danger" size="small">删除</el-button>
+        <template slot-scope="scope" style="display: flex;">
+          <el-button @click="editUserRole(userRoles.Id)" type="primary" size="small">编辑</el-button>
+          <el-button @click="deleteUserRole(userRoles.Id)" type="danger" size="small">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <el-button @click="showAddUserRoleDialog" type="primary" style="margin: 20px 0;">添加用户角色</el-button>
 
-    <el-dialog title="添加用户角色" :visible.sync="addUserRoleDialogVisible">
+    <el-dialog title="添加用户角色" v-model="addUserRoleDialogVisible">
       <el-form :model="newUserRole">
         <el-form-item label="用户ID">
           <el-input v-model="newUserRole.UserId"></el-input>
@@ -28,7 +29,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="编辑用户角色" :visible.sync="editUserRoleDialogVisible">
+    <el-dialog title="编辑用户角色" v-model="editUserRoleDialogVisible">
       <el-form :model="editUserRoleData">
         <el-form-item label="用户ID">
           <el-input v-model="editUserRoleData.UserId"></el-input>
@@ -92,6 +93,7 @@ export default {
     },
     showAddUserRoleDialog() {
       this.addUserRoleDialogVisible = true;
+      console.log(this.addUserRoleDialogVisible);
     },
     addUserRole() {
       $.ajax({
