@@ -178,7 +178,7 @@ namespace ModsAPI.Controllers
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             var entity = new UserRoleEntity()
             {
-                UserId = (string)json.Mail,
+                UserId = (string)json.UserId,
                 RoleId = (string)json.RoleId
             };
             return new ResultEntity<bool>() { ResultData = _IUserService.AddUserRole(entity) };
