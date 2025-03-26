@@ -2,6 +2,7 @@
 using EF.Interface;
 using Entity.Approve;
 using Entity.Mod;
+using Entity.Role;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -25,6 +26,7 @@ namespace Service.Realization
         {
             entity.Id = Guid.NewGuid().ToString();
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            entity.UserId = Context.UserEntity.FirstOrDefault(x => x.Mail == entity.UserEntity.Mail).UserId;
             Context.UserRoleEntity.Add(entity);
             return Context.SaveChanges() > 0;
         }
@@ -81,14 +83,24 @@ namespace Service.Realization
                 Context = Context.Where(x => x.RoleId == RoleId);
             }
             #endregion
+            var Role = new RoleEntity().GetRoleList();
             var list = Context.Skip(Skip).Take(Take).ToList();
             #region 过滤
             foreach (var item in list)
             {
+                item.RoleEntity = Role.FirstOrDefault(x => x.Id == item.RoleId);
                 item.UserEntity.Password = null;
             }
             #endregion
             return list;
+        }
+
+        public async Task<UserRoleEntity?> GetUserRoleByIdAsync(string Id)
+        {
+            var Role = new RoleEntity().GetRoleList();
+            var entity = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserRoleEntity.Include(x => x.UserEntity).FirstOrDefaultAsync(x => x.Id == Id);
+            entity.RoleEntity = Role.FirstOrDefault(x => x.Id == entity.RoleId);
+            return entity;
         }
 
         public UserEntity Login(string Account, string Password)

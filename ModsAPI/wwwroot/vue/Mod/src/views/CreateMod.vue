@@ -112,8 +112,8 @@ export default {
             });
         },
         handleSubmit() {
-            if (!this.modForm.name || this.modForm.name.length > 20) {
-                ElMessage.error('请输入有效的 Mod 名称（20 字以内）');
+            if (!this.modForm.name || this.modForm.name.length > 30) {
+                ElMessage.error('请输入有效的 Mod 名称（30 字以内）');
                 return;
             }
             if (!this.modForm.description) {

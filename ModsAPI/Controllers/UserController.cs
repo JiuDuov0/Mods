@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
+using System.Threading.Tasks;
 
 namespace ModsAPI.Controllers
 {
@@ -150,6 +151,19 @@ namespace ModsAPI.Controllers
         {
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             return new ResultEntity<List<UserRoleEntity>>() { ResultData = _IUserService.GetUserRolePages(json) };
+        }
+
+        /// <summary>
+        /// 根据Id获取用户角色
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetUserRoleById")]
+        [Authorize(Roles = "Developer")]
+        public async Task<ResultEntity<UserRoleEntity?>> GetUserRoleById([FromBody] dynamic json)
+        {
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            return new ResultEntity<UserRoleEntity?>() { ResultData = await _IUserService.GetUserRoleByIdAsync((string)json.Id) };
         }
 
         /// <summary>

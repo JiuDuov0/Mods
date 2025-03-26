@@ -2,13 +2,12 @@
   <div>
     <h1>角色授权管理</h1>
     <el-table :data="userRoles" style="width: 100%">
-      <el-table-column prop="UserId" label="用户ID" width="180"></el-table-column>
       <el-table-column prop="UserEntity.Mail" label="用户邮箱" width="180"></el-table-column>
-      <el-table-column prop="RoleId" label="角色ID" width="180"></el-table-column>
+      <el-table-column prop="RoleEntity.RoleName" label="角色" width="180"></el-table-column>
       <el-table-column label="操作" width="180">
-        <template slot-scope="scope" style="display: flex;">
-          <el-button @click="editUserRole(userRoles.Id)" type="primary" size="small">编辑</el-button>
-          <el-button @click="deleteUserRole(userRoles.Id)" type="danger" size="small">删除</el-button>
+        <template v-slot="scope" style="display: flex;">
+          <!-- <el-button @click="editUserRole(userRoles.Id)" type="primary" size="small">编辑</el-button> -->
+          <el-button @click="deleteUserRole(scope.row.Id)" type="danger" size="small">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -16,11 +15,13 @@
 
     <el-dialog title="添加用户角色" v-model="addUserRoleDialogVisible">
       <el-form :model="newUserRole">
-        <el-form-item label="用户ID">
+        <el-form-item label="用户邮箱">
           <el-input v-model="newUserRole.UserId"></el-input>
         </el-form-item>
-        <el-form-item label="角色ID">
-          <el-input v-model="newUserRole.RoleId"></el-input>
+        <el-form-item label="角色">
+          <el-select v-model="newUserRole.RoleId" placeholder="请选择角色">
+            <el-option v-for="role in Roles" :key="role.Id" :label="role.RoleName" :value="role.Id"></el-option>
+          </el-select>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -31,10 +32,10 @@
 
     <el-dialog title="编辑用户角色" v-model="editUserRoleDialogVisible">
       <el-form :model="editUserRoleData">
-        <el-form-item label="用户ID">
+        <el-form-item label="用户邮箱">
           <el-input v-model="editUserRoleData.UserId"></el-input>
         </el-form-item>
-        <el-form-item label="角色ID">
+        <el-form-item label="角色">
           <el-input v-model="editUserRoleData.RoleId"></el-input>
         </el-form-item>
       </el-form>
@@ -59,11 +60,11 @@ export default {
         UserId: '',
         RoleId: ''
       },
-      editUserRoleData: {
-        Id: '',
-        UserId: '',
-        RoleId: ''
-      }
+      Roles: [
+        { "Id": "45166589-67eb-4012-abcc-817a0fa12c0e", "RoleName": "Developer" },
+        { "Id": "b156c735-fe7b-421a-4764-78867798ef42", "RoleName": "Auditors" },
+        { "Id": "74c3d1d8-d156-4314-bfea-a3162c014117", "RoleName": "ModDev" }
+      ]
     };
   },
   mounted() {
@@ -146,6 +147,8 @@ export default {
       });
     },
     deleteUserRole(Id) {
+      console.log(Id);
+      if (Id === undefined || Id === null || Id === '') { return; }
       $.ajax({
         url: 'https://modcat.top:8089/api/User/DeleteUserRole',
         type: 'POST',
@@ -153,7 +156,7 @@ export default {
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
-        data: JSON.stringify({ Id: Id }),
+        data: "{ \"Id\": \"" + Id + "\" }",
         success: (data) => {
           if (data.ResultData) {
             ElMessage.success('删除用户角色成功');

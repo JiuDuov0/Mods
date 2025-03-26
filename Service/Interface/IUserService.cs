@@ -17,6 +17,7 @@ namespace Service.Interface
         public List<ModEntity> UserAllSubscribeModPage(dynamic json, string UserId);
         public bool UserUnsubscribeMod(string UserId, string ModId);
         public List<UserRoleEntity> GetUserRolePages(dynamic json);
+        public Task<UserRoleEntity?> GetUserRoleByIdAsync(string Id);
         public bool AddUserRole(UserRoleEntity entity);
         public UserRoleEntity UpdateUserRole(UserRoleEntity entity);
         public bool DeleteUserRole(string Id);

@@ -34,6 +34,7 @@
                         <p>版本号: {{ latestVersion.version }}</p>
                         <p>版本描述: {{ latestVersion.description }}</p>
                         <p>更新时间: {{ latestVersion.CreatedAt }}</p>
+                        <div style="text-align: center;">选择版本下载</div>
                         <!-- <el-button type="primary" block @click="downloadLatestVersion(ModId)">下载</el-button> -->
                     </el-card>
                     <el-dialog title="版本详细信息" v-model="versionDialogVisible" width="80%">
@@ -75,6 +76,12 @@
                 <el-button type="primary" @click="submitRating">提交</el-button>
             </span>
         </el-dialog>
+
+        <el-dialog title="下载进度" v-model="showStatus" width="30%">
+            <div style="text-align: center;">
+                <p style="margin-top: 10px;">下载进度: {{ progress }}%</p>
+            </div>
+        </el-dialog>
     </el-container>
 </template>
 <script>
@@ -96,6 +103,8 @@ export default {
             subscribers: "",
             createdAt: "",
             tags: [],
+            progress: 0,
+            showStatus: false,
             Role: localStorage.getItem('Role'),
             latestVersion: {
                 version: '',
@@ -343,48 +352,76 @@ export default {
                 }
             });
         },
-        handleDownload(FileId, VersionNumber) {
+        async handleDownload(FileId, VersionNumber) {
+            this.progress = 0;
+            this.showStatus = true;
+            this.versionDialogVisible = false;
             if (!FileId) {
                 ElMessage.error('文件 ID 不存在，无法下载');
                 return;
             }
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Files/DownloadFile',
-                type: "POST",
-                contentType: "application/json-patch+json",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                data: JSON.stringify({
-                    FileId: FileId
-                }),
-                xhrFields: {
-                    responseType: 'blob' // 使浏览器将响应视为二进制数据
-                },
-                success: (data, status, xhr) => {
-                    var blob = new Blob([data], { type: 'application/x-zip-compressed' });
-                    var link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-                    var fileName = this.entity.Name + VersionNumber + '.zip';
-                    //未知情况，xhr.getResponseHeader('Content-Disposition')返回null
-                    if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
-                        var matches = /filename=([^;]+)/.exec(contentDisposition);
-                        if (matches != null && matches[1]) {
-                            fileName = matches[1].trim();
-                        }
+            try {
+                const response = await this.$axios({
+                    url: 'https://modcat.top:8089/api/Files/DownloadFile',
+                    method: 'POST',
+                    data: { FileId: FileId },
+                    responseType: 'blob',
+                    onDownloadProgress: (progressEvent) => {
+                        this.progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     }
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('下载失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
-                }
-            });
+                });
+
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                var fileName = this.entity.Name + VersionNumber + '.zip';
+                link.setAttribute('download', fileName); // 设置下载文件的名称
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                this.showStatus = false;
+                this.progress = 0;
+            }
+            catch (error) {
+                console.error('下载文件失败:', error);
+            }
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Files/DownloadFile',
+            //     type: "POST",
+            //     contentType: "application/json-patch+json",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token')
+            //     },
+            //     data: JSON.stringify({
+            //         FileId: FileId
+            //     }),
+            //     xhrFields: {
+            //         responseType: 'blob' // 使浏览器将响应视为二进制数据
+            //     },
+            //     success: (data, status, xhr) => {
+            //         var blob = new Blob([data], { type: 'application/x-zip-compressed' });
+            //         var link = document.createElement('a');
+            //         link.href = window.URL.createObjectURL(blob);
+            //         var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+            //         var fileName = this.entity.Name + VersionNumber + '.zip';
+            //         //未知情况，xhr.getResponseHeader('Content-Disposition')返回null
+            //         if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+            //             var matches = /filename=([^;]+)/.exec(contentDisposition);
+            //             if (matches != null && matches[1]) {
+            //                 fileName = matches[1].trim();
+            //             }
+            //         }
+            //         link.download = fileName;
+            //         document.body.appendChild(link);
+            //         link.click();
+            //         document.body.removeChild(link);
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('下载失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         goBack() {
             router.go(-1);
