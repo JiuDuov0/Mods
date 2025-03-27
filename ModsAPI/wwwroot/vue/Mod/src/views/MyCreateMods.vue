@@ -42,7 +42,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <el-button @click="AddNewVersion(mod.ModId)" type="primary">发布新版本</el-button>
@@ -278,9 +278,7 @@ export default {
             // 处理点击事件返回主页
             router.push('/home');
         },
-        handleProfile() {
-            // 处理个人资料点击事件
-        },
+        handleProfile() { router.push('/myProfile'); },
         handleMyCreateMods() {
             // 处理我上传的Mod点击事件
             router.push('/myCreateMods');

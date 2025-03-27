@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
 using System;
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -352,7 +353,7 @@ namespace ModsAPI.Controllers
             }
             #endregion
             //根据角色返回不同的内容
-            if (!string.IsNullOrWhiteSpace(UserRoleIDs) && (UserRoleIDs.Contains("Developer")|| UserRoleIDs.Contains("Auditors")))
+            if (!string.IsNullOrWhiteSpace(UserRoleIDs) && (UserRoleIDs.Contains("Developer") || UserRoleIDs.Contains("Auditors")))
             {
                 return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetailAllModVersion(UserId, (string)json.ModId) };
             }
@@ -636,6 +637,38 @@ namespace ModsAPI.Controllers
             }
             #endregion
             return new ResultEntity<bool> { ResultData = _IModService.DeleteModPoint((string)json.ModPointId) };
+        }
+
+        /// <summary>
+        /// 分页获取某人创建的Mod
+        /// </summary>
+        /// <param name="json">{"Skip":"0","Take":"100","UserId":"b68eb200-4c81-4285-b5c9-af9ccfcbcd75","Search":"","Types":[]}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetModPageListByUserId")]
+        [Authorize]
+        public ResultEntity<List<ModEntity>> GetModPageListByUserId([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            _IAPILogService.WriteLogAsync($"{GetType().Name}/GetModPageListByUserId", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.Skip))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Take))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.UserId))
+            {
+                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无UserId" };
+            }
+            #endregion
+            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod((string)json.UserId, json) };
         }
     }
 }

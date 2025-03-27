@@ -22,7 +22,7 @@
                     <el-button type="danger" block @click="handleUnsubscribe(ModId)" v-else>取消订阅</el-button>
                     <el-card style="margin-top: 20px;">
                         <h3>Mod 信息</h3>
-                        <p>作者: {{ modAuthor }}</p>
+                        <p @click="handleProfile(modAuthorId)">作者: {{ modAuthor }}</p>
                         <p>下载次数: {{ downloads }}</p>
                         <p>创建时间: {{ createdAt }}</p>
                         <p>标签: <el-tag v-for="tag in tags" :key="tag">{{ tag }}</el-tag></p>
@@ -99,6 +99,7 @@ export default {
             description: '',
             isSubscribed: false,
             modAuthor: '',
+            modAuthorId: '',
             downloads: "",
             subscribers: "",
             createdAt: "",
@@ -156,6 +157,7 @@ export default {
                         this.videoUrl = data.ResultData.VideoUrl;
                         this.description = data.ResultData.Description;
                         this.modAuthor = data.ResultData.CreatorEntity.NickName;
+                        this.modAuthorId = data.ResultData.CreatorEntity.UserId;
                         this.downloads = data.ResultData.DownloadCount;
                         if (data.ResultData.ModTypeEntities !== null) {
                             data.ResultData.ModTypeEntities.forEach(element => {
@@ -352,14 +354,22 @@ export default {
                 }
             });
         },
+        handleProfile(UserId) {
+            router.push({
+                path: '/profile',
+                query: {
+                    UserId: UserId
+                }
+            });
+        },
         async handleDownload(FileId, VersionNumber) {
-            this.progress = 0;
-            this.showStatus = true;
-            this.versionDialogVisible = false;
             if (!FileId) {
                 ElMessage.error('文件 ID 不存在，无法下载');
                 return;
             }
+            this.progress = 0;
+            this.showStatus = true;
+            this.versionDialogVisible = false;
             try {
                 const response = await this.$axios({
                     url: 'https://modcat.top:8089/api/Files/DownloadFile',

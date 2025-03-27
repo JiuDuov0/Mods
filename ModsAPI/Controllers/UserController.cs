@@ -215,5 +215,75 @@ namespace ModsAPI.Controllers
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             return new ResultEntity<bool>() { ResultData = _IUserService.DeleteUserRole((string)json.Id) };
         }
+
+        /// <summary>
+        /// 根据UserId获取个人资料(公开资料)
+        /// </summary>
+        /// <param name="json">{"UserId":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetUserByUserIdPublic")]
+        public async Task<ResultEntity<UserEntity?>> GetUserByUserIdPublicAsync([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/GetUserByUserIdPublicAsync", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.UserId))
+            {
+                return new ResultEntity<UserEntity?>() { ResultCode = 400, ResultMsg = "无UserId" };
+            }
+            #endregion
+            var entity = await _IUserService.GetUserByUserIdAsync((string)json.UserId);
+            if (entity != null)
+            {
+                entity.Password = null;
+                entity.Token = null;
+                entity.Mail = null;
+            }
+            return new ResultEntity<UserEntity?>() { ResultData = entity };
+        }
+
+        /// <summary>
+        /// 根据UserId获取个人资料
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost(Name = "GetUserByUserId")]
+        public async Task<ResultEntity<UserEntity?>> GetUserByUserIdAsync()
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/GetUserByUserIdAsync", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            var entity = await _IUserService.GetUserByUserIdAsync(UserId);
+            if (entity != null)
+            {
+                entity.Password = null;
+            }
+            return new ResultEntity<UserEntity?>() { ResultData = entity };
+        }
+
+
+        [HttpPost(Name = "UpdateUserInfo")]
+        public async Task<ResultEntity<bool>> UpdateUserInfoAsync([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/UpdateUserInfo", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            var entity = new UserEntity()
+            {
+                UserId = (string)json.UserId,
+                NickName = (string)json.NickName,
+                HeadPic = (string)json.HeadPic,
+                FeedBackMail = (string)json.FeedBackMail
+            };
+            return new ResultEntity<bool>() { ResultData = await _IUserService.UpdateUserAsync(entity) };
+        }
     }
 }

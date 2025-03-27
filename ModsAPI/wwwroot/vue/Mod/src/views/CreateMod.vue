@@ -201,9 +201,7 @@ export default {
             // 处理点击事件返回主页
             router.push('/home');
         },
-        handleProfile() {
-            // 处理个人资料点击事件
-        },
+        handleProfile() { router.push('/myProfile'); },
         handleMyCreateMods() {
             // 处理我上传的Mod点击事件
             router.push('/myCreateMods');

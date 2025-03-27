@@ -62,7 +62,7 @@ namespace ModsAPI.tools
 
             _RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
             _RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
-            return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName, Role = rolenames };
+            return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName, Role = rolenames, HeadPic = userInfo.HeadPic };
         }
 
         /// <summary>
@@ -256,7 +256,15 @@ namespace ModsAPI.tools
         /// </summary>
         public string NickName { get; set; }
 
+        /// <summary>
+        /// 角色
+        /// </summary>
         public string? Role { get; set; }
+
+        /// <summary>
+        /// 头像url
+        /// </summary>
+        public string? HeadPic { get; set; }
     }
 }
 

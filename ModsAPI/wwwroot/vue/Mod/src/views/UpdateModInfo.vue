@@ -178,9 +178,7 @@ export default {
         handleHome() {
             router.push('/home');
         },
-        handleProfile() {
-            // 处理个人资料点击事件
-        },
+        handleProfile() { router.push('/myProfile'); },
         handleMyCreateMods() {
             router.push('/myCreateMods');
         },

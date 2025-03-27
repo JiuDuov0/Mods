@@ -104,7 +104,14 @@ namespace ModsAPI.Controllers
             var UserInfo = _IUserService.Login((string)json.LoginAccount, (string)json.Password);
             if (UserInfo != null && UserInfo.UserId != null)
             {
-                return new ResultEntity<ResponseToken> { ResultData = _JwtHelper.CreateYearsToken(UserInfo) };
+                if (!string.IsNullOrWhiteSpace(UserInfo.Token))
+                {
+                    return new ResultEntity<ResponseToken>() { ResultData = new ResponseToken() { Token = UserInfo.Token } };
+                }
+                var res = _JwtHelper.CreateYearsToken(UserInfo);
+                UserInfo.Token = res.Token;
+                _IUserService.UpdateUserAsync(UserInfo);
+                return new ResultEntity<ResponseToken> { ResultData = res };
             }
             return new ResultEntity<ResponseToken> { ResultMsg = "账号或密码错误" };
         }

@@ -70,6 +70,16 @@ const routes = [
         name: "roleAuthorization",
         component: roleAuthorization
     },
+    {
+        path: "/profile",
+        name: "profile",
+        component: () => import('../views/Profile.vue')
+    },
+    {
+        path: "/myProfile",
+        name: "myProfile",
+        component: () => import('../views/MyProfile.vue')
+    },
 ]
 
 const router = createRouter({

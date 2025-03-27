@@ -21,5 +21,7 @@ namespace Service.Interface
         public bool AddUserRole(UserRoleEntity entity);
         public UserRoleEntity UpdateUserRole(UserRoleEntity entity);
         public bool DeleteUserRole(string Id);
+        public Task<UserEntity?> GetUserByUserIdAsync(string? UserId);
+        public Task<bool> UpdateUserAsync(UserEntity entity);
     }
 }

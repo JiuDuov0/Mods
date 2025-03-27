@@ -39,6 +39,16 @@ namespace Entity.User
         public DateTime? CreatedAt { get; set; }
 
         /// <summary>
+        /// 反馈邮箱
+        /// </summary>
+        public string? FeedBackMail { get; set; }
+
+        /// <summary>
+        /// Token
+        /// </summary>
+        public string? Token { get; set; }
+
+        /// <summary>
         /// 导航属性，指向Files
         /// </summary>
         public List<FilesEntity> FilesEntities { get; set; }

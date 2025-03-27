@@ -190,5 +190,38 @@ namespace Service.Realization
             Context.UserModSubscribeEntity.Remove(entity);
             return Context.SaveChanges() > 0;
         }
+
+        public async Task<UserEntity?> GetUserByUserIdAsync(string? UserId)
+        {
+            return await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserEntity.FirstOrDefaultAsync(x => x.UserId == UserId);
+        }
+
+        public async Task<bool> UpdateUserAsync(UserEntity entity)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var updateentity = await Context.UserEntity.FirstOrDefaultAsync(x => x.UserId == entity.UserId);
+            if (!string.IsNullOrWhiteSpace(entity.NickName) && entity.NickName.Length <= 8 && entity.NickName != updateentity.NickName)
+            {
+                updateentity.NickName = entity.NickName;
+            }
+            if (!string.IsNullOrWhiteSpace(entity.HeadPic) && entity.HeadPic != updateentity.HeadPic)
+            {
+                updateentity.HeadPic = entity.HeadPic;
+            }
+            if (!string.IsNullOrWhiteSpace(entity.FeedBackMail) && entity.FeedBackMail != updateentity.FeedBackMail)
+            {
+                updateentity.FeedBackMail = entity.FeedBackMail;
+            }
+            if (!string.IsNullOrEmpty(entity.Token) && entity.Token != updateentity.Token)
+            {
+                updateentity.Token = entity.Token;
+            }
+            if (!string.IsNullOrEmpty(entity.Password) && entity.Password != updateentity.Password)
+            {
+                updateentity.Password = entity.Password;
+            }
+            Context.UserEntity.Update(updateentity);
+            return await Context.SaveChangesAsync() > 0;
+        }
     }
 }
