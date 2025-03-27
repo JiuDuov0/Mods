@@ -31,6 +31,31 @@
                     </el-card>
                 </el-col>
             </el-row>
+            <div class="account-info">
+                <el-avatar :src="headurl"></el-avatar>
+                <el-dropdown>
+                    <span class="username" @click="handleDropdownClick">{{ NickName }}</span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item @click.native="handleHome">主页</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleProfile">个人资料</el-dropdown-item>
+
+                            <el-dropdown-item v-if="Role === 'Auditors'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
+                            <el-dropdown-item v-if="Role === 'Developer'"
+                                @click.native="handleroleAuthorization">添加审核人</el-dropdown-item>
+
+                            <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleSubscribeMod">我订阅的Mod</el-dropdown-item>
+                            <el-dropdown-item @click.native="handleLogout">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </div>
+
         </el-main>
 
         <el-dialog title="确认登录信息" v-model="showStatus" width="30%">
@@ -59,13 +84,18 @@ export default {
                 FeedBackMail: '',
                 Token: ''
             },
+            NickName: "",
+            headurl: head,
+            Role: localStorage.getItem('Role'),
             password: '',
             showStatus: false,
             defaultAvatar: head
         };
     },
     mounted() {
+        this.NickName = localStorage.getItem('NickName');
         $('img').attr('referrerPolicy', 'no-referrer');
+        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
         this.getUserInfo();
     },
     methods: {
@@ -149,7 +179,17 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.error(error);
             });
-        }
+        },
+        handleDropdownClick() { },
+        handleHome() { router.push('/home'); },
+        handleapproveModVersion() { router.push('/approveModVersion'); },
+        handleroleAuthorization() { router.push('/roleAuthorization'); },
+        handleProfile() { router.push('/myProfile'); },
+        handleMyCreateMods() { router.push('/myCreateMods'); },
+        handleSubscribeMod() { router.push('/mySubscribeMods'); },
+        handleCreateMod() { router.push('/createMod'); },
+        handleLogout() { ElMessage.info('退出登录'); localStorage.removeItem('token'); localStorage.removeItem('refresh_Token'); localStorage.removeItem('NickName'); router.push('/'); },
+        toModDetail(ModId) { router.push({ path: '/modDetail', query: { ModId: ModId } }); }
     }
 };
 </script>
@@ -170,5 +210,22 @@ export default {
 
 .profile-details {
     margin-top: 20px;
+}
+
+.account-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    z-index: 500;
+    padding: 10px;
+}
+
+.username {
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size: 16px;
 }
 </style>

@@ -43,7 +43,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -103,8 +103,8 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
-            defaulturl: drg,
             Role: localStorage.getItem('Role'),
+            defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
