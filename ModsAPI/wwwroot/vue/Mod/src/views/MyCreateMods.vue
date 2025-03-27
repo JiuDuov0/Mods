@@ -42,7 +42,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <el-button @click="AddNewVersion(mod.ModId)" type="primary">发布新版本</el-button>
@@ -110,6 +110,8 @@ export default {
     },
     mounted() {
         this.NickName = localStorage.getItem('NickName');
+        $('img').attr('referrerPolicy', 'no-referrer');
+        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
         this.fetchModTypes();
         this.fetchModList();
         this.setupIntersectionObserver();

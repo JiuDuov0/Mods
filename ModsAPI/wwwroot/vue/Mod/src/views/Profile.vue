@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -102,7 +102,7 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
-            fileheadurl: '',
+            fileheadurl: head,
             defaulturl: drg,
             Role: localStorage.getItem('Role'),
             User: {},
@@ -115,7 +115,7 @@ export default {
     mounted() {
         $('img').attr('referrerPolicy', 'no-referrer');
         this.NickName = localStorage.getItem('NickName');
-        if (localStorage.getItem('HeadPic') != null) {
+        if (localStorage.getItem('HeadPic') !== 'null') {
             this.headurl = localStorage.getItem('HeadPic');
         }
         //this.Role = localStorage.getItem('Role');

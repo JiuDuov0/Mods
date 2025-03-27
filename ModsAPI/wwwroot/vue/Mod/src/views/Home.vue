@@ -113,6 +113,8 @@ export default {
     },
     mounted() {
         this.NickName = localStorage.getItem('NickName');
+        $('img').attr('referrerPolicy', 'no-referrer');
+        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
         //this.Role = localStorage.getItem('Role');
         this.fetchModTypes();
         this.fetchModList();
