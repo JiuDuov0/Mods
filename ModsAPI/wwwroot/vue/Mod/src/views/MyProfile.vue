@@ -71,7 +71,7 @@ export default {
     methods: {
         getUserInfo() {
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/User/GetUserByUserId',
+                url: 'https://modcat.top:8089/api/User/GetUserByUserId',
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -96,7 +96,7 @@ export default {
         GetToken() {
             this.showStatus = false;
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/Login/CreateToken',
+                url: 'https://modcat.top:8089/api/Login/CreateToken',
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -130,7 +130,7 @@ export default {
         },
         UserInfoUpdate() {
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/User/UpdateUserInfo',
+                url: 'https://modcat.top:8089/api/User/UpdateUserInfo',
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
