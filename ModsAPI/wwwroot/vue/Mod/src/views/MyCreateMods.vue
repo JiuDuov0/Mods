@@ -42,10 +42,10 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
-                                 <div class="line"></div>
+                                <div class="line"></div>
                                 <el-button @click="AddNewVersion(mod.ModId)" type="primary">发布新版本</el-button>
                                 <el-button @click="UpdateModInfo(mod.ModId)" type="primary">编辑Mod基本信息</el-button>
                                 <el-button @click="DeleteMod(mod.ModId)" type="primary">删除Mod</el-button>
@@ -261,7 +261,9 @@ export default {
                             ElMessage.error('删除失败: ' + data.ResultMsg);
                         } else {
                             ElMessage.success('删除成功！');
-                            router.push('/myCreateMods');
+                            this.skip = 0;
+                            this.modList = [];
+                            this.fetchModList();
                         }
                     },
                     error: (err) => {

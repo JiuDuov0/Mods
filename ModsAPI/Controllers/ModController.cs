@@ -500,7 +500,7 @@ namespace ModsAPI.Controllers
             }
             if ((bool)res)
             {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "删除成功" };
+                return new ResultEntity<bool>() { ResultCode = 400, ResultData = true, ResultMsg = "删除成功" };
             }
             else
             {
