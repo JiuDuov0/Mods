@@ -385,6 +385,7 @@ namespace ModsAPI.Controllers
             }
             #endregion
             var entity = _IModService.ModDetailUpd(UserId, (string)json.ModId);
+            entity.Description = entity.Description.Replace("</br>", "\n");
             if (entity == null)
             {
                 return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "非本人Mod！" };

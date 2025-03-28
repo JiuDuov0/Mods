@@ -92,6 +92,7 @@ import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import head from '../assets/head.jpg';
 import drg from '../assets/drg.png';
+import { el } from 'element-plus/es/locales.mjs';
 
 export default {
     name: 'Home',
@@ -155,6 +156,7 @@ export default {
                 async: false,
                 success: (data) => {
                     if (data.ResultData == null) {
+                        if (data.ResultCode == "500") { router.push('/'); }
                         ElMessage.error('获取失败: ' + data.ResultMsg);
                     } else {
                         this.modTypes = data.ResultData;
@@ -162,7 +164,21 @@ export default {
                 },
                 error: (err) => {
                     if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
+                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
+                    else if (err.status == "408") { ElMessage.error('请求超时'); }
+                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
+                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
+                    else if (err.status == "504") { ElMessage.error('网关超时'); }
+                    else if (err.status == "401") { router.push('/'); }
+                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
+                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
+                    else if (err.status == "408") { ElMessage.error('请求超时'); }
+                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
+                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
+                    else if (err.status == "504") { ElMessage.error('网关超时'); }
+                    else if (err.status == "500") { router.push('/'); }
+                    else { ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);}
                     console.log(err);
                 }
             });
@@ -342,6 +358,7 @@ export default {
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
+    min-width: 200px;
 }
 
 .checkbox-item {
