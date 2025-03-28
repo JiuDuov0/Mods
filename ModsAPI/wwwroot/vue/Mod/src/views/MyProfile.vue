@@ -188,7 +188,7 @@ export default {
         handleMyCreateMods() { router.push('/myCreateMods'); },
         handleSubscribeMod() { router.push('/mySubscribeMods'); },
         handleCreateMod() { router.push('/createMod'); },
-        handleLogout() { ElMessage.info('退出登录'); localStorage.removeItem('token'); localStorage.removeItem('refresh_Token'); localStorage.removeItem('NickName'); router.push('/'); },
+        handleLogout() { ElMessage.info('退出登录'); localStorage.removeItem('token'); localStorage.removeItem('refresh_Token'); localStorage.removeItem('NickName'); router.push('/');localStorage.removeItem('HeadPic'); },
         toModDetail(ModId) { router.push({ path: '/modDetail', query: { ModId: ModId } }); }
     }
 };

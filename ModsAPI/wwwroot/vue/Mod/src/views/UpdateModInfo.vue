@@ -194,6 +194,7 @@ export default {
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_Token');
             localStorage.removeItem('NickName');
+            localStorage.removeItem('HeadPic');
             router.push('/');
         }
     }
