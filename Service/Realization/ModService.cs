@@ -133,7 +133,9 @@ namespace Service.Realization
         }
         private async Task SetModPageListToRedisAsync()
         {
-            var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
+            var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).Where(x =>
+            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()))).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
             await _IRedisManageService.SetAsync("ModListPage", list, new TimeSpan(0, 30, 0), 1);
         }
 
