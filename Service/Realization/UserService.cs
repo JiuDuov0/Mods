@@ -26,7 +26,7 @@ namespace Service.Realization
         {
             entity.Id = Guid.NewGuid().ToString();
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
-            entity.UserId = Context.UserEntity.FirstOrDefault(x => x.Mail == entity.UserEntity.Mail).UserId;
+            entity.UserId = Context.UserEntity.FirstOrDefault(x => x.Mail == entity.UserId).UserId;
             Context.UserRoleEntity.Add(entity);
             return Context.SaveChanges() > 0;
         }
