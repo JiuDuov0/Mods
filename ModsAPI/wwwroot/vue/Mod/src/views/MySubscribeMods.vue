@@ -42,10 +42,10 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
-                                 <div class="line"></div>
+                                <div class="line"></div>
                                 <el-button @click="btnUnsubscribeClick(mod.ModId)" type="primary">取消订阅</el-button>
                             </el-card>
                         </el-col>
@@ -362,5 +362,11 @@ export default {
     background-color: #e4e7ed;
     margin-top: 3%;
     margin-bottom: 3%;
+}
+
+h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>

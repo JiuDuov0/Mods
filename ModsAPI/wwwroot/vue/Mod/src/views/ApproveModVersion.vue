@@ -365,4 +365,10 @@ export default {
     margin-right: 1%;
     margin-left: -1%;
 }
+
+h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 </style>

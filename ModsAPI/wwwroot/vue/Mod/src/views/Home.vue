@@ -178,7 +178,7 @@ export default {
                     else if (err.status == "503") { ElMessage.error('服务不可用'); }
                     else if (err.status == "504") { ElMessage.error('网关超时'); }
                     else if (err.status == "500") { router.push('/'); }
-                    else { ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);}
+                    else { ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg); }
                     console.log(err);
                 }
             });
@@ -425,5 +425,11 @@ export default {
 .col-sel {
     margin-right: 1%;
     margin-left: -1%;
+}
+
+h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>
