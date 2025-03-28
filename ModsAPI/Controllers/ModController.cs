@@ -145,6 +145,7 @@ namespace ModsAPI.Controllers
                 Description = (string)json.ModVersionEntities[0].Description,
                 CreatedAt = DateTime.Now
             };
+            ModVersion.Description = ModVersion.Description.Replace("\n", "</br>");
             var ListTypes = new List<ModTypeEntity>();
             if (((JArray)json.ModTypeEntities).HasValues)
             {
@@ -161,6 +162,7 @@ namespace ModsAPI.Controllers
                 PicUrl = (string)json.PicUrl,
                 DownloadCount = 0
             };
+            Mod.Description = Mod.Description.Replace("\n", "</br>");
             #region Get方法获取视频封面信息
             string Get(string url, string content)
             {
@@ -283,6 +285,7 @@ namespace ModsAPI.Controllers
                 Description = (string)json.Description,
                 CreatedAt = DateTime.Now
             };
+            entity.Description = entity.Description.Replace("\n", "</br>");
             if (_IModService.AddModVersion(entity))
             {
                 return new ResultEntity<ModVersionEntity>() { ResultData = entity };
@@ -417,6 +420,7 @@ namespace ModsAPI.Controllers
                 PicUrl = (string)json.PicUrl,
                 ModTypeEntities = ListTypes
             };
+            mod.Description = mod.Description.Replace("\n", "</br>");
             #region Get方法获取视频封面信息
             string Get(string url, string content)
             {
