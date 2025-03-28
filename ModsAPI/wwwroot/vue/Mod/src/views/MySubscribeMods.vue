@@ -36,7 +36,7 @@
                         <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
                             <el-card>
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%;">
+                                    :src="mod.PicUrl || defaulturl" style="width: 100%;height: 10rem;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
@@ -45,6 +45,7 @@
                                         }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
+                                 <div class="line"></div>
                                 <el-button @click="btnUnsubscribeClick(mod.ModId)" type="primary">取消订阅</el-button>
                             </el-card>
                         </el-col>
