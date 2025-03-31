@@ -43,7 +43,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -142,7 +142,7 @@ export default {
         },
         fetchModTypes() {
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Mod/GetAllModTypes',
+                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -185,7 +185,7 @@ export default {
         },
         fetchModList() {
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Mod/ModListPage',
+                url: 'https://modcat.top:8089/api/Mod/ModListPage',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -240,7 +240,7 @@ export default {
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/User/UserUnsubscribeMod',
+                url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -276,7 +276,7 @@ export default {
         },
         UserModSubscribe(modId) {
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/User/ModSubscribe',
+                url: 'https://modcat.top:8089/api/User/ModSubscribe',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {

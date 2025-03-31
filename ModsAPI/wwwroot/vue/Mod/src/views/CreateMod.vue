@@ -116,7 +116,7 @@ export default {
     methods: {
         fetchTags() {
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Mod/GetAllModTypes',
+                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -147,7 +147,7 @@ export default {
                 return;
             }
             $.ajax({
-                url: `https://127.0.0.1:7114/api/Mod/ModListPageSearch`,
+                url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -247,7 +247,7 @@ export default {
             });
 
             $.ajax({
-                url: 'https://127.0.0.1:7114/api/Mod/CreateMod',
+                url: 'https://modcat.top:8089/api/Mod/CreateMod',
                 type: "POST",
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
