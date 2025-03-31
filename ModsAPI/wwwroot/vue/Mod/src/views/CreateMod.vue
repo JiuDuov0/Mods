@@ -19,6 +19,28 @@
                                 <el-option v-for="tag in tags" :key="tag.TypesId" :label="tag.TypeName"
                                     :value="tag.TypesId"></el-option>
                             </el-select>
+                            <el-select v-model="selectedMod" filterable remote placeholder="请选择 Mod 依赖"
+                                :filter-method="fetchMods" @change="fetchModVersions"
+                                style="margin-bottom: 16px; width: 100%;">
+                                <el-option v-for="mod in mods" :key="mod.ModId" :label="mod.Name"
+                                    :value="mod.ModId"></el-option>
+                            </el-select>
+                            <el-select v-model="selectedModVersion" placeholder="请选择 Mod 依赖版本"
+                                style="margin-bottom: 16px; width: 100%;">
+                                <el-option v-for="version in modVersions" :key="version.VersionId"
+                                    :label="version.VersionNumber" :value="version.VersionId"></el-option>
+                            </el-select>
+                            <el-button type="primary" @click="addModDependence">添加依赖</el-button>
+                            <el-table :data="modForm.ModDependenceEntities" style="width: 100%; margin-top: 16px;">
+                                <el-table-column prop="ModName" label="Mod 名称"></el-table-column>
+                                <el-table-column prop="VersionNumber" label="版本号"></el-table-column>
+                                <el-table-column label="操作">
+                                    <template v-slot="scope">
+                                        <el-button @click="removeModDependence(scope.$index)" type="text"
+                                            size="small">移除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
                             <el-button type="primary" block @click="handleSubmit">提交</el-button>
                         </div>
                     </el-card>
@@ -54,6 +76,7 @@
 
 <script>
 import $ from 'jquery';
+import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import { th } from 'element-plus/es/locale/index.mjs';
@@ -70,9 +93,14 @@ export default {
                 versionDescription: '',
                 PicUrl: '',
                 videoUrl: '',
-                tags: []
+                tags: [],
+                ModDependenceEntities: []
             },
             tags: [],
+            mods: [],
+            modVersions: [],
+            selectedMod: '',
+            selectedModVersion: '',
             Role: localStorage.getItem('Role'),
             headurl: head,
             NickName: ""
@@ -83,11 +111,12 @@ export default {
         $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
         this.fetchTags();
+        this.fetchMods();
     },
     methods: {
         fetchTags() {
             $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
+                url: 'https://127.0.0.1:7114/api/Mod/GetAllModTypes',
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
@@ -112,6 +141,67 @@ export default {
                     console.log(err);
                 }
             });
+        },
+        fetchMods(query) {
+            if (query === null || query === undefined || query === '') {
+                return;
+            }
+            $.ajax({
+                url: `https://127.0.0.1:7114/api/Mod/ModListPageSearch`,
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                data: JSON.stringify({
+                    Skip: '0',
+                    Take: '10',
+                    Search: query
+                }),
+                cache: false,
+                dataType: "json",
+                xhrFields: {
+                    withCredentials: true
+                },
+                async: false,
+                success: (data) => {
+                    if (data.ResultData == null) {
+                        ElMessage.error('获取失败: ' + data.ResultMsg);
+                    } else {
+                        this.mods = data.ResultData;
+                        //this.modVersions = data.ResultData.ModVersionEntities;
+                    }
+                },
+                error: (err) => {
+                    if (err.status == "401") { router.push('/'); }
+                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+                    console.log(err);
+                }
+            });
+        },
+        fetchModVersions(modId) {
+            const selectedMod = this.mods.find(mod => mod.ModId === this.selectedMod);
+            this.modVersions = selectedMod.ModVersionEntities;
+        },
+        addModDependence() {
+            const selectedMod = this.mods.find(mod => mod.ModId === this.selectedMod);
+            console.log(selectedMod);
+            const selectedModVersion = this.modVersions.find(version => version.VersionId === this.selectedModVersion);
+            if (selectedMod && selectedModVersion) {
+                this.modForm.ModDependenceEntities.push({
+                    ModId: selectedMod.ModId,
+                    ModName: selectedMod.Name,
+                    VersionId: selectedModVersion.VersionId,
+                    VersionNumber: selectedModVersion.VersionNumber
+                });
+                this.selectedMod = '';
+                this.selectedModVersion = '';
+            } else {
+                ElMessage.error('请选择有效的 Mod 和 Mod 版本');
+            }
+        },
+        removeModDependence(index) {
+            this.modForm.ModDependenceEntities.splice(index, 1);
         },
         handleSubmit() {
             if (!this.modForm.name || this.modForm.name.length > 30) {
@@ -143,6 +233,10 @@ export default {
                     VersionNumber: this.modForm.version,
                     Description: this.modForm.versionDescription
                 }],
+                ModDependenceEntities: this.modForm.ModDependenceEntities.map(dep => ({
+                    ModId: dep.ModId,
+                    DependenceModVersionId: dep.VersionId
+                })),
                 PicUrl: this.modForm.PicUrl,
                 ModTypeEntities: []
             };
@@ -153,7 +247,7 @@ export default {
             });
 
             $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/CreateMod',
+                url: 'https://127.0.0.1:7114/api/Mod/CreateMod',
                 type: "POST",
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
@@ -193,7 +287,8 @@ export default {
                 videoUrl: '',
                 version: '',
                 versionDescription: '',
-                tags: []
+                tags: [],
+                ModDependenceEntities: []
             };
         },
         handleDropdownClick() {

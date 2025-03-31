@@ -79,6 +79,41 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
+        /// 分页搜索Mod列表
+        /// </summary>
+        /// <param name="json">{"Skip":"0","Take":"10","Search":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "ModListPageSearch")]
+        public async Task<ResultEntity<List<ModEntity>?>> ModListPageSearch([FromBody] dynamic json)
+        {
+            #region 记录访问 不确定是否含有Token
+            string? UserId = null;
+            if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "")))
+            {
+                var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+                UserId = _JwtHelper.GetTokenStr(token, "UserId");
+            }
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/ModListPageSearch", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace((string)json.Skip))
+            {
+                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Skip" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Take))
+            {
+                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Take" };
+            }
+            if (string.IsNullOrWhiteSpace((string)json.Search))
+            {
+                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Search" };
+            }
+            #endregion
+            return new ResultEntity<List<ModEntity>?>() { ResultData = await _IModService.ModListPageSearch((int)json.Skip, (int)json.Take, (string)json.Search) };
+        }
+
+        /// <summary>
         /// 获取所有mod类型
         /// </summary>
         /// <returns></returns>
@@ -151,6 +186,12 @@ namespace ModsAPI.Controllers
             {
                 ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
             }
+            var ModDependenceList = new List<ModDependenceEntity>();
+            if (((JArray)json.ModDependenceEntities).HasValues)
+            {
+                ModDependenceList = ((JArray)json.ModDependenceEntities).ToObject<List<ModDependenceEntity>>();
+                ModDependenceList.ForEach(x => { x.ModId = ModId; x.ModDependenceId = Guid.NewGuid().ToString(); });
+            }
             var Mod = new ModEntity()
             {
                 ModId = ModId,
@@ -196,7 +237,7 @@ namespace ModsAPI.Controllers
                 }
                 Mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={Mod.VideoUrl}&autoplay=false&danmaku=false";
             }
-            if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes))
+            if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes, ModDependenceList))
             {
                 Mod.ModVersionEntities = new List<ModVersionEntity> { ModVersion };
                 return new ResultEntity<ModEntity> { ResultData = Mod };

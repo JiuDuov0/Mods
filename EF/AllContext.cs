@@ -51,5 +51,6 @@ namespace EF
         public DbSet<ApproveModVersionEntity> ApproveModEntity { get; set; }
         public DbSet<FilesEntity> FilesEntity { get; set; }
         public DbSet<ModPointEntity> ModPointEntity { get; set; }
+        public DbSet<ModDependenceEntity> ModDependenceEntity { get; set; }
     }
 }

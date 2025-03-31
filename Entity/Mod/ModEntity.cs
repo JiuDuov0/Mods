@@ -93,6 +93,11 @@ namespace Entity.Mod
         public List<ModPointEntity> ModPointEntities { get; set; }
 
         /// <summary>
+        /// Mod引用
+        /// </summary>
+        public List<ModDependenceEntity> ModDependenceEntities { get; set; }
+
+        /// <summary>
         /// 是否订阅了本mod
         /// </summary>
         [NotMapped]

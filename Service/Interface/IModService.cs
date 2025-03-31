@@ -12,9 +12,10 @@ namespace Service.Interface
     public interface IModService
     {
         public List<ModEntity> ModListPage(dynamic json, string UserId);
+        public Task<List<ModEntity>?> ModListPageSearch(int Skip, int Take, string Search);
         public void ApproveModVersion(string modVersionId, string approverUserId, string status, string comments);
         public Task ApproveModVersionAsync(string modVersionId, string approverUserId, string status, string comments);
-        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity, List<ModTypeEntity> list);
+        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity, List<ModTypeEntity>? list, List<ModDependenceEntity>? ModDependenceEntities);
         public bool AddModVersion(ModVersionEntity modVersionEntity);
         public ModVersionEntity GetByModVersionId(string modVersionId);
         public bool AddModTypes(JArray array);

@@ -4,19 +4,9 @@ using Entity.Approve;
 using Entity.Mod;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using Redis.Interface;
 using Service.Interface;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service.Realization
 {
@@ -181,7 +171,7 @@ namespace Service.Realization
             await context.SaveChangesAsync();
         }
 
-        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity, List<ModTypeEntity> list)
+        public bool AddModAndModVersion(ModEntity modEntity, ModVersionEntity modVersionEntity, List<ModTypeEntity>? list, List<ModDependenceEntity>? ModDependenceEntities)
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var transaction = Context.Database.BeginTransaction();
@@ -205,6 +195,10 @@ namespace Service.Realization
                 if (insertlist.Count > 0)
                 {
                     Context.ModTypeEntity.AddRange(insertlist);
+                }
+                if (ModDependenceEntities != null && ModDependenceEntities.Count > 0)
+                {
+                    Context.ModDependenceEntity.AddRange(ModDependenceEntities);
                 }
                 Context.SaveChanges();
                 transaction.Commit();
@@ -367,6 +361,9 @@ namespace Service.Realization
                 .Include(x => x.ModTypeEntities)
                 .ThenInclude(x => x.Types)
                 .Include(x => x.CreatorEntity)
+                .Include(x => x.ModDependenceEntities)
+                .ThenInclude(x => x.DependenceModVersion)
+                .ThenInclude(x => x.Mod)
                 .Where(x => x.SoftDeleted == false)
                 .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
                 .FirstOrDefaultAsync(x => x.ModId == ModId);
@@ -508,6 +505,20 @@ namespace Service.Realization
         public ModPointEntity? GetModPointEntity(string ModId, string UserId)
         {
             return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModPointEntity.FirstOrDefault(x => x.ModId == ModId && x.UserId == UserId);
+        }
+
+        public async Task<List<ModEntity>?> ModListPageSearch(int Skip, int Take, string Search)
+        {
+            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Include(x => x.ModVersionEntities);
+            Context = Context.Where(x => x.SoftDeleted == false);
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                Context = Context.Where(x => x.Name.Contains(Search));
+            }
+            Context = Context.Where(x =>
+            x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()));
+            return await Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToListAsync();
         }
     }
 }
