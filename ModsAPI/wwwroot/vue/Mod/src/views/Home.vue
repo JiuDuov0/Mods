@@ -10,7 +10,7 @@
                                 style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
                             <h2>深岩银河</h2>
                             <el-button type="text" @click="handleCreateMod"
-                                style="margin-left: auto; background-color: black; color: white;width: 7%;">
+                                style="margin-left: auto; background-color: black; color: white;width: 5rem;">
                                 发布Mod
                             </el-button>
                         </div>
@@ -31,22 +31,20 @@
                         </el-checkbox-group>
                     </el-card>
                 </el-col>
-                <el-col :span="21">
-                    <el-row :gutter="20" ref="modListContainer">
-                        <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
-                            <el-card class="el-card-table">
+                <el-col :span="colSpan" class="colrightclass">
+                    <el-row :gutter="20" ref="modListContainer" id="allwidth">
+                        <el-col v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
+                            <el-card class="el-card-table" name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%;height: 10rem;">
+                                    :src="mod.PicUrl || defaulturl" style="width: 100%; height: 10rem;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
-
                                 <div style="max-height: 4rem; height: 2rem;">
-                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">
+                                        {{ tag.Types.TypeName }}
+                                    </el-tag>
                                 </div>
-
-                                <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
                                 <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
                                     type="primary">订阅</el-button>
@@ -93,11 +91,13 @@ import router from '../router/index.js';
 import head from '../assets/head.jpg';
 import drg from '../assets/drg.png';
 import { el } from 'element-plus/es/locales.mjs';
+import { compile } from 'vue';
 
 export default {
     name: 'Home',
     data() {
         return {
+            colSpan: 21,
             skip: 0,
             take: 18,
             modTypes: [],
@@ -120,6 +120,10 @@ export default {
         this.fetchModTypes();
         this.fetchModList();
         this.setupIntersectionObserver();
+        this.updateColWidth();
+        window.addEventListener('resize', this.updateColWidth);
+        this.updateColSpan(); // 初始化 colSpan
+        window.addEventListener('resize', this.updateColSpan);
     },
     watch: {
         selectedTypes() {
@@ -128,7 +132,45 @@ export default {
             this.fetchModList(); // 当选中的类型变化时，重新获取 mod 列表
         }
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.updateColWidth); // 移除监听器
+        window.removeEventListener('resize', this.updateColSpan); // 移除监听器
+    },
     methods: {
+        updateColSpan() {
+            const screenWidth = window.innerWidth; // 获取窗口宽度
+            if (screenWidth < 1870) {
+                this.colSpan = 24; setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
+            } else { this.colSpan = 21 }
+            //this.colSpan =  ? 24 : 21; // 动态设置 colSpan
+        },
+        updateColWidth() {
+            const allwidth = document.getElementById('allwidth').offsetWidth; // 获取父容器宽度
+            const cardMinWidth = 200; // 卡片的最小宽度
+            const gutter = 20; // 列间距
+            const columns = Math.floor(allwidth / (cardMinWidth + gutter)); // 计算每行显示的列数
+            var colWidth = Math.floor((allwidth - (columns - 1) * gutter) / columns); // 计算每列宽度
+
+            var odd = (allwidth - (columns * colWidth)) / columns; // 计算剩余宽度
+            if ((colWidth + odd) * columns >= allwidth) { odd = odd - 1; }
+            if (columns === 1) { colWidth = allwidth - 20; odd = 0; }
+            // 设置动态宽度
+            const colElements = document.getElementsByName('colsetwidth');
+
+            const observer = new MutationObserver(() => {
+                colElements.forEach((col) => {
+                    col.style.flex = `0 0 ${colWidth + odd}px`; // 设置列宽
+                    col.style.maxWidth = `${colWidth + odd}px`;
+                });
+            });
+            observer.observe(document.getElementById('allwidth'), { childList: true, subtree: true });
+            colElements.forEach((col) => {
+                col.style.flex = `0 0 ${colWidth + odd}px`; // 设置列宽
+                col.style.maxWidth = `${colWidth + odd}px`;
+            });
+        },
         getShortDescription(description) {
             if (description.length > 15) {
                 return description.substring(0, 15) + '...';
@@ -215,8 +257,14 @@ export default {
                     if (err.status == "401") { router.push('/'); }
                     ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
                     console.log(err);
+                },
+                complete: () => {
+                    setTimeout(() => {
+                        this.updateColWidth();
+                    }, 100);
                 }
             });
+            //this.updateColWidth();
         },
         setupIntersectionObserver() {
             const options = {
@@ -355,6 +403,12 @@ export default {
 </script>
 
 <style scoped>
+@media (max-width: 1870px) {
+    .col-sel {
+        display: none;
+    }
+}
+
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
@@ -391,7 +445,8 @@ export default {
 }
 
 .el-card-table {
-    height: 95%;
+    min-width: 13rem;
+    max-width: 16rem;
 }
 
 .el-card-sel {
@@ -431,5 +486,27 @@ h3 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* 设置 colsetwidth 的样式 */
+[name="colsetwidth"] {
+    flex: 1 1 auto;
+    /* 允许列根据父容器宽度自适应 */
+    max-width: 25%;
+    /* 默认每行最多显示 4 列 */
+    min-width: 200px;
+    /* 设置最小宽度，避免过小 */
+}
+
+/* 设置 cardsetwidth 的样式 */
+[name="cardsetwidth"] {
+    width: 100%;
+    /* 卡片宽度占满列宽 */
+    margin-bottom: 20px;
+    /* 卡片之间的间距 */
+    border-radius: 8px;
+    /* 卡片圆角 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* 卡片阴影 */
 }
 </style>
