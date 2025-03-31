@@ -326,6 +326,9 @@ namespace Service.Realization
                 .Include(x => x.ModTypeEntities)
                 .ThenInclude(x => x.Types)
                 .Include(x => x.CreatorEntity)
+                .Include(x => x.ModDependenceEntities)
+                .ThenInclude(x => x.DependenceModVersion)
+                .ThenInclude(x => x.Mod)
                 .Where(x => x.SoftDeleted == false)
                 .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
                 .FirstOrDefaultAsync(x => x.ModId == ModId);
@@ -385,7 +388,13 @@ namespace Service.Realization
 
         public ModEntity ModDetailUpd(string UserId, string ModId)
         {
-            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
+            return _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity
+                .Include(x => x.ModTypeEntities)
+                .ThenInclude(x => x.Types)
+                .Include(x => x.ModDependenceEntities)
+                .ThenInclude(x => x.DependenceModVersion)
+                .ThenInclude(x => x.Mod)
+                .FirstOrDefault(x => x.ModId == ModId && x.CreatorUserId == UserId);
         }
 
         public bool? UpdateModInfo(ModEntity entity, string UserId)
@@ -394,6 +403,7 @@ namespace Service.Realization
             var Transaction = WriteContext.Database.BeginTransaction();
             var mod = WriteContext.ModEntity.FirstOrDefault(x => x.ModId == entity.ModId);
             var modtypes = WriteContext.ModTypeEntity.Where(x => x.ModId == entity.ModId).ToList();
+            var ModDependencelist = WriteContext.ModDependenceEntity.Where(x => x.ModId == entity.ModId).ToList();
             var types = WriteContext.TypesEntity.ToList();
             mod.Description = entity.Description;
             mod.UpdatedAt = DateTime.Now;
@@ -413,6 +423,8 @@ namespace Service.Realization
                 WriteContext.Update(mod);
                 WriteContext.RemoveRange(modtypes);
                 WriteContext.ModTypeEntity.AddRange(list);
+                WriteContext.RemoveRange(ModDependencelist);
+                WriteContext.ModDependenceEntity.AddRange(entity.ModDependenceEntities);
                 WriteContext.SaveChanges();
                 Transaction.Commit();
             }

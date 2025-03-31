@@ -137,7 +137,7 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
-        /// 创建mod,并创建版本
+        /// 创建mod,并创建版本,创建mod依赖
         /// </summary>
         /// <param name="json">{"Name":"","Description":"","VideoUrl":"","ModVersionEntities":[{"VersionNumber":"","Description":""}]}</param>
         /// <returns></returns>
@@ -454,13 +454,20 @@ namespace ModsAPI.Controllers
             {
                 ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
             }
+            var ModDependenceList = new List<ModDependenceEntity>();
+            if (((JArray)json.ModDependenceEntities).HasValues)
+            {
+                ModDependenceList = ((JArray)json.ModDependenceEntities).ToObject<List<ModDependenceEntity>>();
+                ModDependenceList.ForEach(x => x.ModDependenceId = Guid.NewGuid().ToString());
+            }
             var mod = new ModEntity()
             {
                 ModId = (string)json.ModId,
                 Description = (string)json.Description,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
-                ModTypeEntities = ListTypes
+                ModTypeEntities = ListTypes,
+                ModDependenceEntities = ModDependenceList
             };
             mod.Description = mod.Description.Replace("\n", "</br>");
             #region Get方法获取视频封面信息
