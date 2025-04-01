@@ -1,16 +1,13 @@
 <template>
     <el-container>
         <el-main>
-            <el-row
-                style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;margin: 0px;height: 4rem;">
-                <el-col style="height: 4rem;">
-                    <el-card style="border-color: white;padding: 0px;margin: 0px; height: 100%;">
-                        <div style="display: flex; align-items: center; margin-top: -1%;">
-                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
-                                style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
+            <el-row class="head-row">
+                <el-col class="head-col">
+                    <el-card class="head-el-card">
+                        <div class="head-el-card-div">
+                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
                             <h2>深岩银河</h2>
-                            <el-button type="text" @click="handleCreateMod"
-                                style="margin-left: auto; background-color: black; color: white;width: 7%;">
+                            <el-button type="text" @click="handleCreateMod" class="head-el-card-div-el-button">
                                 发布Mod
                             </el-button>
                         </div>
@@ -23,10 +20,10 @@
                         <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
                     </el-card>
                 </el-col>
-                <el-col :span="21">
-                    <el-row :gutter="20" ref="modListContainer">
-                        <el-col :span="4" v-for="mod in modList" :key="mod.ModId">
-                            <el-card class="el-card-table">
+                <el-col :span="colSpan">
+                    <el-row :gutter="20" ref="modListContainer" id="allwidth">
+                        <el-col :span="4" v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
+                            <el-card class="el-card-table" name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModVersion.Mod.ModId)"
                                     :src="mod.PicUrl || defaulturl" style="width: 100%;">
                                 <nobr>
@@ -83,6 +80,7 @@ export default {
     name: 'Home',
     data() {
         return {
+            colSpan: 21,
             skip: 0,
             take: 18,
             modTypes: [],
@@ -103,6 +101,10 @@ export default {
         if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
         this.fetchModList();
         this.setupIntersectionObserver();
+        this.updateColWidth();
+        window.addEventListener('resize', this.updateColWidth);
+        this.updateColSpan(); // 初始化 colSpan
+        window.addEventListener('resize', this.updateColSpan);
     },
     watch: {
         selectedTypes() {
@@ -111,7 +113,45 @@ export default {
             this.fetchModList(); // 当选中的类型变化时，重新获取 mod 列表
         }
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.updateColWidth); // 移除监听器
+        window.removeEventListener('resize', this.updateColSpan); // 移除监听器
+    },
     methods: {
+        updateColSpan() {
+            const screenWidth = window.innerWidth; // 获取窗口宽度
+            if (screenWidth < 1870) {
+                this.colSpan = 24; setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
+            } else { this.colSpan = 21 }
+            //this.colSpan =  ? 24 : 21; // 动态设置 colSpan
+        },
+        updateColWidth() {
+            const allwidth = document.getElementById('allwidth').offsetWidth; // 获取父容器宽度
+            const cardMinWidth = 200; // 卡片的最小宽度
+            const gutter = 20; // 列间距
+            const columns = Math.floor(allwidth / (cardMinWidth + gutter)); // 计算每行显示的列数
+            var colWidth = Math.floor((allwidth - (columns - 1) * gutter) / columns); // 计算每列宽度
+
+            var odd = (allwidth - (columns * colWidth)) / columns; // 计算剩余宽度
+            if ((colWidth + odd) * columns >= allwidth) { odd = odd - 1; }
+            if (columns === 1) { colWidth = allwidth - 20; odd = 0; }
+            // 设置动态宽度
+            const colElements = document.getElementsByName('colsetwidth');
+
+            const observer = new MutationObserver(() => {
+                colElements.forEach((col) => {
+                    col.style.flex = `0 0 ${colWidth + odd}px`; // 设置列宽
+                    col.style.maxWidth = `${colWidth + odd}px`;
+                });
+            });
+            observer.observe(document.getElementById('allwidth'), { childList: true, subtree: true });
+            colElements.forEach((col) => {
+                col.style.flex = `0 0 ${colWidth + odd}px`; // 设置列宽
+                col.style.maxWidth = `${colWidth + odd}px`;
+            });
+        },
         getShortDescription(description) {
             if (description.length > 15) {
                 return description.substring(0, 15) + '...';
@@ -293,6 +333,22 @@ export default {
 </script>
 
 <style scoped>
+@media (max-width: 1870px) {
+    .col-sel {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .head-row {
+        display: none;
+    }
+
+    .el-card-table {
+        display: contents;
+    }
+}
+
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
@@ -370,5 +426,60 @@ h3 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+[name="colsetwidth"] {
+    flex: 1 1 auto;
+    max-width: 25%;
+    min-width: 200px;
+}
+
+[name="cardsetwidth"] {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.head-row {
+    position: fixed;
+    z-index: 600;
+    left: 0%;
+    top: 0;
+    width: 101%;
+    padding: 0px;
+    margin: 0px;
+    height: 4rem;
+}
+
+.head-col {
+    height: 4rem;
+}
+
+.head-el-card {
+    border-color: white;
+    padding: 0px;
+    margin: 0px;
+    height: 100%;
+}
+
+.head-el-card-div {
+    display: flex;
+    align-items: center;
+    margin-top: -1%;
+}
+
+.head-el-card-div-img {
+    width: 2%;
+    height: 2%;
+    margin-right: 1%;
+    border-radius: 20%;
+}
+
+.head-el-card-div-el-button {
+    margin-left: auto;
+    background-color: black;
+    color: white;
+    width: 5rem;
 }
 </style>

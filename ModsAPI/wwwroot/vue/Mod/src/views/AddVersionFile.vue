@@ -30,7 +30,7 @@
             <el-row type="flex" justify="center" align="middle" style="height: 100vh;">
                 <el-col :span="12">
                     <el-card>
-                        <h1 style="text-align: center; margin-bottom: 24px;">上传版本文件</h1>
+                        <h1 class="h1">上传版本文件</h1>
                         <el-upload class="upload-demo" action="" :auto-upload="false" :before-upload="beforeUpload"
                             :on-change="handleFileChange" :file-list="fileList" accept=".zip">
                             <el-button type="primary">选择文件</el-button>
@@ -143,6 +143,64 @@ export default {
 </script>
 
 <style scoped>
+@media (max-width: 600px) {
+    .h1 {
+        text-align: center;
+        margin-bottom: 24px;
+        display: none;
+    }
+
+    .el-container {
+        padding: 0 10px;
+    }
+
+    .el-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .el-main {
+        padding: 0;
+    }
+
+    .el-col {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .el-card {
+        padding: 20px;
+        box-shadow: none;
+    }
+
+    h1 {
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .el-upload {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .el-button {
+        font-size: 14px;
+        height: 36px;
+        margin-bottom: 10px;
+    }
+
+    .el-upload__tip {
+        display: none;
+    }
+}
+
+.h1 {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
 .el-card {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

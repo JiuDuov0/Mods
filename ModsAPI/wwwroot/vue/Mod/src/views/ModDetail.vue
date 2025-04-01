@@ -10,7 +10,7 @@
                 <el-col :span="23">
                     <h2>{{ Name }}</h2>
                 </el-col>
-                <el-col :span="19">
+                <el-col :span="colSpan">
                     <iframe width="100%" height="700rem" :src="videoUrl" frameborder="0" allowfullscreen></iframe>
 
                     <el-card v-if="ModDependenceEntities.length > 0" style="margin-top: 20px;">
@@ -80,7 +80,7 @@
         </div>
 
         <!-- 评分窗口 -->
-        <el-dialog title="评分" v-model="ratingWindowVisible" width="30%">
+        <el-dialog title="评分" v-model="ratingWindowVisible" class="el-dialog-rating">
             <div style="text-align: center;">
                 <el-rate v-model="rating" :max="5"></el-rate>
                 <p style="margin-top: 10px;">当前评分: {{ rating }}</p>
@@ -108,6 +108,7 @@ export default {
     name: 'ModDetail',
     data() {
         return {
+            colSpan: 19,
             Name: '',
             videoUrl: '',
             description: '',
@@ -141,8 +142,20 @@ export default {
     mounted() {
         this.modDetail();
         $("#text").html(this.description);
+        this.updateColSpan();
+        window.addEventListener('resize', this.updateColSpan);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.updateColSpan);
     },
     methods: {
+        updateColSpan() {
+            const screenWidth = window.innerWidth;
+            if (screenWidth < 1000) {
+                this.colSpan = 24; setTimeout(() => {
+                }, 100);
+            } else { this.colSpan = 19 }
+        },
         modDetail() {
             // 获取 Mod 详情逻辑
             $.ajax({
@@ -427,6 +440,18 @@ export default {
 };
 </script>
 <style scoped>
+@media (max-width: 1000px) {
+    .sticky-subscribe {
+        display: none;
+    }
+}
+
+@media (max-width: 500px) {
+    .el-dialog-rating {
+        width: 10rem;
+    }
+}
+
 .el-card {
     margin-bottom: 20px;
 }
@@ -458,6 +483,10 @@ export default {
     display: flex;
     align-items: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.el-dialog-rating {
+    width: 10%;
 }
 
 .rating-float:hover {

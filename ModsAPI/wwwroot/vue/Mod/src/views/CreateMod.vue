@@ -327,6 +327,36 @@ export default {
 </script>
 
 <style scoped>
+@media (max-width: 600px) {
+    .el-row {
+        padding: 0 10px;
+    }
+
+    .el-col {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .el-card {
+        padding: 20px;
+        box-shadow: none;
+    }
+
+    h1 {
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .el-input {
+        font-size: 14px;
+    }
+
+    .el-button {
+        font-size: 14px;
+        height: 36px;
+    }
+}
+
 .el-card {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

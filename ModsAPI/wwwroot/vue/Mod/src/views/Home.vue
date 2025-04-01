@@ -1,16 +1,13 @@
 <template>
     <el-container>
         <el-main>
-            <el-row
-                style="position: fixed;z-index: 600;left: 0%;top:0;width: 101%;padding: 0px;margin: 0px;height: 4rem;">
-                <el-col style="height: 4rem;">
-                    <el-card style="border-color: white;padding: 0px;margin: 0px; height: 100%;">
-                        <div style="display: flex; align-items: center; margin-top: -1%;">
-                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon"
-                                style="width: 2%; height: 2%; margin-right: 1%;border-radius:20%;">
+            <el-row class="head-row">
+                <el-col class="head-col">
+                    <el-card class="head-el-card">
+                        <div class="head-el-card-div">
+                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
                             <h2>深岩银河</h2>
-                            <el-button type="text" @click="handleCreateMod"
-                                style="margin-left: auto; background-color: black; color: white;width: 5rem;">
+                            <el-button type="text" @click="handleCreateMod" class="head-el-card-div-el-button">
                                 发布Mod
                             </el-button>
                         </div>
@@ -409,6 +406,16 @@ export default {
     }
 }
 
+@media (max-width: 600px) {
+    .head-row {
+        display: none;
+    }
+
+    .el-card-table {
+        display: contents;
+    }
+}
+
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
@@ -488,25 +495,58 @@ h3 {
     text-overflow: ellipsis;
 }
 
-/* 设置 colsetwidth 的样式 */
 [name="colsetwidth"] {
     flex: 1 1 auto;
-    /* 允许列根据父容器宽度自适应 */
     max-width: 25%;
-    /* 默认每行最多显示 4 列 */
     min-width: 200px;
-    /* 设置最小宽度，避免过小 */
 }
 
-/* 设置 cardsetwidth 的样式 */
 [name="cardsetwidth"] {
     width: 100%;
-    /* 卡片宽度占满列宽 */
     margin-bottom: 20px;
-    /* 卡片之间的间距 */
     border-radius: 8px;
-    /* 卡片圆角 */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    /* 卡片阴影 */
+}
+
+.head-row {
+    position: fixed;
+    z-index: 600;
+    left: 0%;
+    top: 0;
+    width: 101%;
+    padding: 0px;
+    margin: 0px;
+    height: 4rem;
+}
+
+.head-col {
+    height: 4rem;
+}
+
+.head-el-card {
+    border-color: white;
+    padding: 0px;
+    margin: 0px;
+    height: 100%;
+}
+
+.head-el-card-div {
+    display: flex;
+    align-items: center;
+    margin-top: -1%;
+}
+
+.head-el-card-div-img {
+    width: 2%;
+    height: 2%;
+    margin-right: 1%;
+    border-radius: 20%;
+}
+
+.head-el-card-div-el-button {
+    margin-left: auto;
+    background-color: black;
+    color: white;
+    width: 5rem;
 }
 </style>
