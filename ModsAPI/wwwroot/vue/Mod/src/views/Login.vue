@@ -1,6 +1,6 @@
 <template>
     <el-row type="flex" justify="center" align="middle" style="height: 100vh;">
-        <el-col :span="8">
+        <el-col :span="colSpan">
             <el-card>
                 <h1 style="text-align: center; margin-bottom: 24px;">登录</h1>
                 <div>
@@ -25,13 +25,25 @@ export default {
     name: 'Login',
     data() {
         return {
+            colSpan: 8,
             loginForm: {
                 username: '',
                 password: ''
             }
         };
     },
+    mounted() {
+        this.updateColSpan();
+        window.addEventListener('resize', this.updateColSpan);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.updateColSpan);
+    },
     methods: {
+        updateColSpan() {
+            const screenWidth = window.innerWidth;
+            this.colSpan = screenWidth < 600 ? 24 : 8;
+        },
         handleLogin() {
             if (!this.loginForm.username || !this.loginForm.password) {
                 ElMessage.error('请填写完整的登录信息');
@@ -104,6 +116,7 @@ export default {
     .el-button {
         font-size: 14px;
         height: 36px;
+        width: 100%;
         margin: 8px 0;
     }
 }
