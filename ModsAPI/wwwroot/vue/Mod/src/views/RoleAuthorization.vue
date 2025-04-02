@@ -77,7 +77,7 @@ export default {
         type: 'POST',
         contentType: 'application/json',
         headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
+          'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
         },
         data: JSON.stringify({ Skip: 0, Take: 100 }),
         success: (data) => {
@@ -102,7 +102,7 @@ export default {
         type: 'POST',
         contentType: 'application/json',
         headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
+          'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
         },
         data: JSON.stringify(this.newUserRole),
         success: (data) => {
@@ -129,7 +129,7 @@ export default {
         type: 'POST',
         contentType: 'application/json',
         headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
+          'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
         },
         data: JSON.stringify(this.editUserRoleData),
         success: (data) => {
@@ -154,7 +154,7 @@ export default {
         type: 'POST',
         contentType: 'application/json',
         headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
+          'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
         },
         data: "{ \"Id\": \"" + Id + "\" }",
         success: (data) => {

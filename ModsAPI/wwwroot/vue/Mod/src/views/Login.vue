@@ -2,13 +2,18 @@
     <el-row type="flex" justify="center" align="middle" style="height: 100vh;">
         <el-col :span="colSpan">
             <el-card>
-                <h1 style="text-align: center; margin-bottom: 24px;">登录</h1>
                 <div>
-                    <el-input v-model="loginForm.username" placeholder="请输入登入邮箱" style="margin-bottom: 16px;" />
-                    <el-input type="password" v-model="loginForm.password" placeholder="请输入密码"
-                        style="margin-bottom: 16px;" />
+                    <img src="../assets/logo.png" class="img-logo" />
+                    <span class="span-logo">Modcat</span>
+                </div>
+                <h1 style="margin-bottom: 24px;font-size: 24px;">登录</h1>
+                <div>
+                    <input type="text" v-model="loginForm.username" placeholder="请输入登入邮箱" />
+                    <input type="password" v-model="loginForm.password" placeholder="请输入密码" />
+                    <div style="font-size: 0.8125rem;">没有账户？<a style="color: #0067b8;"
+                            @click="handleRegister">立即创建一个！</a></div>
                     <el-button type="primary" block @click="handleLogin">登录</el-button>
-                    <el-button type="primary" block @click="handleRegister">注册</el-button>
+                    <!-- <el-button type="primary" block @click="handleRegister">注册</el-button> -->
                 </div>
             </el-card>
         </el-col>
@@ -50,6 +55,7 @@ export default {
                 return;
             }
 
+            var mail = this.loginForm.username;
             $.ajax({
                 url: 'https://modcat.top:8089/api/Login/UserLogin',
                 type: "POST",
@@ -68,11 +74,12 @@ export default {
                     if (data.ResultData == null) {
                         ElMessage.error('登录失败: ' + data.ResultMsg);
                     } else {
-                        localStorage.setItem("NickName", data.ResultData.NickName);
-                        localStorage.setItem("HeadPic", data.ResultData.HeadPic);
-                        localStorage.setItem("Role", data.ResultData.Role);
-                        localStorage.setItem("token", data.ResultData.Token);
-                        localStorage.setItem("refresh_Token", data.ResultData.Refresh_Token);
+                        localStorage.setItem("Mail", mail);
+                        localStorage.setItem("NickName" + mail, data.ResultData.NickName);
+                        localStorage.setItem("HeadPic" + mail, data.ResultData.HeadPic);
+                        localStorage.setItem("Role" + mail, data.ResultData.Role);
+                        localStorage.setItem("token" + mail, data.ResultData.Token);
+                        localStorage.setItem("refresh_Token" + mail, data.ResultData.Refresh_Token);
                         router.push('/home');
                     }
                 },
@@ -132,5 +139,34 @@ export default {
 .el-button {
     height: 40px;
     font-size: 16px;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    float: right;
+    border-radius: 0 !important;
+}
+
+input {
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgb(102, 102, 102) !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    outline: none;
+    margin-bottom: 16px;
+    width: 98%;
+    height: 1.5rem;
+}
+
+.img-logo {
+    width: 1rem;
+    height: 1rem;
+}
+
+.span-logo {
+    font-size: 25px;
+    color: rgb(102, 102, 102);
+    margin-left: 0.5rem;
+    margin-bottom: 1rem;
 }
 </style>

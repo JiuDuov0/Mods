@@ -121,7 +121,6 @@ namespace Redis.Realization
             var value = _redisConnection.GetDatabase(DB).StringGet(key);
             if (value.HasValue)
             {
-                string sadf = value.ToString();
                 //需要用的反序列化，将Redis存储的Byte[]，进行反序列化
                 return JsonConvert.DeserializeObject<TEntity>(value);
             }
@@ -136,7 +135,7 @@ namespace Redis.Realization
             var value = await _redisConnection.GetDatabase(DB).StringGetAsync(key);
             if (value.HasValue)
             {
-                return JsonConvert.DeserializeObject<TEntity>(JObject.Parse(value).ToString());
+                return JsonConvert.DeserializeObject<TEntity>(value);
             }
             else
             {

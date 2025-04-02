@@ -14,7 +14,7 @@
     }
   },
   "CorsUrls": [
-    "http://localhost:5173",
+    "http://localhost:5173",//前端位置
     "http://*:5173"
   ],
   "AllowedHosts": "*",
@@ -29,14 +29,14 @@
   "PermitLimit": 50, //时间窗口内允许的最大请求
   "QueueLimit": 50, //列中允许的最大请求数
   "FilePath": "",//文件路径
-  "WriteConnectionString": "Data Source=43.160.202.17;Initial Catalog=Mods;User ID=sa;Password=JiuDuo0928@.;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False",
+  "WriteConnectionString": "Data Source={sqlserverip};Initial Catalog=Mods;User ID={user};Password={password};Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False",
   "ReadConnectionString": "Data Source={sqlserverip};Initial Catalog=Mods;User ID={user};Password={password};Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False|Data Source={sqlserverip};Initial Catalog=Mods;User ID={user};Password={password};Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False",
   "JwtSettings": {
     "Issuer": "", //颁发者
     "Audience": "", //使用者
     "SecrentKey": "", //秘钥
-    "Expirces": 3600, //Token过期时间
-    "RefreshTokenExpirces": 86400 //refresh_Token过期时间
+    "Expirces": 3600, //Token过期时间 s
+    "RefreshTokenExpirces": 86400 //refresh_Token过期时间 s
   }
 }
 

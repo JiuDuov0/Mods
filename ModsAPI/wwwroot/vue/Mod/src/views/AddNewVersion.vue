@@ -57,7 +57,7 @@ export default {
         return {
             NickName: '',
             headurl: head,
-            Role: localStorage.getItem('Role'),
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             ModId: this.$route.query.ModId, // 从路由参数获取 Mod ID
             versionForm: {
                 version: '',
@@ -66,9 +66,9 @@ export default {
         };
     },
     mounted() {
-        this.NickName = localStorage.getItem('NickName');
+        this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
         $('img').attr('referrerPolicy', 'no-referrer');
-        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
+        if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
     },
     methods: {
         submitVersion() {
@@ -86,7 +86,7 @@ export default {
                 type: 'POST',
                 contentType: 'application/json; charset=utf-8',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: this.ModId,
@@ -134,10 +134,12 @@ export default {
         handleroleAuthorization() { router.push('/roleAuthorization'); },
         handleLogout() {
             ElMessage.info('退出登录');
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_Token');
-            localStorage.removeItem('NickName');
-            localStorage.removeItem('HeadPic');
+            localStorage.removeItem('token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('refresh_Token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('NickName' + localStorage.getItem('Mail'));
+            localStorage.removeItem('HeadPic' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Role' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Mail');
             router.push('/');
         }
     }

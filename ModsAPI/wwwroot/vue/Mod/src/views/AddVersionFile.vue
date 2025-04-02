@@ -55,7 +55,7 @@ export default {
     data() {
         return {
             NickName: '',
-            Role: localStorage.getItem('Role'),
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             headurl: head,
             fileList: [], // 存储选中的文件
             VersionId: this.$route.query.VersionId // 从路由参数获取版本 ID
@@ -64,7 +64,7 @@ export default {
     mounted() {
         this.NickName = localStorage.getItem('NickName');
         $('img').attr('referrerPolicy', 'no-referrer');
-        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
+        if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
     },
     methods: {
         beforeUpload(file) {
@@ -91,7 +91,7 @@ export default {
             fetch('https://modcat.top:8089/api/Files/UploadMod', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 body: formData
             })
@@ -132,10 +132,12 @@ export default {
         handleroleAuthorization() { router.push('/roleAuthorization'); },
         handleLogout() {
             ElMessage.info('退出登录');
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_Token');
-            localStorage.removeItem('NickName');
-            localStorage.removeItem('HeadPic');
+            localStorage.removeItem('token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('refresh_Token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('NickName' + localStorage.getItem('Mail'));
+            localStorage.removeItem('HeadPic' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Role' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Mail');
             router.push('/');
         }
     }

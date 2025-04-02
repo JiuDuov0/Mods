@@ -121,7 +121,7 @@ export default {
             tags: [],
             progress: 0,
             showStatus: false,
-            Role: localStorage.getItem('Role'),
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             latestVersion: {
                 version: '',
                 description: '',
@@ -163,7 +163,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: this.$route.query.ModId
@@ -214,7 +214,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: this.$route.query.ModId
@@ -255,7 +255,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: ModId
@@ -288,7 +288,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: ModId
@@ -333,7 +333,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: this.ModId,
@@ -360,7 +360,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModPointId: this.pointentity.ModPointId,
@@ -403,6 +403,7 @@ export default {
                 const response = await this.$axios({
                     url: 'https://modcat.top:8089/api/Files/DownloadFile',
                     method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')) },
                     data: { FileId: FileId },
                     responseType: 'blob',
                     onDownloadProgress: (progressEvent) => {
@@ -422,6 +423,7 @@ export default {
                 this.progress = 0;
             }
             catch (error) {
+                ElMessage.error('下载文件失败:' + error);
                 console.error('下载文件失败:', error);
             }
         },

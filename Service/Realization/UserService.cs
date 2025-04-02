@@ -5,6 +5,7 @@ using Entity.Mod;
 using Entity.Role;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
+using Redis.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +17,12 @@ namespace Service.Realization
     internal class UserService : Interface.IUserService
     {
         private readonly ICreateDBContextService _IDbContextServices;
+        private readonly IRedisManageService _IRedisManageService;
 
-        public UserService(ICreateDBContextService iDbContextServices)
+        public UserService(ICreateDBContextService iDbContextServices, IRedisManageService redisManageService)
         {
             _IDbContextServices = iDbContextServices;
+            _IRedisManageService = redisManageService;
         }
 
         public bool AddUserRole(UserRoleEntity entity)

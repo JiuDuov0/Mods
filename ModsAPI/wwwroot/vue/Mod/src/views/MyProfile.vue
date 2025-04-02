@@ -93,9 +93,9 @@ export default {
         };
     },
     mounted() {
-        this.NickName = localStorage.getItem('NickName');
+        this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
         $('img').attr('referrerPolicy', 'no-referrer');
-        if (localStorage.getItem('HeadPic') !== 'null') { this.headurl = localStorage.getItem('HeadPic'); }
+        if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
         this.getUserInfo();
     },
     methods: {
@@ -104,7 +104,7 @@ export default {
                 url: 'https://modcat.top:8089/api/User/GetUserByUserId',
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 }
             }).then(response => {
                 if (response.data.ResultData) {
@@ -129,7 +129,7 @@ export default {
                 url: 'https://modcat.top:8089/api/Login/CreateToken',
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: {
                     LoginAccount: this.user.Mail,
@@ -163,7 +163,7 @@ export default {
                 url: 'https://modcat.top:8089/api/User/UpdateUserInfo',
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: this.user
             }).then(response => {
@@ -188,7 +188,7 @@ export default {
         handleMyCreateMods() { router.push('/myCreateMods'); },
         handleSubscribeMod() { router.push('/mySubscribeMods'); },
         handleCreateMod() { router.push('/createMod'); },
-        handleLogout() { ElMessage.info('退出登录'); localStorage.removeItem('token'); localStorage.removeItem('refresh_Token'); localStorage.removeItem('NickName'); router.push('/');localStorage.removeItem('HeadPic'); },
+        handleLogout() { ElMessage.info('退出登录'); localStorage.removeItem('token' + localStorage.getItem('Mail')); localStorage.removeItem('refresh_Token' + localStorage.getItem('Mail')); localStorage.removeItem('NickName' + localStorage.getItem('Mail')); localStorage.removeItem('HeadPic' + localStorage.getItem('Mail')); localStorage.removeItem('Role' + localStorage.getItem('Mail')); localStorage.removeItem('Mail'); router.push('/'); },
         toModDetail(ModId) { router.push({ path: '/modDetail', query: { ModId: ModId } }); }
     }
 };

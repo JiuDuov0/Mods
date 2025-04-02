@@ -316,6 +316,18 @@ namespace Service.Realization
             return Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
         }
 
+        private async Task<List<ModEntity>> GetMyCreateModRedisAsync(string UserId)
+        {
+            var result = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.CreatorUserId == UserId).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).ToListAsync();
+            await _IRedisManageService.SetAsync("GetMyCreateMod" + UserId, result, new TimeSpan(2, 0, 0), 1);
+            return result;
+        }
+
+        private async Task<List<ModEntity>> GetMyCreateModEFAsync()
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<ModEntity> ModDetail(string UserId, string ModId)
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);

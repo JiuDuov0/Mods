@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -105,7 +105,7 @@ export default {
             headurl: head,
             fileheadurl: head,
             defaulturl: drg,
-            Role: localStorage.getItem('Role'),
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             User: {},
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
@@ -115,10 +115,8 @@ export default {
     },
     mounted() {
         $('img').attr('referrerPolicy', 'no-referrer');
-        this.NickName = localStorage.getItem('NickName');
-        if (localStorage.getItem('HeadPic') !== 'null') {
-            this.headurl = localStorage.getItem('HeadPic');
-        }
+        this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
+        if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
         //this.Role = localStorage.getItem('Role');
         this.fetchModTypes();
         this.fetchModList();
@@ -191,7 +189,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 cache: false,
                 dataType: "json",
@@ -244,7 +242,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     UserId: this.UserId,
@@ -300,7 +298,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: ModId
@@ -336,7 +334,7 @@ export default {
                 type: "POST",
                 contentType: "application/json; charset=utf-8",
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
                 },
                 data: JSON.stringify({
                     ModId: modId
@@ -391,10 +389,12 @@ export default {
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_Token');
-            localStorage.removeItem('NickName');
-            localStorage.removeItem('HeadPic');
+            localStorage.removeItem('token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('refresh_Token' + localStorage.getItem('Mail'));
+            localStorage.removeItem('NickName' + localStorage.getItem('Mail'));
+            localStorage.removeItem('HeadPic' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Role' + localStorage.getItem('Mail'));
+            localStorage.removeItem('Mail');
             router.push('/');
         },
         toModDetail(ModId) {

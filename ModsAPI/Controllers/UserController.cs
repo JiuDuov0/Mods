@@ -266,7 +266,11 @@ namespace ModsAPI.Controllers
             return new ResultEntity<UserEntity?>() { ResultData = entity };
         }
 
-
+        /// <summary>
+        /// 更新用户信息
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
         [HttpPost(Name = "UpdateUserInfo")]
         public async Task<ResultEntity<bool>> UpdateUserInfoAsync([FromBody] dynamic json)
         {
