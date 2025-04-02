@@ -80,6 +80,11 @@ const routes = [
         name: "myProfile",
         component: () => import('../views/MyProfile.vue')
     },
+    {
+        path: "/downloadmintcat",
+        name: "downloadmintcat",
+        component: () => import('../views/Downloadmintcat.vue')
+    },
 ]
 
 const router = createRouter({
