@@ -215,6 +215,9 @@ export default {
             this.$axios({
                 url: 'https://modcat.top:8089/api/User/GetUserByUserIdPublic',
                 method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+                },
                 data: {
                     UserId: this.UserId
                 },

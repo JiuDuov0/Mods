@@ -15,7 +15,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 app.config.globalProperties.$ = $; // 添加 jQuery 到全局属性
 app.config.globalProperties.$router = router // 添加路由器到全局属性
-axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`; // 设置默认的 Authorization 头
+axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token' + localStorage.getItem('Mail'))}`; // 设置默认的 Authorization 头
 app.config.globalProperties.$axios = axios; // 添加 axios 到全局属性
 app.use(router); // 使用路由器
 app.use(ElementPlus);

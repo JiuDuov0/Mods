@@ -11,7 +11,9 @@
                     <h2>{{ Name }}</h2>
                 </el-col>
                 <el-col :span="colSpan">
-                    <iframe width="100%" height="700rem" :src="videoUrl" frameborder="0" allowfullscreen></iframe>
+                    <iframe class="myiframe" width="100%" height="700rem" :src="videoUrl" frameborder="0"
+                        allowfullscreen>
+                    </iframe>
 
                     <el-card v-if="ModDependenceEntities.length > 0" style="margin-top: 20px;">
                         <h3>前置依赖</h3>
@@ -102,7 +104,8 @@
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
-import { da } from 'element-plus/es/locale/index.mjs';
+import { da, el } from 'element-plus/es/locale/index.mjs';
+import drg from '../assets/drg.png';
 
 export default {
     name: 'ModDetail',
@@ -144,6 +147,15 @@ export default {
         $("#text").html(this.description);
         this.updateColSpan();
         window.addEventListener('resize', this.updateColSpan);
+        const iframe = document.querySelector('.myiframe');
+        iframe.onload = () => {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const img = iframeDoc.querySelector('img');
+            if (img) {
+                img.style.width = '100%';
+                img.style.height = '100%';
+            }
+        };
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.updateColSpan);
@@ -183,6 +195,15 @@ export default {
                         this.Name = data.ResultData.Name;
                         this.createdAt = data.ResultData.CreatedAt;
                         this.videoUrl = data.ResultData.VideoUrl;
+                        if (this.videoUrl === null || this.videoUrl === "") {
+                            if (data.ResultData.PicUrl === null || data.ResultData.PicUrl === "") {
+                                this.videoUrl = drg;
+                            } else {
+                                // this.videoUrl = data.ResultData.PicUrl;
+                                this.videoUrl = drg;
+                            }
+
+                        }
                         this.description = data.ResultData.Description;
                         this.modAuthor = data.ResultData.CreatorEntity.NickName;
                         this.modAuthorId = data.ResultData.CreatorEntity.UserId;
@@ -512,6 +533,13 @@ export default {
 }
 
 .fullicon {
+    width: 100%;
+    height: 100%;
+}
+
+.myiframe {}
+
+.myiframe img {
     width: 100%;
     height: 100%;
 }
