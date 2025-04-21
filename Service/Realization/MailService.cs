@@ -1,12 +1,11 @@
 ﻿using EF.Interface;
+using MailKit.Net.Smtp;
+using MimeKit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Configuration;
 using Redis.Interface;
 using Service.Interface;
 using System;
-using System.Net;
-using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace Service.Realization
@@ -53,22 +52,29 @@ namespace Service.Realization
             var random = new Random();
             var selectedConfig = smtpConfigs[random.Next(smtpConfigs.Length)];
 
-            using (var client = new SmtpClient(selectedConfig.Server, selectedConfig.SmtpPort))
+            // 使用 MailKit 发送邮件
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("ModCat", selectedConfig.SenderEmail));
+            message.To.Add(new MailboxAddress("", recipientEmail));
+            message.Subject = "邮箱验证码";
+            message.Body = new TextPart("plain")
             {
-                client.Credentials = new NetworkCredential(selectedConfig.SenderEmail, selectedConfig.SenderPassword);
-                client.EnableSsl = true;
+                Text = $"您的验证码是：{verificationCode}，请在10分钟内使用。"
+            };
 
-                var mailMessage = new MailMessage
+            using (var client = new SmtpClient())
+            {
+                try
                 {
-                    From = new MailAddress(selectedConfig.SenderEmail),
-                    Subject = "邮箱验证码",
-                    Body = $"您的验证码是：{verificationCode}，请在10分钟内使用。",
-                    IsBodyHtml = false
-                };
-
-                mailMessage.To.Add(recipientEmail);
-
-                await client.SendMailAsync(mailMessage);
+                    await client.ConnectAsync(selectedConfig.Server, selectedConfig.SmtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.AuthenticateAsync(selectedConfig.SenderEmail, selectedConfig.SenderPassword);
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                }
+                catch (Exception ex)
+                {
+                    return $"发送邮件失败：{ex.Message}";
+                }
             }
 
             // 将验证码和状态信息存入 Redis，设置 24 小时过期时间
