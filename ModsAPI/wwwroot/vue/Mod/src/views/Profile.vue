@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -215,6 +215,9 @@ export default {
             this.$axios({
                 url: 'https://modcat.top:8089/api/User/GetUserByUserIdPublic',
                 method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+                },
                 data: {
                     UserId: this.UserId
                 },
@@ -222,7 +225,6 @@ export default {
                 responseType: 'json'
             }).then(response => {
                 if (response.data.ResultData) {
-                    console.log(response.data.ResultData);
                     this.User = response.data.ResultData;
                     if (response.data.ResultData.HeadPic != null) { this.fileheadurl = response.data.ResultData.HeadPic; } else { this.fileheadurl = head; }
                 } else {
