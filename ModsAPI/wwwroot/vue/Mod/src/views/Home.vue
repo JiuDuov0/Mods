@@ -7,8 +7,8 @@
                         <div class="head-el-card-div">
                             <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
                             <h2>深岩银河</h2>
-                            <el-button type="text" @click="handleCreateMod" class="head-el-card-div-el-button">
-                                发布Mod
+                            <el-button type="text" @click="handleDownloadmintcat" class="head-el-card-div-el-button">
+                                下载mintcat
                             </el-button>
                         </div>
                     </el-card>
@@ -377,6 +377,9 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleDownloadmintcat() {
+            router.push('/downloadmintcat');
+        },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
@@ -549,6 +552,13 @@ h3 {
     margin-left: auto;
     background-color: black;
     color: white;
-    width: 5rem;
+    width: 5.2rem;
+}
+
+.head-el-card-div-el-button:hover {
+    color: white !important;
+    background-color: black !important;
+    border-color: #e4e7ed !important;
+    box-shadow: none !important;
 }
 </style>
