@@ -1,0 +1,117 @@
+<template>
+    <div class="change-password-container">
+        <h2>修改密码</h2>
+        <el-form :model="form" :rules="rules" ref="form" label-width="100px">
+            <!-- 邮箱 -->
+            <el-form-item label="邮箱" prop="email">
+                <el-input v-model="form.email" placeholder="请输入邮箱"></el-input>
+            </el-form-item>
+
+            <!-- 验证码 -->
+            <el-form-item label="验证码" prop="code">
+                <el-input v-model="form.code" placeholder="请输入验证码">
+                    <!-- 将按钮放入 el-input 的后置插槽 -->
+                    <template #append>
+                        <el-button type="primary" @click="sendCode" :disabled="isSendingCode">
+                            {{ isSendingCode ? `已发送验证码` : '发送验证码' }}
+                        </el-button>
+                    </template>
+                </el-input>
+            </el-form-item>
+
+            <!-- 密码 -->
+            <el-form-item label="新密码" prop="password">
+                <el-input v-model="form.password" type="password" placeholder="请输入新密码"></el-input>
+            </el-form-item>
+
+            <!-- 确认修改 -->
+            <el-button style="width: 100%;" type="primary" @click="submitForm">确认修改</el-button>
+        </el-form>
+    </div>
+</template>
+
+<script>
+import router from '../router/index.js';
+
+export default {
+    data() {
+        return {
+            form: {
+                email: '',
+                code: '',
+                password: '',
+            },
+            rules: {
+                email: [
+                    { required: true, message: '请输入邮箱', trigger: 'blur' },
+                    { type: 'email', message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] },
+                ],
+                code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
+                password: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
+            },
+            isSendingCode: false,
+            countdown: 60,
+        };
+    },
+    methods: {
+        sendCode() {
+            if (!this.form.email) {
+                this.$message.error('请先输入邮箱');
+                return;
+            }
+            this.isSendingCode = true;
+            this.countdown = 60;
+
+            // 模拟发送验证码
+            this.$axios({
+                url: 'https://modcat.top:8089/api/Login/SendVerificationCode',
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+                },
+                data: {
+                    Mail: this.form.email,
+                },
+            }).then(response => {
+                if (response.data.ResultData) { this.$message.success('验证码已发送'); } else { this.$message.error('发送失败: ' + response.data.ResultMsg); }
+            }).catch(error => {
+            });
+        },
+        submitForm() {
+            this.$axios({
+                url: 'https://modcat.top:8089/api/Login/VerifyEmailCodeAndChangePassWord',
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+                },
+                data: {
+                    Mail: this.form.email,
+                    VerificationCode: this.form.code,
+                    Password: this.form.password
+                },
+            }).then(response => {
+                if (response.data.ResultData) { this.$message.success('修改成功！'); router.push('/register'); } else { this.$message.error('修改失败: ' + response.data.ResultMsg); }
+            }).catch(error => {
+            });
+        },
+    },
+};
+</script>
+
+<style scoped>
+.change-password-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+</style>

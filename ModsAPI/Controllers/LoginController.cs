@@ -24,6 +24,7 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly IAPILogService _IAPILogService;
+        private readonly IMailService _IMailService;
 
         /// <summary>
         /// 构造函数依赖注入
@@ -32,12 +33,13 @@ namespace ModsAPI.Controllers
         /// <param name="jwtHelper"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="iAPILogService"></param>
-        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService)
+        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService, IMailService iMailService)
         {
             _IUserService = iUserService;
             _JwtHelper = jwtHelper;
             _IHttpContextAccessor = iHttpContextAccessor;
             _IAPILogService = iAPILogService;
+            _IMailService = iMailService;
         }
 
         /// <summary>
@@ -167,6 +169,74 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "邮箱已注册" };
             }
             return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "信息错误" };
+        }
+
+        /// <summary>
+        /// 发送验证码
+        /// </summary>
+        /// <param name="json">{"Mail":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "SendVerificationCode")]
+        public async Task<ResultEntity<bool>> SendVerificationCodeAsync([FromBody] dynamic json)
+        {
+            var Mail = string.Empty;
+            #region 记录访问
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            Mail = (string)json.Mail;
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/SendVerificationCodeAsync", Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            var resultMsg = await _IMailService.SendVerificationCodeAsync(Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            if (resultMsg == string.Empty)
+            {
+                return new ResultEntity<bool> { ResultData = true, ResultMsg = resultMsg };
+            }
+            else
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = resultMsg };
+            }
+        }
+
+        /// <summary>
+        /// 验证验证码，修改密码
+        /// </summary>
+        /// <param name="json">{"Mail":"","VerificationCode":"","Password":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "VerifyEmailCodeAndChangePassWord")]
+        public async Task<ResultEntity<bool>> VerifyEmailCodeAndChangePassWordAsync([FromBody] dynamic json)
+        {
+            var Mail = string.Empty;
+            var VerificationCode = string.Empty;
+            var Password = string.Empty;
+            #region 记录访问
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            Mail = (string)json.Mail;
+            VerificationCode = (string)json.VerificationCode;
+            Password = (string)json.Password;
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/VerifyEmailCodeAndChangePassWordAsync", Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace(Mail))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少Mail" };
+            }
+            if (string.IsNullOrWhiteSpace(VerificationCode))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少VerificationCode" };
+            }
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少Password" };
+            }
+            #endregion
+            if (await _IMailService.VerifyEmailCodeAsync(Mail, VerificationCode))
+            {
+                await _IUserService.UpdateUserPasswordAsync(Mail, Password);
+            }
+            else
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "验证码不正确" };
+            }
+            return new ResultEntity<bool> { ResultData = true };
         }
 
         /// <summary>

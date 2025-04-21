@@ -11,7 +11,8 @@
                     <input type="text" v-model="loginForm.username" placeholder="请输入登入邮箱" />
                     <input type="password" v-model="loginForm.password" placeholder="请输入密码" />
                     <div style="font-size: 0.8125rem;">没有账户？<a style="color: #0067b8;"
-                            @click="handleRegister">立即创建一个！</a></div>
+                            @click="handleRegister">立即创建一个！</a><a style="color: #0067b8;"
+                            @click="handleChangePassword">忘记密码</a></div>
                     <el-button type="primary" block @click="handleLogin">登录</el-button>
                     <!-- <el-button type="primary" block @click="handleRegister">注册</el-button> -->
                 </div>
@@ -89,6 +90,7 @@ export default {
                 }
             });
         },
+        handleChangePassword() { router.push('/changePassword'); },
         handleRegister() {
             router.push('/register');
         }

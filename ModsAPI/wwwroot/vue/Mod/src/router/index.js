@@ -85,6 +85,11 @@ const routes = [
         name: "downloadmintcat",
         component: () => import('../views/Downloadmintcat.vue')
     },
+    {
+        path: "/changePassword",
+        name: "changePassword",
+        component: () => import('../views/ChangePassword.vue')
+    },
 ]
 
 const router = createRouter({

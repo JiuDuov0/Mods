@@ -23,5 +23,6 @@ namespace Service.Interface
         public bool DeleteUserRole(string Id);
         public Task<UserEntity?> GetUserByUserIdAsync(string? UserId);
         public Task<bool> UpdateUserAsync(UserEntity entity);
+        public Task<bool> UpdateUserPasswordAsync(string mail, string password);
     }
 }

@@ -226,5 +226,21 @@ namespace Service.Realization
             Context.UserEntity.Update(updateentity);
             return await Context.SaveChangesAsync() > 0;
         }
+
+        public Task<bool> UpdateUserPasswordAsync(string mail, string password)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.UserEntity.FirstOrDefault(x => x.Mail == mail);
+            if (entity != null)
+            {
+                entity.Password = password;
+                Context.UserEntity.Update(entity);
+                return Task.FromResult(Context.SaveChanges() > 0);
+            }
+            else
+            {
+                return Task.FromResult(false);
+            }
+        }
     }
 }

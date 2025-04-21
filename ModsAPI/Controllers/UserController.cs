@@ -292,6 +292,5 @@ namespace ModsAPI.Controllers
             };
             return new ResultEntity<bool>() { ResultData = await _IUserService.UpdateUserAsync(entity) };
         }
-
     }
 }
