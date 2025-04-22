@@ -485,6 +485,7 @@ body.dark-theme .el-button {
 body.dark-theme .el-button:hover {
     background-color: #444444;
     border-color: #555555;
+    color: #ffffffa6;
 }
 
 body.dark-theme .el-dropdown-menu {
@@ -668,5 +669,15 @@ body.dark-theme .el-select__wrapper.is-hovering {
     border-color: #2c2c2c;
     box-shadow: 0 0 5px #2c2c2c;
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body.dark-theme .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+    background-color: #333333;
+    color: #ffffff;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+    border-color: #444444;
 }
 </style>
