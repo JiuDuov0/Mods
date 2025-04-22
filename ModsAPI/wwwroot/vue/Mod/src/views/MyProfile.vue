@@ -22,8 +22,9 @@
                                 </el-form-item>
                                 <el-form-item label="Token">
                                     <el-input v-model="user.Token" type="password" readonly></el-input>
-                                    <el-button type="primary" @click="showdialog">获取Token</el-button>
-                                    <el-button type="primary" @click="copy">复制</el-button>
+                                    <el-button style="margin-top: 1rem;" type="primary"
+                                        @click="showdialog">获取Token</el-button>
+                                    <el-button style="margin-top: 1rem;" type="primary" @click="copy">复制</el-button>
                                 </el-form-item>
                                 <el-button type="primary" @click="UserInfoUpdate">修改</el-button>
                             </el-form>
@@ -86,7 +87,7 @@ export default {
             },
             NickName: "",
             headurl: head,
-            Role: localStorage.getItem('Role'),
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             password: '',
             showStatus: false,
             defaultAvatar: head
@@ -97,6 +98,7 @@ export default {
         $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
         this.getUserInfo();
+        this.detectDarkMode();
     },
     methods: {
         getUserInfo() {
@@ -118,6 +120,23 @@ export default {
                 }
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.error(error);
+            });
+        },
+        detectDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme'); // 添加夜间主题样式
+            } else {
+                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
+            }
+
+            // 监听主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
             });
         },
         showdialog() {
@@ -194,7 +213,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .profile-summary {
     margin-top: 20px;
 }
@@ -227,5 +246,142 @@ export default {
     margin-left: 10px;
     margin-right: 10px;
     font-size: 16px;
+}
+
+/* 黑暗模式全局样式 */
+body.dark-theme {
+    background-color: #121212;
+    color: #ffffffa6;
+}
+
+/* 黑暗模式下的卡片样式 */
+body.dark-theme .profile-card {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 黑暗模式下的头像样式 */
+body.dark-theme .profile-header {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .profile-header h2 {
+    color: #ffffff;
+}
+
+/* 黑暗模式下的输入框样式 */
+body.dark-theme .el-input__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+/* 输入框聚焦样式 */
+body.dark-theme .el-input__inner:focus {
+    border-color: #666666;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* 黑暗模式下的按钮样式 */
+body.dark-theme .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+/* 按钮悬停样式 */
+body.dark-theme .el-button:hover {
+    background-color: #444444;
+    border-color: #555555;
+}
+
+/* 黑暗模式下的下拉菜单样式 */
+body.dark-theme .el-dropdown-menu {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+}
+
+/* 黑暗模式下的下拉菜单项 */
+body.dark-theme .el-dropdown-item {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-item:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-item.is-active {
+    background-color: #444444;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* 黑暗模式下的头像信息 */
+body.dark-theme .account-info {
+    color: #ffffffa6;
+}
+
+/* 黑暗模式下的对话框样式 */
+body.dark-theme .el-dialog {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 黑暗模式下的表单标签 */
+body.dark-theme .el-form-item__label {
+    color: #ffffffa6;
+}
+
+/* 黑暗模式下的表单校验错误提示 */
+body.dark-theme .el-form-item__error {
+    color: #ff6b6b;
+}
+
+/* 黑暗模式下的链接样式 */
+body.dark-theme a {
+    color: #4a90e2;
+}
+
+body.dark-theme a:hover {
+    color: #82b1ff;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
+    background-color: #444444;
+    color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .el-input__wrapper {
+    background-color: #2c2c2c;
+    border-radius: 4px;
+    padding: 4px;
+    border: 1px solid #2c2c2c;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 </style>

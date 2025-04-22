@@ -258,7 +258,7 @@ namespace Service.Realization
 
         public List<ApproveModVersionEntity> GetApproveModVersionPageList(int Skip, int Take, string Search)
         {
-            IQueryable<ApproveModVersionEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).ThenInclude(x => x.Mod).Where(x => x.Status == "0");
+            IQueryable<ApproveModVersionEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ApproveModEntity.Include(x => x.ModVersion).ThenInclude(x => x.Mod).Where(x => x.Status == "0").Where(x => x.ModVersion.Mod.SoftDeleted == false);
             if (!string.IsNullOrWhiteSpace(Search))
             {
                 Context = Context.Where(x => x.ModVersion.Mod.Name.Contains(Search));

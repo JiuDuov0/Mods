@@ -42,6 +42,7 @@ export default {
     mounted() {
         this.updateColSpan();
         window.addEventListener('resize', this.updateColSpan);
+        this.detectDarkMode();
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.updateColSpan);
@@ -105,12 +106,29 @@ export default {
         validateEmail(email) {
             const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return re.test(email);
+        },
+        detectDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme'); // 添加夜间主题样式
+            } else {
+                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
+            }
+
+            // 监听主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            });
         }
     }
 };
 </script>
 
-<style scoped>
+<style>
 @media (max-width: 600px) {
     .el-row {
         padding: 0 10px;
@@ -182,5 +200,46 @@ input {
     color: rgb(102, 102, 102);
     margin-left: 0.5rem;
     margin-bottom: 1rem;
+}
+
+body.dark-theme {
+    background-color: #121212;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-card {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #1e1e1e;
+}
+
+body.dark-theme .el-input__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .span-logo {
+    color: #ffffffa6;
+}
+
+input:-webkit-autofill {
+    background-color: transparent !important;
+    color: inherit !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
+    -webkit-text-fill-color: inherit !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+body.dark-theme input:-webkit-autofill {
+    background-color: #2c2c2c !important;
+    -webkit-text-fill-color: #ffffffa6 !important;
+    box-shadow: 0 0 0px 1000px #2c2c2c inset !important;
 }
 </style>
