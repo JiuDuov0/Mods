@@ -32,6 +32,7 @@
 
 <script>
 import router from '../router/index.js';
+import { sha256 } from 'js-sha256';
 
 export default {
     data() {
@@ -64,7 +65,7 @@ export default {
 
             // 模拟发送验证码
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/Login/SendVerificationCode',
+                url: 'https://modcat.top:8089/api/Login/SendVerificationCode',
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
@@ -79,7 +80,7 @@ export default {
         },
         submitForm() {
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/Login/VerifyEmailCodeAndChangePassWord',
+                url: 'https://modcat.top:8089/api/Login/VerifyEmailCodeAndChangePassWord',
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
@@ -87,10 +88,10 @@ export default {
                 data: {
                     Mail: this.form.email,
                     VerificationCode: this.form.code,
-                    Password: this.form.password
+                    Password: sha256(this.form.password)
                 },
             }).then(response => {
-                if (response.data.ResultData) { this.$message.success('修改成功！'); router.push('/register'); } else { this.$message.error('修改失败: ' + response.data.ResultMsg); }
+                if (response.data.ResultData) { this.$message.success('修改成功！'); router.push('/'); } else { this.$message.error('修改失败: ' + response.data.ResultMsg); }
             }).catch(error => {
             });
         },

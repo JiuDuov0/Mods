@@ -66,14 +66,26 @@ namespace Service.Realization
             {
                 try
                 {
-                    await client.ConnectAsync(selectedConfig.Server, selectedConfig.SmtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.ConnectAsync(selectedConfig.Server, selectedConfig.SmtpPort, MailKit.Security.SecureSocketOptions.SslOnConnect);
                     await client.AuthenticateAsync(selectedConfig.SenderEmail, selectedConfig.SenderPassword);
                     await client.SendAsync(message);
                     await client.DisconnectAsync(true);
                 }
+                catch (SmtpCommandException ex)
+                {
+                    return $"SMTP 命令错误: {ex.Message} (Code: {ex.StatusCode})";
+                }
+                catch (SmtpProtocolException ex)
+                {
+                    return $"SMTP 协议错误: {ex.Message}";
+                }
+                catch (IOException ex)
+                {
+                    return $"IO 错误: {ex.Message}";
+                }
                 catch (Exception ex)
                 {
-                    return $"发送邮件失败：{ex.Message}";
+                    return $"未知错误: {ex.Message}";
                 }
             }
 
@@ -91,6 +103,21 @@ namespace Service.Realization
             return string.Empty; // 返回验证码
         }
 
+        public Task<bool> UpdateCatchState(string recipientEmail)
+        {
+            string redisKey = $"MailVerification:{recipientEmail}";
+            // 检查缓存中是否存在验证码
+            var mailInfo = _redisService.Get<MailInfo>(redisKey, 2);
+            if (mailInfo == null)
+            {
+                return Task.FromResult(false); // 验证失败
+            }
+            // 更新状态为已修改（200）
+            mailInfo.Status = "200";
+            _redisService.Set(redisKey, mailInfo, TimeSpan.FromHours(24), 2); // 重置过期时间为24小时
+            return Task.FromResult(true); // 更新成功
+        }
+
         public async Task<bool> VerifyEmailCodeAsync(string recipientEmail, string verificationCode)
         {
             string redisKey = $"MailVerification:{recipientEmail}";
@@ -101,7 +128,10 @@ namespace Service.Realization
             {
                 return false; // 验证失败
             }
-
+            if (mailInfo.Status != "0" || mailInfo.SentTime.Value.AddMinutes(10) < DateTime.Now)
+            {
+                return false; // 验证失败
+            }
             // 更新状态为已验证（100）
             mailInfo.Status = "100";
             await _redisService.SetAsync(redisKey, mailInfo, TimeSpan.FromHours(24), 2); // 重置过期时间为24小时

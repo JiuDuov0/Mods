@@ -230,7 +230,10 @@ namespace ModsAPI.Controllers
             #endregion
             if (await _IMailService.VerifyEmailCodeAsync(Mail, VerificationCode))
             {
-                await _IUserService.UpdateUserPasswordAsync(Mail, Password);
+                if (await _IUserService.UpdateUserPasswordAsync(Mail, Password))
+                {
+                    await _IMailService.UpdateCatchState(Mail);
+                }
             }
             else
             {
