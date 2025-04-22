@@ -138,8 +138,6 @@ h2 {
 
 body.dark-theme .el-input__wrapper {
     background-color: #2c2c2c;
-    border-radius: 4px;
-    padding: 4px;
     border: 1px solid #2c2c2c;
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
