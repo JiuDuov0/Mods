@@ -243,6 +243,51 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
+        /// Token续签接口
+        /// </summary>
+        /// <param name="json">{"Token":"","RefreshToken":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "RefreshToken")]
+        [EnableRateLimiting("Concurrency")]
+        public ResultEntity<ResponseToken> RefreshToken([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = (string)json.Token;
+            var refreshToken = (string)json.RefreshToken;
+            _IAPILogService.WriteLogAsync("LoginController/RefreshToken", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+
+            #region 验证参数
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "缺少Token" };
+            }
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "缺少RefreshToken" };
+            }
+            #endregion
+
+            try
+            {
+                // 调用 JwtHelper 的 Refresh 方法进行 Token 续签
+                var newToken = _JwtHelper.Refresh(token, refreshToken, HttpContext);
+                if (newToken != null)
+                {
+                    return new ResultEntity<ResponseToken> { ResultData = newToken, ResultMsg = "Token续签成功" };
+                }
+                else
+                {
+                    return new ResultEntity<ResponseToken> { ResultCode = 401, ResultMsg = "Token续签失败" };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 500, ResultMsg = $"Token续签异常: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
         /// 测试用的
         /// </summary>
         /// <returns></returns>

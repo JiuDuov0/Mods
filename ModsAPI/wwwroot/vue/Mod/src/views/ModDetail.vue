@@ -19,10 +19,16 @@
                         <h3>前置依赖</h3>
                         <ul>
                             <li v-for="dependence in ModDependenceEntities" :key="dependence.ModDependenceId"
-                                @click="goToModDetail(dependence.DependenceModVersion.Mod.ModId)">
-
-                                {{ dependence.DependenceModVersion.Mod.Name }} - {{
-                                    dependence.DependenceModVersion.VersionNumber }}
+                                @click="goToModDetail(dependence.DependenceModVersion.Mod?.ModId)">
+                                <template v-if="dependence.DependenceModVersionId !== '未知'">
+                                    {{ dependence.DependenceModVersion.Mod.Name }} - {{
+                                        dependence.DependenceModVersion.VersionNumber }}
+                                </template>
+                                <template v-else>
+                                    <a :href="dependence.ModIOURL" target="_blank" rel="noopener noreferrer">
+                                        {{ dependence.ModIOURL }}
+                                    </a>
+                                </template>
                             </li>
                         </ul>
                     </el-card>

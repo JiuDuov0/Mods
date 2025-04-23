@@ -30,10 +30,12 @@
                                 <el-option v-for="version in modVersions" :key="version.VersionId"
                                     :label="version.VersionNumber" :value="version.VersionId"></el-option>
                             </el-select>
+                            <el-input v-model="ModIOURL" placeholder="请输入ModIO依赖URL" style="margin-bottom: 16px;" />
                             <el-button type="primary" @click="addModDependence">添加依赖</el-button>
                             <el-table :data="modForm.ModDependenceEntities" style="width: 100%; margin-top: 16px;">
                                 <el-table-column prop="ModName" label="Mod 名称"></el-table-column>
                                 <el-table-column prop="VersionNumber" label="版本号"></el-table-column>
+                                <el-table-column prop="ModIOURL" label="ModIO依赖"></el-table-column>
                                 <el-table-column label="操作">
                                     <template v-slot="scope">
                                         <el-button @click="removeModDependence(scope.$index)" type="text"
@@ -101,6 +103,7 @@ export default {
             modVersions: [],
             selectedMod: '',
             selectedModVersion: '',
+            ModIOURL: '',
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             headurl: head,
             NickName: ""
@@ -203,7 +206,6 @@ export default {
         },
         addModDependence() {
             const selectedMod = this.mods.find(mod => mod.ModId === this.selectedMod);
-            console.log(selectedMod);
             const selectedModVersion = this.modVersions.find(version => version.VersionId === this.selectedModVersion);
             if (selectedMod && selectedModVersion) {
                 this.modForm.ModDependenceEntities.push({
@@ -214,6 +216,15 @@ export default {
                 });
                 this.selectedMod = '';
                 this.selectedModVersion = '';
+            } else if (this.ModIOURL) {
+                this.modForm.ModDependenceEntities.push({
+                    ModId: null,
+                    ModName: 'ModIO 依赖',
+                    VersionId: '未知',
+                    VersionNumber: null,
+                    ModIOURL: this.ModIOURL
+                });
+                this.ModIOURL = '';
             } else {
                 ElMessage.error('请选择有效的 Mod 和 Mod 版本');
             }
@@ -253,7 +264,8 @@ export default {
                 }],
                 ModDependenceEntities: this.modForm.ModDependenceEntities.map(dep => ({
                     ModId: dep.ModId,
-                    DependenceModVersionId: dep.VersionId
+                    DependenceModVersionId: dep.VersionId,
+                    ModIOURL: dep.ModIOURL
                 })),
                 PicUrl: this.modForm.PicUrl,
                 ModTypeEntities: []
