@@ -22,7 +22,6 @@
 </template>
 
 <script>
-import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import { sha256 } from 'js-sha256';
 import router from '../router/index.js';
@@ -58,37 +57,33 @@ export default {
             }
 
             var mail = this.loginForm.username;
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Login/UserLogin',
-                type: "POST",
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     LoginAccount: this.loginForm.username,
                     Password: sha256(this.loginForm.password)
-                }),
+                },
                 contentType: "application/json; charset=utf-8",
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: function (data) {
-                    if (data.ResultData == null) {
-                        ElMessage.error('登录失败: ' + data.ResultMsg);
-                    } else {
-                        localStorage.setItem("Mail", mail);
-                        localStorage.setItem("NickName" + mail, data.ResultData.NickName);
-                        localStorage.setItem("HeadPic" + mail, data.ResultData.HeadPic);
-                        localStorage.setItem("Role" + mail, data.ResultData.Role);
-                        localStorage.setItem("token" + mail, data.ResultData.Token);
-                        localStorage.setItem("refresh_Token" + mail, data.ResultData.Refresh_Token);
-                        router.push('/home');
-                    }
-                },
-                error: function (err) {
-                    ElMessage.error('登录失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('登录失败: ' + response.data.ResultMsg);
+                } else {
+                    localStorage.setItem("Mail", mail);
+                    localStorage.setItem("NickName" + mail, response.data.ResultData.NickName);
+                    localStorage.setItem("HeadPic" + mail, response.data.ResultData.HeadPic);
+                    localStorage.setItem("Role" + mail, response.data.ResultData.Role);
+                    localStorage.setItem("token" + mail, response.data.ResultData.Token);
+                    localStorage.setItem("refresh_Token" + mail, response.data.ResultData.Refresh_Token);
+                    router.push('/home');
                 }
+            }).catch(error => {
+                if (error.response && error.response.status === 401) {
+                    router.push('/');
+                }
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.error(error);
             });
         },
         handleChangePassword() { router.push('/changePassword'); },

@@ -163,6 +163,10 @@ namespace Service.Realization
         public bool SubscribeToMod(string userId, string modId)
         {
             var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            if (_IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.FirstOrDefault(x => x.UserId == userId && x.ModId == modId) != null)
+            {
+                return true;
+            }
             var subscription = new UserModSubscribeEntity
             {
                 SubscribeId = Guid.NewGuid().ToString(),
@@ -171,6 +175,7 @@ namespace Service.Realization
                 SubscribedAt = DateTime.Now
             };
             context.UserModSubscribeEntity.Add(subscription);
+            _IRedisManageService.Remove($"SetUserModSubscribe{userId}", 1);
             return context.SaveChanges() > 0;
         }
 
@@ -191,6 +196,7 @@ namespace Service.Realization
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var entity = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
             Context.UserModSubscribeEntity.Remove(entity);
+            _IRedisManageService.Remove($"SetUserModSubscribe{UserId}", 1);
             return Context.SaveChanges() > 0;
         }
 

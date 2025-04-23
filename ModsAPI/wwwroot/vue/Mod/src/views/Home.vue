@@ -198,86 +198,48 @@ export default {
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
         fetchModTypes() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
+                method: 'POST',
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        if (data.ResultCode == "500") { router.push('/'); }
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modTypes = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
-                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
-                    else if (err.status == "408") { ElMessage.error('请求超时'); }
-                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
-                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
-                    else if (err.status == "504") { ElMessage.error('网关超时'); }
-                    else if (err.status == "401") { router.push('/'); }
-                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
-                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
-                    else if (err.status == "408") { ElMessage.error('请求超时'); }
-                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
-                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
-                    else if (err.status == "504") { ElMessage.error('网关超时'); }
-                    else if (err.status == "500") { router.push('/'); }
-                    else { ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg); }
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modTypes = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchModList() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/ModListPage',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     Skip: this.skip,
                     Take: this.take,
-                    Types: this.selectedTypes, // 传递选中的类型
-                    Search: this.select // 传递搜索输入内容
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
+                    Types: this.selectedTypes,
+                    Search: this.select
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
-                        this.skip += this.take; // 更新 skip 值
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
-                },
-                complete: () => {
-                    setTimeout(() => {
-                        this.updateColWidth();
-                    }, 100);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modList = this.modList.concat(response.data.ResultData); // 将新数据附加到 modList
+                    this.skip += this.take; // 更新 skip 值
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
+            }).finally(() => {
+                setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
             });
             //this.updateColWidth();
         },
@@ -302,75 +264,53 @@ export default {
         },
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('取消订阅成功！');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == ModId) {
-                                item.IsMySubscribe = false;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('取消订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('取消订阅成功！');
+                    this.modList.forEach((item) => {
+                        if (item.ModId == ModId) {
+                            item.IsMySubscribe = false;
+                        }
+                    });
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         UserModSubscribe(modId) {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/ModSubscribe',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: modId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('订阅成功');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == modId) {
-                                item.IsMySubscribe = true;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('订阅成功！');
+                    this.modList.forEach((item) => {
+                        if (item.ModId == modId) {
+                            item.IsMySubscribe = true;
+                        }
+                    });
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         handleDropdownClick() {
