@@ -19,8 +19,9 @@
                         <h3>前置依赖</h3>
                         <ul>
                             <li v-for="dependence in ModDependenceEntities" :key="dependence.ModDependenceId"
-                                @click="goToModDetail(dependence.DependenceModVersion.Mod?.ModId)">
-                                <template v-if="dependence.DependenceModVersionId !== '未知'">
+                                @click="goToModDetail(dependence.DependenceModVersion.ModId)">
+                                <template
+                                    v-if="dependence.DependenceModVersionId !== '未知' && dependence.DependenceModVersionId !== null">
                                     {{ dependence.DependenceModVersion.Mod.Name }} - {{
                                         dependence.DependenceModVersion.VersionNumber }}
                                 </template>
@@ -107,6 +108,7 @@
     </el-container>
 </template>
 <script>
+import { watch } from 'vue'
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
@@ -478,15 +480,23 @@ export default {
             }
         },
         goToModDetail(ModId) {
+            if (!ModId) {
+                return;
+            }
             router.push({
                 path: '/modDetail',
                 query: {
                     ModId: ModId
                 }
+            }).then(() => {
+                window.location.reload();
             });
         },
         goBack() {
             router.go(-1);
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         }
     }
 };

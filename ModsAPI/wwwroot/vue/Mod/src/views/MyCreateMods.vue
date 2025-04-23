@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -332,6 +332,15 @@ export default {
                 });
             }).catch(() => {
                 ElMessage.info('已取消删除');
+            });
+        },
+        toModDetail(ModId) {
+            // 处理点击事件跳转到 Mod 详情页
+            router.push({
+                path: '/modDetail',
+                query: {
+                    ModId: ModId
+                }
             });
         },
         handleDownloadmintcat() {
