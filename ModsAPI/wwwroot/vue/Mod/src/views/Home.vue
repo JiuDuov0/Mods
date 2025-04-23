@@ -51,6 +51,7 @@
                         </el-col>
                     </el-row>
                     <div ref="bottomObserver" style="height: 1px;"></div>
+                    <div id="show" style="text-align: center;display: none;">正在获取数据，请稍候</div>
                 </el-col>
                 <div class="account-info">
                     <el-avatar :src="headurl"></el-avatar>
@@ -101,6 +102,7 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
+            isFetching: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
@@ -215,6 +217,11 @@ export default {
             });
         },
         fetchModList() {
+            if (this.isFetching) {
+                return;
+            }
+            this.isFetching = true;
+            $('#show').show();
             this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/ModListPage',
                 method: 'POST',
@@ -237,6 +244,8 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             }).finally(() => {
+                this.isFetching = false;
+                $('#show').hide();
                 setTimeout(() => {
                     this.updateColWidth();
                 }, 100);
@@ -254,7 +263,11 @@ export default {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         if (this.skip <= this.modList.length) {
-                            this.fetchModList();
+                            if (this.isFetching) {
+                                return;
+                            } else {
+                                this.fetchModList();
+                            }
                         }
                     }
                 });

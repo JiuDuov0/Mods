@@ -217,8 +217,13 @@ export default {
                             if (data.ResultData.PicUrl === null || data.ResultData.PicUrl === "") {
                                 this.videoUrl = drg;
                             } else {
-                                // this.videoUrl = data.ResultData.PicUrl;
-                                this.videoUrl = drg;
+                                this.videoUrl = '/pic.html';
+                                localStorage.setItem("imgPath", data.ResultData.PicUrl);
+                                const iframeWidth = document.querySelector('.myiframe').offsetWidth;
+                                const iframeHeight = document.querySelector('.myiframe').offsetHeight;
+                                localStorage.setItem("imgwidth", document.querySelector('.myiframe').offsetWidth - 20);
+                                localStorage.setItem("imgheight", document.querySelector('.myiframe').offsetHeight - 20);
+                                //this.videoUrl = drg;
                             }
 
                         }

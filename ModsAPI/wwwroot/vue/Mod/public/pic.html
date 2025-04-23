@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 获取图片路径
+            const imgPath = localStorage.getItem('imgPath');
+            const imgwidth = localStorage.getItem('imgwidth');
+            const imgheight = localStorage.getItem('imgheight');
+            if (imgPath) {
+                // 创建img元素并设置src属性
+                const imgElement = $('<img>').attr('src', imgPath).css({
+                    'max-width': imgwidth + 'px',
+                    'max-height': imgheight + 'px',
+                    'display': 'block',
+                    'margin': '0 auto'
+                }).attr('referrerPolicy', 'no-referrer');
+                $('body').append(imgElement);
+            } else {
+            }
+        });
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>
