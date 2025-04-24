@@ -3,7 +3,7 @@ import router from './router/index';
 import { ElMessage } from 'element-plus';
 
 const instance = axios.create({
-    baseURL: 'https://127.0.0.1:7114/api', // API 基础路径
+    baseURL: 'https://modcat.top:8089/api', // API 基础路径
     timeout: 10000, // 请求超时时间
     headers: {
         'Content-Type': 'application/json',

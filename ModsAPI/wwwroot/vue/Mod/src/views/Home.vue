@@ -201,7 +201,7 @@ export default {
         },
         fetchModTypes() {
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/Mod/GetAllModTypes',
+                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -223,7 +223,7 @@ export default {
             this.isFetching = true;
             $('#show').show();
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/Mod/ModListPage',
+                url: 'https://modcat.top:8089/api/Mod/ModListPage',
                 method: 'POST',
                 data: {
                     Skip: this.skip,
@@ -278,7 +278,7 @@ export default {
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/User/UserUnsubscribeMod',
+                url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
                 method: 'POST',
                 data: {
                     ModId: ModId
@@ -303,7 +303,7 @@ export default {
         },
         UserModSubscribe(modId) {
             this.$axios({
-                url: 'https://127.0.0.1:7114/api/User/ModSubscribe',
+                url: 'https://modcat.top:8089/api/User/ModSubscribe',
                 method: 'POST',
                 data: {
                     ModId: modId
