@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -95,7 +95,7 @@ export default {
         return {
             colSpan: 21,
             skip: 0,
-            take: 18,
+            take: 100,
             modTypes: [],
             modList: [],
             NickName: "",

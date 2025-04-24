@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -734,6 +734,11 @@ body.dark-theme .el-card h3 {
 
 body.dark-theme .el-input {
     background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-dropdown-menu {
+    background-color: #1e1e1e;
     color: #ffffffa6;
 }
 </style>
