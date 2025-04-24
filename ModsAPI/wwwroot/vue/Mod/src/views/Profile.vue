@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -235,7 +235,7 @@ export default {
                     router.push('/');
                 }
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
-                console.error(error);
+                console.log(error);
             });
         },
         fetchModList() {

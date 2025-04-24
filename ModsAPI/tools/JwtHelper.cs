@@ -150,7 +150,7 @@ namespace ModsAPI.tools
             var handler = new JwtSecurityTokenHandler();
             var payload = handler.ReadJwtToken(Token).Payload;
             var claims = payload.Claims;
-            var UserId = claims.First(claim => claim.Type == "userid").Value;
+            var UserId = claims.First(claim => claim.Type == "UserId").Value;
             var OldRefreshToken = _RedisManage.GetValue(UserId + "RefreshToken").ToString().Replace("\"", "");
             if (OldRefreshToken == null || refresh_Token != OldRefreshToken)
             {

@@ -126,7 +126,7 @@ export default {
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.log('Error:', error);
                     ElMessage.error('文件上传失败');
                 });
         },

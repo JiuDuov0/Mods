@@ -119,69 +119,108 @@ export default {
     },
     methods: {
         fetchTags() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
+                method: 'POST',
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.tags = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.tags = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             this.tags = data.ResultData;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         fetchMods(query) {
             if (query === null || query === undefined || query === '') {
                 return;
             }
-            $.ajax({
-                url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+
+            this.$axios({
+                url: 'https://modcat.top:8089/api/Mod/ModListPageSearch',
+                method: 'POST',
+                data: {
                     Skip: '0',
-                    Take: '10',
+                    Take: '100',
                     Search: query
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.mods = data.ResultData;
-                        //this.modVersions = data.ResultData.ModVersionEntities;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.mods = response.data.ResultData;
+                    //this.modVersions = data.ResultData.ModVersionEntities;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         Skip: '0',
+            //         Take: '10',
+            //         Search: query
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             this.mods = data.ResultData;
+            //             //this.modVersions = data.ResultData.ModVersionEntities;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         detectDarkMode() {
             const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -276,39 +315,62 @@ export default {
                 });
             });
 
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/CreateMod',
-                type: "POST",
+                method: 'POST',
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('提交失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('提交成功');
-                        router.push({
-                            path: '/addVersionFile',
-                            query: {
-                                VersionId: data.ResultData.ModVersionEntities[0].VersionId
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('提交失败 ');
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('提交失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('提交成功');
+                    router.push({
+                        path: '/addVersionFile',
+                        query: {
+                            VersionId: response.data.ResultData.ModVersionEntities[0].VersionId
+                        }
+                    });
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/CreateMod',
+            //     type: "POST",
+            //     data: JSON.stringify(formData),
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('提交失败: ' + data.ResultMsg);
+            //         } else {
+            //             ElMessage.success('提交成功');
+            //             router.push({
+            //                 path: '/addVersionFile',
+            //                 query: {
+            //                     VersionId: data.ResultData.ModVersionEntities[0].VersionId
+            //                 }
+            //             });
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('提交失败 ');
+            //         console.log(err);
+            //     }
+            // });
         },
         handleReset() {
             this.modForm = {

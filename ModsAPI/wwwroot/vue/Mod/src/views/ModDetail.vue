@@ -196,102 +196,180 @@ export default {
         },
         modDetail() {
             // 获取 Mod 详情逻辑
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/ModDetail',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: this.$route.query.ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        // 赋值
-                        this.entity = data.ResultData;
-                        this.Name = data.ResultData.Name;
-                        this.createdAt = data.ResultData.CreatedAt;
-                        this.videoUrl = data.ResultData.VideoUrl;
-                        if (this.videoUrl === null || this.videoUrl === "") {
-                            if (data.ResultData.PicUrl === null || data.ResultData.PicUrl === "") {
-                                this.videoUrl = drg;
-                            } else {
-                                this.videoUrl = '/pic.html';
-                                localStorage.setItem("imgPath", data.ResultData.PicUrl);
-                                const iframeWidth = document.querySelector('.myiframe').offsetWidth;
-                                const iframeHeight = document.querySelector('.myiframe').offsetHeight;
-                                localStorage.setItem("imgwidth", document.querySelector('.myiframe').offsetWidth - 20);
-                                localStorage.setItem("imgheight", document.querySelector('.myiframe').offsetHeight - 20);
-                                //this.videoUrl = drg;
-                            }
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    // 赋值
+                    this.entity = response.data.ResultData;
+                    this.Name = response.data.ResultData.Name;
+                    this.createdAt = response.data.ResultData.CreatedAt;
+                    this.videoUrl = response.data.ResultData.VideoUrl;
+                    if (this.videoUrl === null || this.videoUrl === "") {
+                        if (response.data.ResultData.PicUrl === null || response.data.ResultData.PicUrl === "") {
+                            this.videoUrl = drg;
+                        } else {
+                            this.videoUrl = '/pic.html';
+                            localStorage.setItem("imgPath", response.data.ResultData.PicUrl);
+                            const iframeWidth = document.querySelector('.myiframe').offsetWidth;
+                            const iframeHeight = document.querySelector('.myiframe').offsetHeight;
+                            localStorage.setItem("imgwidth", document.querySelector('.myiframe').offsetWidth - 20);
+                            localStorage.setItem("imgheight", document.querySelector('.myiframe').offsetHeight - 20);
+                            //this.videoUrl = drg;
+                        }
 
-                        }
-                        this.description = data.ResultData.Description;
-                        this.modAuthor = data.ResultData.CreatorEntity.NickName;
-                        this.modAuthorId = data.ResultData.CreatorEntity.UserId;
-                        this.downloads = data.ResultData.DownloadCount;
-                        if (data.ResultData.ModTypeEntities !== null) {
-                            data.ResultData.ModTypeEntities.forEach(element => {
-                                this.tags.push(element.Types.TypeName);
-                            });
-                        }
-                        this.ModDependenceEntities = data.ResultData.ModDependenceEntities;
-                        this.isSubscribed = data.ResultData.IsMySubscribe;
-                        this.latestVersion.version = data.ResultData.ModVersionEntities[0].VersionNumber;
-                        this.latestVersion.description = data.ResultData.ModVersionEntities[0].Description;
-                        this.latestVersion.FilesId = data.ResultData.ModVersionEntities[0].FilesId;
-                        this.latestVersion.CreatedAt = data.ResultData.ModVersionEntities[0].CreatedAt;
-                        if (data.ResultData.AVGPoint != null) {
-                            this.AVGPoint = data.ResultData.AVGPoint;
-                        }
                     }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                    this.description = response.data.ResultData.Description;
+                    $("#text").html(this.description);
+                    this.modAuthor = response.data.ResultData.CreatorEntity.NickName;
+                    this.modAuthorId = response.data.ResultData.CreatorEntity.UserId;
+                    this.downloads = response.data.ResultData.DownloadCount;
+                    if (response.data.ResultData.ModTypeEntities !== null) {
+                        response.data.ResultData.ModTypeEntities.forEach(element => {
+                            this.tags.push(element.Types.TypeName);
+                        });
+                    }
+                    this.ModDependenceEntities = response.data.ResultData.ModDependenceEntities;
+                    this.isSubscribed = response.data.ResultData.IsMySubscribe;
+                    this.latestVersion.version = response.data.ResultData.ModVersionEntities[0].VersionNumber;
+                    this.latestVersion.description = response.data.ResultData.ModVersionEntities[0].Description;
+                    this.latestVersion.FilesId = response.data.ResultData.ModVersionEntities[0].FilesId;
+                    this.latestVersion.CreatedAt = response.data.ResultData.ModVersionEntities[0].CreatedAt;
+                    if (response.data.ResultData.AVGPoint != null) {
+                        this.AVGPoint = response.data.ResultData.AVGPoint;
+                    }
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
-            $.ajax({
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/ModDetail',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: this.$route.query.ModId
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             // 赋值
+            //             this.entity = data.ResultData;
+            //             this.Name = data.ResultData.Name;
+            //             this.createdAt = data.ResultData.CreatedAt;
+            //             this.videoUrl = data.ResultData.VideoUrl;
+            //             if (this.videoUrl === null || this.videoUrl === "") {
+            //                 if (data.ResultData.PicUrl === null || data.ResultData.PicUrl === "") {
+            //                     this.videoUrl = drg;
+            //                 } else {
+            //                     this.videoUrl = '/pic.html';
+            //                     localStorage.setItem("imgPath", data.ResultData.PicUrl);
+            //                     const iframeWidth = document.querySelector('.myiframe').offsetWidth;
+            //                     const iframeHeight = document.querySelector('.myiframe').offsetHeight;
+            //                     localStorage.setItem("imgwidth", document.querySelector('.myiframe').offsetWidth - 20);
+            //                     localStorage.setItem("imgheight", document.querySelector('.myiframe').offsetHeight - 20);
+            //                     //this.videoUrl = drg;
+            //                 }
+
+            //             }
+            //             this.description = data.ResultData.Description;
+            //             this.modAuthor = data.ResultData.CreatorEntity.NickName;
+            //             this.modAuthorId = data.ResultData.CreatorEntity.UserId;
+            //             this.downloads = data.ResultData.DownloadCount;
+            //             if (data.ResultData.ModTypeEntities !== null) {
+            //                 data.ResultData.ModTypeEntities.forEach(element => {
+            //                     this.tags.push(element.Types.TypeName);
+            //                 });
+            //             }
+            //             this.ModDependenceEntities = data.ResultData.ModDependenceEntities;
+            //             this.isSubscribed = data.ResultData.IsMySubscribe;
+            //             this.latestVersion.version = data.ResultData.ModVersionEntities[0].VersionNumber;
+            //             this.latestVersion.description = data.ResultData.ModVersionEntities[0].Description;
+            //             this.latestVersion.FilesId = data.ResultData.ModVersionEntities[0].FilesId;
+            //             this.latestVersion.CreatedAt = data.ResultData.ModVersionEntities[0].CreatedAt;
+            //             if (data.ResultData.AVGPoint != null) {
+            //                 this.AVGPoint = data.ResultData.AVGPoint;
+            //             }
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
+
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/GetModPointByModId',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: this.$route.query.ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        //暂未评分
-                    } else {
-                        // 赋值
-                        this.rating = data.ResultData.Point;
-                        this.pointentity = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    console.log(err);
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    //暂未评分
+                } else {
+                    // 赋值
+                    this.rating = response.data.ResultData.Point;
+                    this.pointentity = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/GetModPointByModId',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: this.$route.query.ModId
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             //暂未评分
+            //         } else {
+            //             // 赋值
+            //             this.rating = data.ResultData.Point;
+            //             this.pointentity = data.ResultData;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         console.log(err);
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //     }
+            // });
         },
         showVersionDetails() {
             if (this.entity && this.entity.ModVersionEntities) {
@@ -302,69 +380,109 @@ export default {
             }
         },
         handleSubscribe(ModId) {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/ModSubscribe',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('订阅成功');
-                        this.isSubscribed = true;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('订阅成功');
+                    this.isSubscribed = true;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/User/ModSubscribe',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: ModId
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('订阅失败: ' + data.ResultMsg);
+            //         } else {
+            //             ElMessage.success('订阅成功');
+            //             this.isSubscribed = true;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         handleUnsubscribe(ModId) {
             // 处理取消订阅逻辑
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('取消订阅成功！');
-                        this.isSubscribed = false;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('取消订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('取消订阅成功！');
+                    this.isSubscribed = false;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: ModId
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == false || data.ResultData == null) {
+            //             ElMessage.error('取消订阅失败: ' + data.ResultMsg);
+            //         } else {
+            //             ElMessage.success('取消订阅成功！');
+            //             this.isSubscribed = false;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         downloadLatestVersion(ModId) {
             // 处理下载最新版本逻辑
@@ -380,60 +498,104 @@ export default {
             }
         },
         addPoint() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/AddModPoint',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: this.ModId,
                     Point: this.rating
-                }),
-                success: (data) => {
-                    if (data.ResultCode === 200) {
-                        ElMessage.success('评分提交成功');
-                        this.ratingWindowVisible = false;
-                    } else {
-                        ElMessage.error('评分提交失败: ' + data.ResultMsg);
-                    }
                 },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultCode === 200) {
+                    ElMessage.success('评分提交成功');
+                    this.ratingWindowVisible = false;
+                } else {
+                    ElMessage.error('评分提交失败: ' + response.data.ResultMsg);
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/AddModPoint',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: this.ModId,
+            //         Point: this.rating
+            //     }),
+            //     success: (data) => {
+            //         if (data.ResultCode === 200) {
+            //             ElMessage.success('评分提交成功');
+            //             this.ratingWindowVisible = false;
+            //         } else {
+            //             ElMessage.error('评分提交失败: ' + data.ResultMsg);
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         updatePoint() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/UpdateModPoint',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModPointId: this.pointentity.ModPointId,
                     UserId: this.pointentity.UserId,
                     ModId: this.ModId,
                     Point: this.rating
-                }),
-                success: (data) => {
-                    if (data.ResultCode === 200) {
-                        ElMessage.success('评分提交成功');
-                        this.ratingWindowVisible = false;
-                    } else {
-                        ElMessage.error('评分提交失败: ' + data.ResultMsg);
-                    }
                 },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultCode === 200) {
+                    ElMessage.success('评分提交成功');
+                    this.ratingWindowVisible = false;
+                } else {
+                    ElMessage.error('评分提交失败: ' + response.data.ResultMsg);
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/UpdateModPoint',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModPointId: this.pointentity.ModPointId,
+            //         UserId: this.pointentity.UserId,
+            //         ModId: this.ModId,
+            //         Point: this.rating
+            //     }),
+            //     success: (data) => {
+            //         if (data.ResultCode === 200) {
+            //             ElMessage.success('评分提交成功');
+            //             this.ratingWindowVisible = false;
+            //         } else {
+            //             ElMessage.error('评分提交失败: ' + data.ResultMsg);
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('评分提交失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         handleProfile(UserId) {
             router.push({
@@ -476,7 +638,7 @@ export default {
             }
             catch (error) {
                 ElMessage.error('下载文件失败:' + error);
-                console.error('下载文件失败:', error);
+                console.log('下载文件失败:', error);
             }
         },
         goToModDetail(ModId) {

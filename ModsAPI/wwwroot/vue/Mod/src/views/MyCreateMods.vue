@@ -50,6 +50,7 @@
                         </el-col>
                     </el-row>
                     <div ref="bottomObserver" style="height: 1px;"></div>
+                    <div id="show" style="text-align: center;display: none;">正在获取数据，请稍候</div>
                 </el-col>
             </el-row>
             <div class="account-info">
@@ -99,6 +100,7 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
+            isFetching: false,
             defaulturl: drg,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             selectedTypes: [], // 用于存储选中的类型
@@ -223,39 +225,73 @@ export default {
             });
         },
         fetchModList() {
-            $.ajax({
+            if (this.isFetching) {
+                return;
+            }
+            this.isFetching = true;
+            $('#show').show();
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/GetMyCreateMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     Skip: this.skip,
                     Take: this.take,
                     Types: this.selectedTypes, // 传递选中的类型
                     Search: this.select // 传递搜索输入内容
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
-                        this.skip += this.take; // 更新 skip 值
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    console.log(err);
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modList = this.modList.concat(response.data.ResultData); // 将新数据附加到 modList
+                    this.skip += this.take; // 更新 skip 值
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
+            }).finally(() => {
+                this.isFetching = false;
+                $('#show').hide();
+                setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/GetMyCreateMod',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         Skip: this.skip,
+            //         Take: this.take,
+            //         Types: this.selectedTypes, // 传递选中的类型
+            //         Search: this.select // 传递搜索输入内容
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
+            //             this.skip += this.take; // 更新 skip 值
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         console.log(err);
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //     }
+            // });
         },
         setupIntersectionObserver() {
             const options = {
@@ -268,7 +304,11 @@ export default {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         if (this.skip <= this.modList.length) {
-                            this.fetchModList();
+                            if (this.isFetching) {
+                                return;
+                            } else {
+                                this.fetchModList();
+                            }
                         }
                     }
                 });
@@ -727,5 +767,61 @@ body.dark-theme [name="cardsetwidth"] .el-button {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     margin-left: 0px;
     margin-top: 1%;
+}
+
+body.dark-theme .el-message-box {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border: 1px solid #333333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .el-message-box__header {
+    color: #ffffff;
+    border-bottom: 1px solid #444444;
+}
+
+body.dark-theme .el-message-box__content {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-message-box__btns .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+body.dark-theme .el-message-box__btns .el-button:hover {
+    background-color: #444444;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+body.dark-theme .el-message-box__btns .el-button--primary {
+    margin-left: 0px;
+}
+
+body.dark-theme .el-message-box__btns .el-button--primary:hover {
+    background-color: #b3001e;
+    border-color: #b3001e;
+}
+
+body.dark-theme .el-message-box__btns .el-button--default {
+    margin-left: 0px;
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-message-box__btns .el-button--default:hover {
+    background-color: #444444;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+body.dark-theme .el-message-box__title {
+    color: #ffffff;
 }
 </style>

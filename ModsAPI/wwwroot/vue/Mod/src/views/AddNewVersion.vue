@@ -82,38 +82,69 @@ export default {
                 return;
             }
 
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/ModAddVersion', // 替换为实际的 API URL
-                type: 'POST',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+            this.$axios({
+                url: 'https://modcat.top:8089/api/Mod/ModAddVersion',
+                method: 'POST',
+                data: {
                     ModId: this.ModId,
                     VersionNumber: this.versionForm.version,
                     Description: this.versionForm.description
-                }),
-                success: (data) => {
-                    if (data.ResultCode === 200) {
-                        ElMessage.success('版本添加成功');
-                        this.versionForm.version = '';
-                        this.versionForm.description = '';
-                        router.push({
-                            path: '/addVersionFile',
-                            query: {
-                                VersionId: data.ResultData.VersionId
-                            }
-                        });
-                    } else {
-                        ElMessage.error('版本添加失败: ' + data.ResultMsg);
-                    }
                 },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('版本添加失败: ' + err.responseText);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultCode === 200) {
+                    ElMessage.success('版本添加成功');
+                    this.versionForm.version = '';
+                    this.versionForm.description = '';
+                    router.push({
+                        path: '/addVersionFile',
+                        query: {
+                            VersionId: response.data.ResultData.VersionId
+                        }
+                    });
+                } else {
+                    ElMessage.error('版本添加失败: ' + response.data.ResultMsg);
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/ModAddVersion',
+            //     type: 'POST',
+            //     contentType: 'application/json; charset=utf-8',
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: this.ModId,
+            //         VersionNumber: this.versionForm.version,
+            //         Description: this.versionForm.description
+            //     }),
+            //     success: (data) => {
+            //         if (data.ResultCode === 200) {
+            //             ElMessage.success('版本添加成功');
+            //             this.versionForm.version = '';
+            //             this.versionForm.description = '';
+            //             router.push({
+            //                 path: '/addVersionFile',
+            //                 query: {
+            //                     VersionId: data.ResultData.VersionId
+            //                 }
+            //             });
+            //         } else {
+            //             ElMessage.error('版本添加失败: ' + data.ResultMsg);
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('版本添加失败: ' + err.responseText);
+            //     }
+            // });
         },
         detectDarkMode() {
             const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;

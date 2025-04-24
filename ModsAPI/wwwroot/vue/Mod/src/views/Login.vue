@@ -58,7 +58,7 @@ export default {
 
             var mail = this.loginForm.username;
             this.$axios({
-                url: 'https://modcat.top:8089/api/Login/UserLogin',
+                url: 'https://127.0.0.1:7114/api/Login/UserLogin',
                 method: 'POST',
                 data: {
                     LoginAccount: this.loginForm.username,
@@ -76,14 +76,16 @@ export default {
                     localStorage.setItem("Role" + mail, response.data.ResultData.Role);
                     localStorage.setItem("token" + mail, response.data.ResultData.Token);
                     localStorage.setItem("refresh_Token" + mail, response.data.ResultData.Refresh_Token);
-                    router.push('/home');
+                    setTimeout(() => {
+                        router.push('/home');
+                    }, 100);
                 }
             }).catch(error => {
                 if (error.response && error.response.status === 401) {
                     router.push('/');
                 }
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
-                console.error(error);
+                console.log(error);
             });
         },
         handleChangePassword() { router.push('/changePassword'); },

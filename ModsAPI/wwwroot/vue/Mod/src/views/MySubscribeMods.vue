@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -48,6 +48,7 @@
                         </el-col>
                     </el-row>
                     <div ref="bottomObserver" style="height: 1px;"></div>
+                    <div id="show" style="text-align: center;display: none;">正在获取数据，请稍候</div>
                 </el-col>
             </el-row>
             <div class="account-info">
@@ -97,6 +98,7 @@ export default {
             NickName: "",
             headurl: head,
             defaulturl: drg,
+            isFetching: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
@@ -192,67 +194,117 @@ export default {
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
         fetchModTypes() {
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
+                method: 'POST',
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modTypes = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modTypes = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             this.modTypes = data.ResultData;
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         fetchModList() {
-            $.ajax({
+            if (this.isFetching) {
+                return;
+            }
+            this.isFetching = true;
+            $('#show').show();
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/UserAllSubscribeModPage',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     Skip: this.skip,
                     Take: this.take,
                     Types: this.selectedTypes, // 传递选中的类型
                     Search: this.select // 传递搜索输入内容
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
-                        this.skip += this.take; // 更新 skip 值
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modList = this.modList.concat(response.data.ResultData); // 将新数据附加到 modList
+                    this.skip += this.take; // 更新 skip 值
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
+            }).finally(() => {
+                this.isFetching = false;
+                $('#show').hide();
+                setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/User/UserAllSubscribeModPage',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         Skip: this.skip,
+            //         Take: this.take,
+            //         Types: this.selectedTypes, // 传递选中的类型
+            //         Search: this.select // 传递搜索输入内容
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == null) {
+            //             ElMessage.error('获取失败: ' + data.ResultMsg);
+            //         } else {
+            //             this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
+            //             this.skip += this.take; // 更新 skip 值
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         setupIntersectionObserver() {
             const options = {
@@ -265,7 +317,11 @@ export default {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         if (this.skip <= this.modList.length) {
-                            this.fetchModList();
+                            if (this.isFetching) {
+                                return;
+                            } else {
+                                this.fetchModList();
+                            }
                         }
                     }
                 });
@@ -275,38 +331,60 @@ export default {
         },
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
-            $.ajax({
+            this.$axios({
                 url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+                method: 'POST',
+                data: {
                     ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.info('取消订阅成功！');
-                        this.skip = 0; // 选中的类型变化时，重置 skip
-                        this.modList = []; // 清空当前 modList
-                        this.fetchModList(); // 当选中的类型变化时，重新获取 mod 列表
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('取消订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.info('取消订阅成功！');
+                    this.skip = 0; // 选中的类型变化时，重置 skip
+                    this.modList = []; // 清空当前 modList
+                    this.fetchModList(); // 当选中的类型变化时，重新获取 mod 列表
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
+
+            // $.ajax({
+            //     url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
+            //     type: "POST",
+            //     contentType: "application/json; charset=utf-8",
+            //     headers: {
+            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            //     },
+            //     data: JSON.stringify({
+            //         ModId: ModId
+            //     }),
+            //     cache: false,
+            //     dataType: "json",
+            //     xhrFields: {
+            //         withCredentials: true
+            //     },
+            //     async: false,
+            //     success: (data) => {
+            //         if (data.ResultData == false || data.ResultData == null) {
+            //             ElMessage.error('取消订阅失败: ' + data.ResultMsg);
+            //         } else {
+            //             ElMessage.info('取消订阅成功！');
+            //             this.skip = 0; // 选中的类型变化时，重置 skip
+            //             this.modList = []; // 清空当前 modList
+            //             this.fetchModList(); // 当选中的类型变化时，重新获取 mod 列表
+            //         }
+            //     },
+            //     error: (err) => {
+            //         if (err.status == "401") { router.push('/'); }
+            //         ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
+            //         console.log(err);
+            //     }
+            // });
         },
         toModDetail(ModId) {
             // 处理点击事件跳转到 Mod 详情页
