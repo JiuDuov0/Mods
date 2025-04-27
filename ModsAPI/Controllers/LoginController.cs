@@ -52,7 +52,7 @@ namespace ModsAPI.Controllers
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
             #region 记录访问
-            _IAPILogService.WriteLogAsync("LoginController/UserLogin", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("LoginController/UserLogin", (string)json.LoginAccount, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
 
@@ -253,8 +253,10 @@ namespace ModsAPI.Controllers
         {
             #region 记录访问
             var token = (string)json.Token;
+            string UserId = string.Empty;
+            if (string.IsNullOrWhiteSpace(token)) { UserId = _JwtHelper.GetTokenStr(token, "UserId"); }
             var refreshToken = (string)json.RefreshToken;
-            _IAPILogService.WriteLogAsync("LoginController/RefreshToken", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("LoginController/RefreshToken", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
             #region 验证参数

@@ -176,7 +176,7 @@ namespace ModsAPI.Controllers
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            await _IAPILogService.WriteLogAsync("FilesController/DownloadFile", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile/{json.FileId}", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
