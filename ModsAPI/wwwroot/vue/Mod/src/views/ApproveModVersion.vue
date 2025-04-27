@@ -331,7 +331,9 @@ export default {
                     ElMessage.error('审核失败: ' + response.data.ResultMsg);
                 } else if (response.data.ResultData === "审核成功") {
                     ElMessage.success('审核成功');
-                    this.fetchModList();
+                    setTimeout(() => {
+                        this.fetchModList();
+                    }, 200);
                 } else {
                     ElMessage.error('审核失败');
                 }
