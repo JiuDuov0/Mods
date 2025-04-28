@@ -70,37 +70,36 @@ export default {
                 return;
             }
             var mail = this.registerForm.mail;
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Login/UserRegister',
-                type: "POST",
-                data: JSON.stringify({
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Login/UserRegister`,
+                method: 'POST',
+                data: {
                     LoginAccount: this.registerForm.mail,
                     NickName: this.registerForm.nickname,
                     Password: sha256(this.registerForm.password)
-                }),
+                },
                 contentType: "application/json; charset=utf-8",
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('注册失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('注册成功');
-                        localStorage.setItem("Mail", mail);
-                        localStorage.setItem("NickName" + mail, data.ResultData.NickName);
-                        localStorage.setItem("token" + mail, data.ResultData.Token);
-                        localStorage.setItem("refresh_Token" + mail, data.ResultData.Refresh_Token);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('登录失败: ' + response.data.ResultMsg);
+                } else {
+                    localStorage.setItem("Mail", mail);
+                    localStorage.setItem("NickName" + mail, response.data.ResultData.NickName);
+                    localStorage.setItem("HeadPic" + mail, response.data.ResultData.HeadPic);
+                    localStorage.setItem("Role" + mail, response.data.ResultData.Role);
+                    localStorage.setItem("token" + mail, response.data.ResultData.Token);
+                    localStorage.setItem("refresh_Token" + mail, response.data.ResultData.Refresh_Token);
+                    setTimeout(() => {
                         router.push('/home');
-                    }
-                },
-                error: (err) => {
-                    ElMessage.error('注册失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                    }, 100);
                 }
+            }).catch(error => {
+                if (error.response && error.response.status === 401) {
+                    router.push('/');
+                }
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         validateEmail(email) {

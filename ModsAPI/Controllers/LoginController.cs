@@ -128,7 +128,7 @@ namespace ModsAPI.Controllers
         public ResultEntity<ResponseToken> UserRegister([FromBody] dynamic json)
         {
             #region 记录访问
-            _IAPILogService.WriteLogAsync("LoginController/UserRegister", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("LoginController/UserRegister", (string)json.LoginAccount, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
 

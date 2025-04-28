@@ -66,9 +66,8 @@ export default {
             this.isSendingCode = true;
             this.countdown = 60;
 
-            // 模拟发送验证码
             this.$axios({
-                url: 'https://modcat.top:8089/api/Login/SendVerificationCode',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Login/SendVerificationCode`,
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
@@ -83,7 +82,7 @@ export default {
         },
         submitForm() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Login/VerifyEmailCodeAndChangePassWord',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Login/VerifyEmailCodeAndChangePassWord`,
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))

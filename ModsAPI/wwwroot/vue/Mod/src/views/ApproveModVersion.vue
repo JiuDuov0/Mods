@@ -183,7 +183,7 @@ export default {
         },
         fetchModList() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Approve/GetApproveModVersionPageList',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Approve/GetApproveModVersionPageList`,
                 method: 'POST',
                 data: {
                     Skip: this.skip,
@@ -203,38 +203,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Approve/GetApproveModVersionPageList',
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         Skip: this.skip,
-            //         Take: this.take,
-            //         Search: this.select
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.modList = this.modList.concat(data.ResultData);
-            //             this.skip += this.take; // 更新 skip 值
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         setupIntersectionObserver() {
             const options = {
@@ -257,7 +225,7 @@ export default {
         },
         RefuseModVersion(VersionId) {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Approve/ApproveMod',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Approve/ApproveMod`,
                 method: 'POST',
                 data: {
                     VersionId: VersionId,
@@ -279,45 +247,10 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Approve/ApproveMod',
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         VersionId: VersionId,
-            //         Comments: "驳回",
-            //         Status: "10",
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('审核失败: ' + data.ResultMsg);
-            //         } else if (data.ResultData === "审核成功") {
-            //             ElMessage.success('审核成功');
-            //             this.fetchModList();
-            //         } else {
-            //             ElMessage.error('审核失败');
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         ApproveModVersion(VersionId) {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Approve/ApproveMod',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Approve/ApproveMod`,
                 method: 'POST',
                 data: {
                     VersionId: VersionId,
@@ -341,41 +274,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Approve/ApproveMod',
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         VersionId: VersionId,
-            //         Comments: "通过",
-            //         Status: "20",
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('审核失败: ' + data.ResultMsg);
-            //         } else if (data.ResultData === "审核成功") {
-            //             ElMessage.success('审核成功');
-            //             this.fetchModList();
-            //         } else {
-            //             ElMessage.error('审核失败');
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         handleDropdownClick() {
             // 处理下拉菜单点击事件

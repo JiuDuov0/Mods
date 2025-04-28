@@ -58,7 +58,7 @@ export default {
 
             var mail = this.loginForm.username;
             this.$axios({
-                url: 'https://modcat.top:8089/api/Login/UserLogin',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Login/UserLogin`,
                 method: 'POST',
                 data: {
                     LoginAccount: this.loginForm.username,
@@ -200,7 +200,7 @@ body.dark-theme .el-card {
 
 body.dark-theme .el-input__inner {
     background-color: #2c2c2c;
-    color: #ffffffa6;
+    color: #ffffffa6 !important;
     border-color: #444444;
 }
 
@@ -226,5 +226,9 @@ body.dark-theme input:-webkit-autofill {
     background-color: #2c2c2c !important;
     -webkit-text-fill-color: #ffffffa6 !important;
     box-shadow: 0 0 0px 1000px #2c2c2c inset !important;
+}
+
+body.dark-theme input {
+    color: #ffffffa6;
 }
 </style>

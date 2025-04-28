@@ -114,7 +114,7 @@ export default {
     methods: {
         fetchTags() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -128,29 +128,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-            //     type: 'POST',
-            //     contentType: 'application/json; charset=utf-8',
-            //     headers: {
-            //         Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     cache: false,
-            //     dataType: 'json',
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取标签失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.tags = data.ResultData;
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取标签失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         fetchModDetails() {
             const formData = {
@@ -158,7 +135,7 @@ export default {
             };
 
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/GetModDetailUpdate',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetModDetailUpdate`,
                 method: 'POST',
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
@@ -186,41 +163,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: `https://modcat.top:8089/api/Mod/GetModDetailUpdate`,
-            //     type: 'POST',
-            //     data: JSON.stringify(formData),
-            //     contentType: 'application/json; charset=utf-8',
-            //     headers: {
-            //         Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取 Mod 详情失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.modForm.name = data.ResultData.Name;
-            //             this.modForm.description = data.ResultData.Description;
-            //             this.modForm.VideoUrl = data.ResultData.VideoUrl.substring(39, data.ResultData.VideoUrl.indexOf('&'));
-            //             this.modForm.PicUrl = data.ResultData.PicUrl;
-            //             this.modForm.tags = data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
-            //             this.modForm.ModDependenceEntities = data.ResultData.ModDependenceEntities;
-            //             this.modForm.ModDependenceEntities.forEach((dependence) => {
-            //                 dependence.ModDependenceId = dependence.ModDependenceId;
-            //                 dependence.ModId = dependence.ModId;
-            //                 dependence.ModName = dependence.DependenceModVersion.Mod.Name;
-            //                 dependence.VersionId = dependence.DependenceModVersion.VersionId;
-            //                 dependence.VersionNumber = dependence.DependenceModVersion.VersionNumber;
-            //             });
-            //             console.log(this.modForm.ModDependenceEntities);
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取 Mod 详情失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         fetchMods(query) {
             if (query === null || query === undefined || query === '') {
@@ -228,7 +170,7 @@ export default {
             }
 
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/ModListPageSearch',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModListPageSearch`,
                 method: 'POST',
                 data: {
                     Skip: '0',
@@ -248,39 +190,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         Skip: '0',
-            //         Take: '10',
-            //         Search: query
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.mods = data.ResultData;
-            //             //this.modVersions = data.ResultData.ModVersionEntities;
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         fetchModVersions(modId) {
             const selectedMod = this.mods.find(mod => mod.ModId === this.selectedMod);
@@ -335,7 +244,7 @@ export default {
             };
 
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/UpdateModInfo',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/UpdateModInfo`,
                 method: 'POST',
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
@@ -351,29 +260,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Mod/UpdateModInfo',
-            //     type: 'POST',
-            //     data: JSON.stringify(formData),
-            //     contentType: 'application/json; charset=utf-8',
-            //     headers: {
-            //         Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('提交失败: ' + data.ResultMsg);
-            //         } else {
-            //             ElMessage.success('提交成功');
-            //             router.push('/myCreateMods');
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('提交失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         handleDropdownClick() {
             // 处理下拉菜单点击事件

@@ -120,7 +120,7 @@ export default {
     methods: {
         fetchTags() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -134,33 +134,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.tags = data.ResultData;
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         fetchMods(query) {
             if (query === null || query === undefined || query === '') {
@@ -168,7 +141,7 @@ export default {
             }
 
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/ModListPageSearch',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModListPageSearch`,
                 method: 'POST',
                 data: {
                     Skip: '0',
@@ -188,39 +161,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         Skip: '0',
-            //         Take: '10',
-            //         Search: query
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.mods = data.ResultData;
-            //             //this.modVersions = data.ResultData.ModVersionEntities;
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-            //         console.log(err);
-            //     }
-            // });
         },
         detectDarkMode() {
             const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -316,7 +256,7 @@ export default {
             });
 
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/CreateMod',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/CreateMod`,
                 method: 'POST',
                 data: JSON.stringify(formData),
                 contentType: "application/json; charset=utf-8",
@@ -337,40 +277,6 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Mod/CreateMod',
-            //     type: "POST",
-            //     data: JSON.stringify(formData),
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('提交失败: ' + data.ResultMsg);
-            //         } else {
-            //             ElMessage.success('提交成功');
-            //             router.push({
-            //                 path: '/addVersionFile',
-            //                 query: {
-            //                     VersionId: data.ResultData.ModVersionEntities[0].VersionId
-            //                 }
-            //             });
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         ElMessage.error('提交失败 ');
-            //         console.log(err);
-            //     }
-            // });
         },
         handleReset() {
             this.modForm = {
@@ -468,9 +374,7 @@ export default {
 .account-info {
     position: fixed;
     bottom: 20px;
-    /* 距离页面底部 20px */
     left: 20px;
-    /* 距离页面左侧 20px */
     display: flex;
     align-items: center;
     cursor: pointer;

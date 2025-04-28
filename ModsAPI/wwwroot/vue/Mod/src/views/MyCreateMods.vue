@@ -197,31 +197,20 @@ export default {
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
         fetchModTypes() {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                method: 'POST',
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modTypes = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modTypes = data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchModList() {
@@ -231,7 +220,7 @@ export default {
             this.isFetching = true;
             $('#show').show();
             this.$axios({
-                url: 'https://modcat.top:8089/api/Mod/GetMyCreateMod',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetMyCreateMod`,
                 method: 'POST',
                 data: {
                     Skip: this.skip,
@@ -258,40 +247,6 @@ export default {
                     this.updateColWidth();
                 }, 100);
             });
-
-            // $.ajax({
-            //     url: 'https://modcat.top:8089/api/Mod/GetMyCreateMod',
-            //     type: "POST",
-            //     contentType: "application/json; charset=utf-8",
-            //     headers: {
-            //         'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-            //     },
-            //     data: JSON.stringify({
-            //         Skip: this.skip,
-            //         Take: this.take,
-            //         Types: this.selectedTypes, // 传递选中的类型
-            //         Search: this.select // 传递搜索输入内容
-            //     }),
-            //     cache: false,
-            //     dataType: "json",
-            //     xhrFields: {
-            //         withCredentials: true
-            //     },
-            //     async: false,
-            //     success: (data) => {
-            //         if (data.ResultData == null) {
-            //             ElMessage.error('获取失败: ' + data.ResultMsg);
-            //         } else {
-            //             this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
-            //             this.skip += this.take; // 更新 skip 值
-            //         }
-            //     },
-            //     error: (err) => {
-            //         if (err.status == "401") { router.push('/'); }
-            //         console.log(err);
-            //         ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-            //     }
-            // });
         },
         setupIntersectionObserver() {
             const options = {
@@ -338,37 +293,28 @@ export default {
                 cancelButtonText: '取消',
                 type: 'warning'
             }).then(() => {
-                $.ajax({
-                    url: 'https://modcat.top:8089/api/Mod/DeleteMod',
-                    type: "POST",
-                    contentType: "application/json; charset=utf-8",
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                    },
-                    data: JSON.stringify({
+                this.$axios({
+                    url: `${import.meta.env.VITE_API_BASE_URL}/Mod/DeleteMod`,
+                    method: 'POST',
+                    data: {
                         ModId: ModId
-                    }),
-                    cache: false,
-                    dataType: "json",
-                    xhrFields: {
-                        withCredentials: true
                     },
-                    async: false,
-                    success: (data) => {
-                        if (data.ResultData == false || data.ResultData == null) {
-                            ElMessage.error('删除失败: ' + data.ResultMsg);
-                        } else {
-                            ElMessage.success('删除成功！');
-                            this.skip = 0;
-                            this.modList = [];
+                    contentType: "application/json; charset=utf-8",
+                    responseType: 'json'
+                }).then(response => {
+                    if (response.data.ResultData == false || response.data.ResultData == null) {
+                        ElMessage.error('删除失败: ' + response.data.ResultMsg);
+                    } else {
+                        ElMessage.success('删除成功！');
+                        this.skip = 0;
+                        this.modList = [];
+                        setTimeout(() => {
                             this.fetchModList();
-                        }
-                    },
-                    error: (err) => {
-                        if (err.status == "401") { router.push('/'); }
-                        ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                        console.log(err);
+                        }, 100);
                     }
+                }).catch(error => {
+                    ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                    console.log(error);
                 });
             }).catch(() => {
                 ElMessage.info('已取消删除');

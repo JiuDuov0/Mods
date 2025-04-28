@@ -106,7 +106,7 @@ export default {
             formData.append('VersionId', this.VersionId);
             formData.append('file', this.fileList[0].raw);
 
-            fetch('https://modcat.top:8089/api/Files/UploadMod', {
+            fetch(`${import.meta.env.VITE_API_BASE_URL}/Files/UploadMod`, {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))

@@ -103,7 +103,7 @@ export default {
     methods: {
         getUserInfo() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/User/GetUserByUserId',
+                url: `${import.meta.env.VITE_API_BASE_URL}/User/GetUserByUserId`,
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
@@ -145,7 +145,7 @@ export default {
         GetToken() {
             this.showStatus = false;
             this.$axios({
-                url: 'https://modcat.top:8089/api/Login/CreateToken',
+                url: `${import.meta.env.VITE_API_BASE_URL}/Login/CreateToken`,
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
@@ -179,7 +179,7 @@ export default {
         },
         UserInfoUpdate() {
             this.$axios({
-                url: 'https://modcat.top:8089/api/User/UpdateUserInfo',
+                url: `${import.meta.env.VITE_API_BASE_URL}/User/UpdateUserInfo`,
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
