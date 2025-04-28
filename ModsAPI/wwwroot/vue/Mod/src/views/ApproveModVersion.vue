@@ -89,6 +89,7 @@ export default {
             headurl: head,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             defaulturl: drg,
+            isFetching: false,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
@@ -182,6 +183,10 @@ export default {
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
         fetchModList() {
+            if (this.isFetching) {
+                return;
+            }
+            this.isFetching = true;
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Approve/GetApproveModVersionPageList`,
                 method: 'POST',
@@ -202,6 +207,12 @@ export default {
             }).catch(error => {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
+            }).finally(() => {
+                this.isFetching = false;
+                $('#show').hide();
+                setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
             });
         },
         setupIntersectionObserver() {
@@ -215,7 +226,11 @@ export default {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         if (this.skip <= this.modList.length) {
-                            this.fetchModList();
+                            if (this.isFetching) {
+                                return;
+                            } else {
+                                this.fetchModList();
+                            }
                         }
                     }
                 });
