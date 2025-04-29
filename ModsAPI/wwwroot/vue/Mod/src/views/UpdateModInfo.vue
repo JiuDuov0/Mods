@@ -153,9 +153,9 @@ export default {
                     this.modForm.ModDependenceEntities.forEach((dependence) => {
                         dependence.ModDependenceId = dependence.ModDependenceId;
                         dependence.ModId = dependence.ModId;
-                        dependence.ModName = dependence.DependenceModVersion.Mod.Name;
-                        dependence.VersionId = dependence.DependenceModVersion.VersionId;
-                        dependence.VersionNumber = dependence.DependenceModVersion.VersionNumber;
+                        dependence.ModName = dependence.DependenceModVersion?.Mod.Name;
+                        dependence.VersionId = dependence.DependenceModVersion?.VersionId;
+                        dependence.VersionNumber = dependence.DependenceModVersion?.VersionNumber;
                     });
                     //console.log(this.modForm.ModDependenceEntities);
                 }

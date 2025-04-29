@@ -403,6 +403,7 @@ export default {
                 const response = await this.$axios({
                     url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFile`,
                     method: 'POST',
+                    timeout: 300000,
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')) },
                     data: { FileId: FileId },
                     responseType: 'blob',

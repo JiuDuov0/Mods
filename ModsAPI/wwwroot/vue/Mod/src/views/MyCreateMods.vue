@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -206,7 +206,7 @@ export default {
                 if (response.data.ResultData == null) {
                     ElMessage.error('获取失败: ' + response.data.ResultMsg);
                 } else {
-                    this.modTypes = data.ResultData;
+                    this.modTypes = response.data.ResultData;
                 }
             }).catch(error => {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));

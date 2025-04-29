@@ -36,6 +36,8 @@
                             <el-button type="primary">选择文件</el-button>
                             <div slot="tip" class="el-upload__tip">仅支持 .zip 格式文件</div>
                         </el-upload>
+                        <el-progress v-if="uploadProgress > 0" :percentage="uploadProgress"
+                            status="success"></el-progress>
                         <el-button type="primary" block @click="submit">提交</el-button>
                     </el-card>
                 </el-col>
@@ -58,6 +60,7 @@ export default {
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             headurl: head,
             fileList: [], // 存储选中的文件
+            uploadProgress: 0,
             VersionId: this.$route.query.VersionId // 从路由参数获取版本 ID
         };
     },
@@ -106,29 +109,49 @@ export default {
             formData.append('VersionId', this.VersionId);
             formData.append('file', this.fileList[0].raw);
 
-            fetch(`${import.meta.env.VITE_API_BASE_URL}/Files/UploadMod`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.ResultCode === 200) {
+            // 使用 XMLHttpRequest 实现上传进度
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${import.meta.env.VITE_API_BASE_URL}/Files/UploadMod`, true);
+            xhr.setRequestHeader(
+                'Authorization',
+                'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            );
+
+            // 监听上传进度
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const progress = Math.round((event.loaded * 100) / event.total);
+                    this.uploadProgress = progress; // 更新进度条
+                }
+            };
+
+            // 请求完成的回调
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.ResultCode === 200) {
                         ElMessage.success('文件上传成功');
                         this.fileList = []; // 清空文件列表
+                        this.uploadProgress = 0; // 重置进度条
                         setTimeout(() => {
                             router.push('/home');
                         }, 2000);
                     } else {
-                        ElMessage.error('文件上传失败: ' + data.ResultMsg);
+                        ElMessage.error('文件上传失败: ' + response.ResultMsg);
                     }
-                })
-                .catch(error => {
-                    console.log('Error:', error);
+                } else {
                     ElMessage.error('文件上传失败');
-                });
+                }
+            };
+
+            // 请求失败的回调
+            xhr.onerror = () => {
+                ElMessage.error('文件上传失败');
+                this.uploadProgress = 0; // 重置进度条
+            };
+
+            // 发送请求
+            xhr.send(formData);
         },
         handleDropdownClick() {
             // 处理下拉菜单点击事件

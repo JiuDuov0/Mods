@@ -352,11 +352,7 @@ namespace Service.Realization
                 entity.CreatorEntity = user;
                 entity.IsMySubscribe = subscribe != null;
 
-                // 过滤 ModVersionEntities 只包含 Status == "20" 的实体
-                entity.ModVersionEntities = entity.ModVersionEntities
-                    .Where(x => x.ApproveModVersionEntity.Status == "20")
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ToList();
+                entity.ModVersionEntities = entity.ModVersionEntities.Where(x => x.ApproveModVersionEntity.Status == "20").Where(x => !string.IsNullOrWhiteSpace(x.FilesId)).OrderByDescending(x => x.CreatedAt).ToList();
             }
 
             if (avg != null)
@@ -380,7 +376,7 @@ namespace Service.Realization
                 .ThenInclude(x => x.DependenceModVersion)
                 .ThenInclude(x => x.Mod)
                 .Where(x => x.SoftDeleted == false)
-                .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                //.Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
                 .FirstOrDefaultAsync(x => x.ModId == ModId);
 
             var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
@@ -389,6 +385,7 @@ namespace Service.Realization
                 var user = new UserEntity() { UserId = entity.CreatorEntity.UserId, NickName = entity.CreatorEntity.NickName };
                 entity.CreatorEntity = user;
                 entity.IsMySubscribe = subscribe != null;
+                entity.ModVersionEntities = entity.ModVersionEntities.Where(x => !string.IsNullOrWhiteSpace(x.FilesId)).OrderByDescending(x => x.CreatedAt).ToList();
             }
 
             if (avg != null)

@@ -97,12 +97,14 @@ export default {
                     ElMessage.success('版本添加成功');
                     this.versionForm.version = '';
                     this.versionForm.description = '';
-                    router.push({
-                        path: '/addVersionFile',
-                        query: {
-                            VersionId: response.data.ResultData.VersionId
-                        }
-                    });
+                    setTimeout(() => {
+                        router.push({
+                            path: '/addVersionFile',
+                            query: {
+                                VersionId: response.data.ResultData.VersionId
+                            }
+                        });
+                    }, 1000);
                 } else {
                     ElMessage.error('版本添加失败: ' + response.data.ResultMsg);
                 }
