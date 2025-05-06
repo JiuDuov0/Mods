@@ -743,7 +743,6 @@ body.dark-theme .el-dialog {
 }
 
 body.dark-theme .account-info {
-    background-color: #1e1e1e;
     color: #ffffffa6;
     border: 1px solid #333333;
 }
