@@ -32,7 +32,7 @@ namespace EF
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(MyLogFactory);
-            optionsBuilder.UseSqlServer(_strConn);
+            optionsBuilder.UseSqlServer(_strConn, x => { x.CommandTimeout(120); });
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

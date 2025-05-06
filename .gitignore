@@ -31,3 +31,5 @@
 /appsettings.json
 /publish-aot.zip
 /publish-aot-200m-44m.zip
+/ViewEntity/obj
+/ViewEntity/bin

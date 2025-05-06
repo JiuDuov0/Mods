@@ -232,6 +232,10 @@ export default {
                 ElMessage.error('请选择标签');
                 return;
             }
+            if (this.modForm.PicUrl.length > 200) {
+                ElMessage.error('图片链接过长！');
+                return;
+            }
 
             var formData = {
                 Name: this.modForm.name,

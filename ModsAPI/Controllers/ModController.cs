@@ -14,6 +14,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using ViewEntity.Mod;
 
 namespace ModsAPI.Controllers
 {
@@ -49,7 +50,7 @@ namespace ModsAPI.Controllers
         /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "ModListPage")]
-        public ResultEntity<List<ModEntity>> ModListPage([FromBody] dynamic json)
+        public ResultEntity<List<ModListViewEntity>> ModListPage([FromBody] dynamic json)
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
@@ -68,14 +69,16 @@ namespace ModsAPI.Controllers
             #region 验证
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json, UserId) };
+            var list = _IModService.ModListPage(json, UserId);
+            GC.Collect();
+            return new ResultEntity<List<ModListViewEntity>> { ResultData = list };
         }
 
         /// <summary>

@@ -24,6 +24,7 @@
     <ProjectReference Include="..\EF\EF.csproj" />
     <ProjectReference Include="..\Entity\Entity.csproj" />
     <ProjectReference Include="..\Redis\Redis.csproj" />
+    <ProjectReference Include="..\ViewEntity\ViewEntity.csproj" />
   </ItemGroup>
 
 </Project>

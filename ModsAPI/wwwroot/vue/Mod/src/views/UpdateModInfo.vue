@@ -228,6 +228,14 @@ export default {
                 ElMessage.error('请输入 Mod 描述');
                 return;
             }
+            if (this.modForm.tags.length == 0) {
+                ElMessage.error('请选择标签');
+                return;
+            }
+            if (this.modForm.PicUrl.length > 200) {
+                ElMessage.error('图片链接过长！');
+                return;
+            }
 
             const formData = {
                 ModId: this.$route.query.ModId,

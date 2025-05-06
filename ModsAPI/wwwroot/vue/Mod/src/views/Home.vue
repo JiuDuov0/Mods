@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">
-                                        {{ tag.Types.TypeName }}
+                                        {{ tag.TypeName }}
                                     </el-tag>
                                 </div>
                                 <div class="line"></div>

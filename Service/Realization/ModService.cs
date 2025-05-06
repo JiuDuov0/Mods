@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Redis.Interface;
 using Service.Interface;
+using System.Diagnostics;
+using ViewEntity.Mod;
 
 namespace Service.Realization
 {
@@ -21,13 +23,13 @@ namespace Service.Realization
             _IRedisManageService = redisManageService;
         }
 
-        public List<ModEntity> ModListPage(dynamic json, string UserId)
+        public List<ModListViewEntity> ModListPage(dynamic json, string UserId)
         {
             int Skip = Convert.ToInt32(json.Skip);
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();
             Types.RemoveAll(x => x == null || x == "");
-            var RedisModList = _IRedisManageService.Get<List<ModEntity>>("ModListPage", 1);
+            var RedisModList = _IRedisManageService.Get<List<ModListViewEntity>>("ModListPage", 1);
             var RedisUserModSubscribe = _IRedisManageService.Get<List<UserModSubscribeEntity>>("SetUserModSubscribe" + UserId, 1);
             if (Skip + Take > 1000)
             {
@@ -50,7 +52,7 @@ namespace Service.Realization
             return ModPageListRedis(RedisModList, json, UserId, RedisUserModSubscribe, Types).Result;
         }
 
-        private List<ModEntity> EFGetList(dynamic json, string UserId)
+        private List<ModListViewEntity> EFGetList(dynamic json, string UserId)
         {
             var task = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.Where(x => x.UserId == UserId).ToListAsync();
             int Skip = Convert.ToInt32(json.Skip);
@@ -78,15 +80,20 @@ namespace Service.Realization
             #endregion
             var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
             var Subscribes = task.Result;
+            var PageList = new List<ModListViewEntity>();
             foreach (var item in list)
             {
-                item.ModTypeEntities.ForEach(x => x.Types.ModTypeEntities = null);
-                item.IsMySubscribe = Subscribes.Any(x => x.ModId == item.ModId);
+                var TypesList = new List<ModTypesListViewEntity>();
+                foreach (var item0 in item.ModTypeEntities)
+                {
+                    TypesList.Add(new ModTypesListViewEntity() { TypesId = item0.TypesId, TypeName = item0.Types.TypeName });
+                }
+                PageList.Add(new ModListViewEntity() { ModId = item.ModId, Name = item.Name, PicUrl = item.PicUrl, ModTypeEntities = TypesList, IsMySubscribe = Subscribes.Any(x => x.ModId == item.ModId) });
             }
-            return list;
+            return PageList;
         }
 
-        private async Task<List<ModEntity>> ModPageListRedis(List<ModEntity> mods, dynamic json, string UserId, List<UserModSubscribeEntity> userModSubscribeEntities, List<string> Types)
+        private async Task<List<ModListViewEntity>> ModPageListRedis(List<ModListViewEntity> mods, dynamic json, string UserId, List<UserModSubscribeEntity> userModSubscribeEntities, List<string> Types)
         {
             if (userModSubscribeEntities == null || userModSubscribeEntities.Count == 0)
             {
@@ -108,17 +115,8 @@ namespace Service.Realization
                     query = query.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
                 }
             }
-            query = query.Where(x =>
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
-            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
             #endregion
-            var list = query.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
-            foreach (var item in list)
-            {
-                item.ModTypeEntities.ForEach(x => x.Types.ModTypeEntities = null);
-                item.ModVersionEntities = null;
-                item.IsMySubscribe = userModSubscribeEntities.Any(x => x.ModId == item.ModId);
-            }
+            var list = query.Skip(Skip).Take(Take).ToList();
             return list;
         }
         private async Task SetModPageListToRedisAsync()
@@ -126,7 +124,17 @@ namespace Service.Realization
             var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).Where(x =>
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()))).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
-            await _IRedisManageService.SetAsync("ModListPage", list, new TimeSpan(0, 30, 0), 1);
+            var PageList = new List<ModListViewEntity>();
+            foreach (var item in list)
+            {
+                var TypesList = new List<ModTypesListViewEntity>();
+                foreach (var item0 in item.ModTypeEntities)
+                {
+                    TypesList.Add(new ModTypesListViewEntity() { TypesId = item0.TypesId, TypeName = item0.Types.TypeName });
+                }
+                PageList.Add(new ModListViewEntity() { ModId = item.ModId, Name = item.Name, PicUrl = item.PicUrl, ModTypeEntities = TypesList });
+            }
+            await _IRedisManageService.SetAsync("ModListPage", PageList, new TimeSpan(0, 30, 0), 1);
         }
 
         private async Task<List<UserModSubscribeEntity>> SetUserModSubscribeToRedisAsync(string UserId)
@@ -332,18 +340,23 @@ namespace Service.Realization
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
             var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
-            var entity = await Context.ModEntity.IgnoreQueryFilters()
-                .Include(x => x.ModVersionEntities)
-                .ThenInclude(x => x.ApproveModVersionEntity)
-                .Include(x => x.ModTypeEntities)
-                .ThenInclude(x => x.Types)
-                .Include(x => x.CreatorEntity)
-                .Include(x => x.ModDependenceEntities)
-                .ThenInclude(x => x.DependenceModVersion)
-                .ThenInclude(x => x.Mod)
-                .Where(x => x.SoftDeleted == false)
-                .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
-                .FirstOrDefaultAsync(x => x.ModId == ModId);
+            var entity = _IRedisManageService.Get<ModEntity>($"ModDetail:{ModId}", 1);
+            if (entity == null)
+            {
+                entity = await Context.ModEntity.IgnoreQueryFilters()
+                    .Include(x => x.ModVersionEntities)
+                    .ThenInclude(x => x.ApproveModVersionEntity)
+                    .Include(x => x.ModTypeEntities)
+                    .ThenInclude(x => x.Types)
+                    .Include(x => x.CreatorEntity)
+                    .Include(x => x.ModDependenceEntities)
+                    .ThenInclude(x => x.DependenceModVersion)
+                    .ThenInclude(x => x.Mod)
+                    .Where(x => x.SoftDeleted == false)
+                    .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                    .FirstOrDefaultAsync(x => x.ModId == ModId);
+                await _IRedisManageService.SetAsync($"ModDetail:{entity.ModId}", entity, new TimeSpan(12, 0, 0), 1);
+            }
 
             var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
             if (entity != null)
@@ -359,6 +372,7 @@ namespace Service.Realization
             {
                 entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
             }
+            GC.Collect();
             return entity;
         }
 
