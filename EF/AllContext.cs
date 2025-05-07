@@ -1,5 +1,6 @@
 ﻿using Entity.Approve;
 using Entity.File;
+using Entity.Game;
 using Entity.Mod;
 using Entity.Type;
 using Entity.User;
@@ -52,5 +53,6 @@ namespace EF
         public DbSet<FilesEntity> FilesEntity { get; set; }
         public DbSet<ModPointEntity> ModPointEntity { get; set; }
         public DbSet<ModDependenceEntity> ModDependenceEntity { get; set; }
+        public DbSet<GameEntity> GameEntity { get; set; }
     }
 }

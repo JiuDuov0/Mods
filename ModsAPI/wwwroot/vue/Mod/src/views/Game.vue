@@ -1,54 +1,16 @@
 <template>
     <el-container>
         <el-main>
-            <el-row>
-                <el-col :span="24" class="profile-summary">
-                    <el-card class="profile-card">
-                        <div class="profile-header">
-                            <el-avatar :src="fileheadurl" id="head" size="large"></el-avatar>
-                            <h2>{{ this.User.NickName }}</h2>
-                        </div>
-                        <div class="profile-details">
-                            <p><strong>意见反馈邮箱:</strong> {{ this.User.FeedBackMail }}</p>
-                        </div>
-                    </el-card>
-                </el-col>
-            </el-row>
-            <el-row class="el-row-sel">
-                <el-col :span="3" class="el-col-sel">
-                    <el-card style="margin-left: -5%;margin-right: 5%;">
-                        <el-input v-model="select" placeholder="搜索..." clearable @keyup.enter="handleSearch"></el-input>
-                        <h3>Mod 类型</h3>
-                        <el-checkbox-group v-model="selectedTypes">
-                            <div v-for="type in modTypes" :key="type.TypesId" class="checkbox-item">
-                                <el-checkbox :label="type.TypesId">
-                                    {{ type.TypeName }}
-                                </el-checkbox>
-                            </div>
-                        </el-checkbox-group>
-                    </el-card>
-                </el-col>
-                <el-col :span="colSpan">
+            <el-row class="card-sel">
+                <el-col :span="colSpan" class="colrightclass">
                     <el-row :gutter="20" ref="modListContainer" id="allwidth">
-                        <el-col :span="4" v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
+                        <el-col v-for="mod in modList" :key="mod.GameId" name="colsetwidth">
                             <el-card class="el-card-table" name="cardsetwidth">
-                                <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%;height: 10rem;">
+                                <img referrerPolicy="no-referrer" @click="toHome(mod.GameId, mod.GameName, mod.Icon)"
+                                    :src="mod.Picture" style="width: 100%; height: 10rem;">
                                 <nobr>
-                                    <h3>{{ mod.Name }}</h3>
+                                    <h3>{{ mod.GameName }}</h3>
                                 </nobr>
-
-                                <div style="max-height: 4rem; height: 2rem;">
-                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
-                                </div>
-
-                                <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
-                                <div class="line"></div>
-                                <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
-                                    type="primary">订阅</el-button>
-                                <el-button v-else @click="btnUnsubscribeClick(mod.ModId)"
-                                    type="primary">取消订阅</el-button>
                             </el-card>
                         </el-col>
                     </el-row>
@@ -90,28 +52,24 @@ import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import head from '../assets/head.jpg';
 import drg from '../assets/drg.png';
-import { el } from 'element-plus/es/locale/index.mjs';
+import { el } from 'element-plus/es/locales.mjs';
+import { compile } from 'vue';
 
 export default {
     name: 'Home',
     data() {
         return {
-            colSpan: 21,
+            colSpan: 24,
             skip: 0,
-            take: 18,
-            UserId: this.$route.query.UserId,
+            take: 100,
             modTypes: [],
             modList: [],
             NickName: "",
             headurl: head,
-            fileheadurl: head,
-            defaulturl: drg,
-            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             GameId: localStorage.getItem('GameId'),
-            GameName: localStorage.getItem('GameName'),
-            Icon: localStorage.getItem('Icon'),
-            User: {},
             isFetching: false,
+            Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
@@ -119,18 +77,15 @@ export default {
         };
     },
     mounted() {
-        $('img').attr('referrerPolicy', 'no-referrer');
         this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
+        $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
         //this.Role = localStorage.getItem('Role');
-        this.fetchModTypes();
+        //this.fetchModTypes();
         this.fetchModList();
         this.setupIntersectionObserver();
-        this.getUserInfo();
         this.updateColWidth();
         window.addEventListener('resize', this.updateColWidth);
-        this.updateColSpan();
-        window.addEventListener('resize', this.updateColSpan);
         this.detectDarkMode();
     },
     watch: {
@@ -141,17 +96,26 @@ export default {
         }
     },
     beforeDestroy() {
-        window.removeEventListener('resize', this.updateColWidth);
-        window.removeEventListener('resize', this.updateColSpan);
+        window.removeEventListener('resize', this.updateColWidth); // 移除监听器
+        window.removeEventListener('resize', this.updateColSpan); // 移除监听器
     },
     methods: {
-        updateColSpan() {
-            const screenWidth = window.innerWidth; // 获取窗口宽度
-            if (screenWidth < 1870) {
-                this.colSpan = 24; setTimeout(() => {
-                    this.updateColWidth();
-                }, 100);
-            } else { this.colSpan = 21 }
+        detectDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme'); // 添加夜间主题样式
+            } else {
+                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
+            }
+
+            // 监听主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            });
         },
         updateColWidth() {
             const allwidth = document.getElementById('allwidth').offsetWidth; // 获取父容器宽度
@@ -184,23 +148,6 @@ export default {
             }
             return description;
         },
-        detectDarkMode() {
-            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (isDarkMode) {
-                document.body.classList.add('dark-theme'); // 添加夜间主题样式
-            } else {
-                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
-            }
-
-            // 监听主题变化
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (e.matches) {
-                    document.body.classList.add('dark-theme');
-                } else {
-                    document.body.classList.remove('dark-theme');
-                }
-            });
-        },
         handleSearch() {
             this.skip = 0; // 搜索时重置 skip
             this.modList = []; // 清空当前 modList
@@ -226,49 +173,20 @@ export default {
                 console.log(error);
             });
         },
-        getUserInfo() {
-            this.$axios({
-                url: `${import.meta.env.VITE_API_BASE_URL}/User/GetUserByUserIdPublic`,
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: {
-                    UserId: this.UserId
-                },
-                contentType: "application/json; charset=utf-8",
-                responseType: 'json'
-            }).then(response => {
-                if (response.data.ResultData) {
-                    this.User = response.data.ResultData;
-                    if (response.data.ResultData.HeadPic != null) { this.fileheadurl = response.data.ResultData.HeadPic; } else { this.fileheadurl = head; }
-                } else {
-                    ElMessage.error('获取用户信息失败: ' + response.data.ResultMsg);
-                }
-            }).catch(error => {
-                if (error.response && error.response.status === 401) {
-                    router.push('/');
-                }
-                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
-                console.log(error);
-            });
-        },
         fetchModList() {
             if (this.isFetching) {
                 return;
             }
             this.isFetching = true;
             $('#show').show();
-
             this.$axios({
-                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetModPageListByUserId`,
+                url: `${import.meta.env.VITE_API_BASE_URL}/Game/GetGamePageList`,
                 method: 'POST',
                 data: {
-                    UserId: this.UserId,
+                    GameId: this.GameId,
                     Skip: this.skip,
                     Take: this.take,
-                    Types: this.selectedTypes, // 传递选中的类型
-                    Search: this.select // 传递搜索输入内容
+                    Search: this.select
                 },
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -289,6 +207,7 @@ export default {
                     this.updateColWidth();
                 }, 100);
             });
+            //this.updateColWidth();
         },
         setupIntersectionObserver() {
             const options = {
@@ -313,59 +232,6 @@ export default {
 
             observer.observe(this.$refs.bottomObserver);
         },
-        btnUnsubscribeClick(ModId) {
-            // 处理取消订阅按钮点击事件
-            this.$axios({
-                url: `${import.meta.env.VITE_API_BASE_URL}/User/UserUnsubscribeMod`,
-                method: 'POST',
-                data: {
-                    ModId: ModId
-                },
-                contentType: "application/json; charset=utf-8",
-                responseType: 'json'
-            }).then(response => {
-                if (response.data.ResultData == false || response.data.ResultData == null) {
-                    ElMessage.error('取消订阅失败: ' + response.data.ResultMsg);
-                } else {
-                    ElMessage.success('取消订阅成功！');
-                    this.modList.forEach((item) => {
-                        if (item.ModId == ModId) {
-                            item.IsMySubscribe = false;
-                        }
-                    });
-                }
-            }).catch(error => {
-                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
-                console.log(error);
-            }).finally(() => {
-            });
-        },
-        UserModSubscribe(modId) {
-            this.$axios({
-                url: `${import.meta.env.VITE_API_BASE_URL}/User/ModSubscribe`,
-                method: 'POST',
-                data: {
-                    ModId: modId
-                },
-                contentType: "application/json; charset=utf-8",
-                responseType: 'json'
-            }).then(response => {
-                if (response.data.ResultData == null) {
-                    ElMessage.error('订阅失败: ' + response.data.ResultMsg);
-                } else {
-                    ElMessage.success('订阅成功');
-                    this.modList.forEach((item) => {
-                        if (item.ModId == modId) {
-                            item.IsMySubscribe = true;
-                        }
-                    });
-                }
-            }).catch(error => {
-                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
-                console.log(error);
-            }).finally(() => {
-            });
-        },
         handleDropdownClick() {
             // 处理下拉菜单点击事件
         },
@@ -388,6 +254,9 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleDownloadmintcat() {
+            router.push('/downloadmintcat');
+        },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
@@ -399,13 +268,13 @@ export default {
             localStorage.removeItem('Mail');
             router.push('/');
         },
-        toModDetail(ModId) {
+        toHome(GameId, GameName, Icon) {
+            localStorage.setItem("GameId", GameId);
+            localStorage.setItem("GameName", GameName);
+            localStorage.setItem("Icon", Icon);
             // 处理点击事件跳转到 Mod 详情页
             router.push({
-                path: '/modDetail',
-                query: {
-                    ModId: ModId
-                }
+                path: '/home'
             });
         }
     }
@@ -414,14 +283,25 @@ export default {
 
 <style>
 @media (max-width: 1870px) {
-    .el-col-sel {
+    .col-sel {
         display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .head-row {
+        display: none;
+    }
+
+    .el-card-table {
+        display: contents;
     }
 }
 
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
+    min-width: 200px;
 }
 
 .checkbox-item {
@@ -454,7 +334,12 @@ export default {
 }
 
 .el-card-table {
-    height: 95%;
+    min-width: 13rem;
+    max-width: 16rem;
+}
+
+.el-card__body {
+    padding: 1rem;
 }
 
 .el-card-sel {
@@ -482,7 +367,7 @@ export default {
 }
 
 .card-sel {
-    /* margin-top: 3%; */
+    margin-top: 3%;
 }
 
 .col-sel {
@@ -490,19 +375,212 @@ export default {
     margin-left: -1%;
 }
 
-.profile-summary {}
+h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-.profile-header {}
+[name="colsetwidth"] {
+    flex: 1 1 auto;
+    max-width: 25%;
+    min-width: 200px;
+}
 
-.profile-details {}
+[name="cardsetwidth"] {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
-.el-row-sel {}
+.head-row {
+    position: fixed;
+    z-index: 600;
+    left: 0%;
+    top: 0;
+    width: 101%;
+    padding: 0px;
+    margin: 0px;
+    height: 4rem;
+}
 
-.el-col-sel {}
+.head-col {
+    height: 4rem;
+}
 
-.profile-card {
-    margin-left: -1%;
-    margin-right: -1%;
+.head-el-card {
+    border-color: white;
+    padding: 0px;
+    margin: 0px;
+    height: 100%;
+}
+
+.head-el-card-div {
+    display: flex;
+    align-items: center;
+    margin-top: -1%;
+}
+
+.head-el-card-div-img {
+    width: 2%;
+    height: 2%;
+    margin-right: 1%;
+    border-radius: 20%;
+}
+
+.head-el-card-div-el-button {
+    margin-left: auto;
+    background-color: black;
+    color: white;
+    width: 5.2rem;
+}
+
+.head-el-card-div-el-button:hover {
+    color: white !important;
+    background-color: black !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme {
+    background-color: #121212;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-card {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .el-input__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button:hover {
+    background-color: #444444;
+    border-color: #555555;
+}
+
+body.dark-theme .el-tag {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .line {
+    background-color: #444444;
+}
+
+body.dark-theme .account-info {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-dropdown-menu {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+}
+
+body.dark-theme .el-form-item__label {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-form-item__error {
+    color: #ff6b6b;
+}
+
+body.dark-theme .el-input {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme [name="cardsetwidth"] {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme h3 {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-avatar {
+    border: 1px solid #444444;
+}
+
+body.dark-theme .head-row {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333333;
+}
+
+body.dark-theme .head-el-card-div-el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .head-el-card-div-el-button:hover {
+    background-color: #444444;
+    border-color: #444444;
+}
+
+body.dark-theme .el-checkbox {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-checkbox__input.is-checked .el-checkbox__inner {
+    background-color: #444444;
+    border-color: #555555;
+}
+
+body.dark-theme .el-checkbox__inner:hover {
+    border-color: #666666;
+}
+
+body.dark-theme .el-pagination {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button:hover {
+    background-color: #444444;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-item {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-item:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-item.is-active {
+    background-color: #444444;
+    color: #ffffff;
+    font-weight: bold;
 }
 
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
@@ -525,110 +603,9 @@ body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
-body.dark-theme .head-el-card-div-el-button:hover {
-    background-color: #444444;
-    border-color: #444444;
-}
-
-.head-el-card-div-el-button:hover {
-    color: white !important;
-    background-color: black !important;
-    box-shadow: none !important;
-}
-
 body.dark-theme .el-input__wrapper {
     background-color: #2c2c2c;
     border: 1px solid #2c2c2c;
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-}
-
-body.dark-theme .account-info {
-    color: #ffffffa6;
-}
-
-body.dark-theme {
-    background-color: #1e1e1e;
-    color: #ffffffa6;
-}
-
-body.dark-theme .el-card {
-    background-color: #2c2c2c;
-    color: #ffffffa6;
-    border: 1px solid #333333;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-theme .el-button {
-    background-color: #333333;
-    color: #ffffffa6;
-    border-color: #444444;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-body.dark-theme .el-button:hover {
-    background-color: #444444;
-    color: #ffffff;
-    border-color: #555555;
-}
-
-body.dark-theme .el-input__inner {
-    background-color: #2c2c2c;
-    color: #ffffffa6;
-}
-
-body.dark-theme .el-input__inner::placeholder {
-    color: #888888;
-}
-
-body.dark-theme .el-checkbox__label {
-    color: #ffffffa6;
-}
-
-body.dark-theme .el-checkbox__input.is-checked+.el-checkbox__label {
-    color: #ffffff;
-}
-
-body.dark-theme .el-tag {
-    background-color: #333333;
-    color: #ffffffa6;
-    border-color: #444444;
-}
-
-body.dark-theme .el-dropdown-menu__item {
-    background-color: #2c2c2c;
-    color: #ffffffa6;
-    border-radius: 4px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-body.dark-theme .el-dropdown-menu__item:hover {
-    background-color: #444444;
-    color: #ffffff;
-}
-
-body.dark-theme .el-avatar {
-    border: 2px solid #444444;
-}
-
-body.dark-theme .line {
-    background-color: #444444;
-}
-
-body.dark-theme .account-info {
-    color: #ffffffa6;
-}
-
-body.dark-theme .el-card h3 {
-    color: #ffffff;
-}
-
-body.dark-theme .el-input {
-    background-color: #2c2c2c;
-    color: #ffffffa6;
-}
-
-body.dark-theme .el-dropdown-menu {
-    background-color: #1e1e1e;
-    color: #ffffffa6;
 }
 </style>

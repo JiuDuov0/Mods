@@ -105,6 +105,9 @@ export default {
             selectedModVersion: '',
             ModIOURL: '',
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             headurl: head,
             NickName: ""
         };
@@ -121,6 +124,9 @@ export default {
         fetchTags() {
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
+                },
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -251,6 +257,7 @@ export default {
                     ModIOURL: dep.ModIOURL
                 })),
                 PicUrl: this.modForm.PicUrl,
+                GameId: this.GameId,
                 ModTypeEntities: []
             };
             this.modForm.tags.forEach(tag => {

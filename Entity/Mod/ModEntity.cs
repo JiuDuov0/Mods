@@ -1,4 +1,5 @@
-﻿using Entity.User;
+﻿using Entity.Game;
+using Entity.User;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -62,6 +63,11 @@ namespace Entity.Mod
         public string? PicUrl { get; set; }
 
         /// <summary>
+        /// 游戏Id
+        /// </summary>
+        public string? GameId { get; set; }
+
+        /// <summary>
         /// 导航属性，指向Mod的图片
         /// </summary>
         public List<ModPictureEntity> ModPictureEntities { get; set; }
@@ -96,6 +102,12 @@ namespace Entity.Mod
         /// Mod引用
         /// </summary>
         public List<ModDependenceEntity> ModDependenceEntities { get; set; }
+
+        /// <summary>
+        /// 导航属性，指向Mod的游戏
+        /// </summary>
+        [ForeignKey("GameId")]
+        public GameEntity GameEntity { get; set; }
 
         /// <summary>
         /// 是否订阅了本mod

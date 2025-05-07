@@ -25,6 +25,7 @@
 import { ElMessage } from 'element-plus';
 import { sha256 } from 'js-sha256';
 import router from '../router/index.js';
+import { el } from 'element-plus/es/locales.mjs';
 
 export default {
     name: 'Login',
@@ -77,7 +78,7 @@ export default {
                     localStorage.setItem("token" + mail, response.data.ResultData.Token);
                     localStorage.setItem("refresh_Token" + mail, response.data.ResultData.Refresh_Token);
                     setTimeout(() => {
-                        router.push('/home');
+                        if (localStorage.getItem("GameId")) { router.push('/home'); } else { router.push('/game'); }
                     }, 100);
                 }
             }).catch(error => {

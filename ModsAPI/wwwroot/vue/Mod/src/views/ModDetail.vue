@@ -133,6 +133,9 @@ export default {
             progress: 0,
             showStatus: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             latestVersion: {
                 version: '',
                 description: '',

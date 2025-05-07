@@ -57,6 +57,9 @@ export default {
     data() {
         return {
             NickName: '',
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             headurl: head,
             fileList: [], // 存储选中的文件

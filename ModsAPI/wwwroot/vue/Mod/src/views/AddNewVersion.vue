@@ -56,6 +56,9 @@ export default {
     data() {
         return {
             NickName: '',
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             headurl: head,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             ModId: this.$route.query.ModId, // 从路由参数获取 Mod ID

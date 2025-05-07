@@ -4,9 +4,9 @@
             <el-row class="head-row">
                 <el-col class="head-col">
                     <el-card class="head-el-card">
-                        <div class="head-el-card-div">
-                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
-                            <h2>深岩银河</h2>
+                        <div class="head-el-card-div" @click="handleGame">
+                            <img :src="this.Icon" alt="" class="head-el-card-div-img">
+                            <h2>{{ this.GameName }}</h2>
                             <el-button type="text" @click="handleDownloadmintcat" class="head-el-card-div-el-button">
                                 下载mintcat
                             </el-button>
@@ -100,6 +100,9 @@ export default {
             defaulturl: drg,
             isFetching: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             selectedTypes: [], // 用于存储选中的类型
             select: "", // 用于存储搜索输入内容
             inputTimeout: null, // 用于存储 setTimeout 的引用
@@ -196,6 +199,9 @@ export default {
         fetchModTypes() {
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
+                },
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -323,6 +329,7 @@ export default {
         },
         handleapproveModVersion() { router.push('/approveModVersion'); },
         handleroleAuthorization() { router.push('/roleAuthorization'); },
+        handleGame() { router.push('/game'); },
         handleDownloadmintcat() {
             router.push('/downloadmintcat');
         },

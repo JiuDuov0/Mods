@@ -27,6 +27,7 @@ namespace ModsAPI.Controllers
     {
         private readonly IModService _IModService;
         private readonly IAPILogService _IAPILogService;
+        private readonly ITypesService _ITypesService;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly JwtHelper _JwtHelper;
 
@@ -37,12 +38,13 @@ namespace ModsAPI.Controllers
         /// <param name="iAPILogService"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="jwtHelper"></param>
-        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper)
+        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, ITypesService iTypesService)
         {
             _IModService = iModService;
             _IAPILogService = iAPILogService;
             _IHttpContextAccessor = iHttpContextAccessor;
             _JwtHelper = jwtHelper;
+            _ITypesService = iTypesService;
         }
         /// <summary>
         /// 分页获取Mod列表
@@ -119,9 +121,10 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获取所有mod类型
         /// </summary>
+        /// <param name="json">{"":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetAllModTypes")]
-        public ResultEntity<List<TypesEntity>> GetAllModTypes()
+        public ResultEntity<List<TypesEntity>> GetAllModTypes([FromBody] dynamic json)
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
@@ -136,7 +139,7 @@ namespace ModsAPI.Controllers
                 _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             }
             #endregion
-            return new ResultEntity<List<TypesEntity>>() { ResultData = new TypesEntity().GetRoleList() };
+            return new ResultEntity<List<TypesEntity>>() { ResultData = _ITypesService.GetTypesListAsync((string)json.GameId).Result };
         }
 
         /// <summary>
@@ -204,6 +207,7 @@ namespace ModsAPI.Controllers
                 CreatedAt = DateTime.Now,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
+                GameId = (string)json.GameId,
                 DownloadCount = 0
             };
             Mod.Description = Mod.Description.Replace("\n", "</br>");
@@ -469,6 +473,7 @@ namespace ModsAPI.Controllers
                 Description = (string)json.Description,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
+                GameId = (string)json.GameId,
                 ModTypeEntities = ListTypes,
                 ModDependenceEntities = ModDependenceList
             };

@@ -88,6 +88,9 @@ export default {
             NickName: "",
             headurl: head,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             password: '',
             showStatus: false,
             defaultAvatar: head

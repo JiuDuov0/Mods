@@ -4,9 +4,9 @@
             <el-row class="head-row">
                 <el-col class="head-col">
                     <el-card class="head-el-card">
-                        <div class="head-el-card-div">
-                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
-                            <h2>深岩银河</h2>
+                        <div class="head-el-card-div" @click="handleGame">
+                            <img :src="this.Icon" alt="" class="head-el-card-div-img">
+                            <h2>{{ this.GameName }}</h2>
                             <el-button type="text" @click="handleDownloadmintcat" class="head-el-card-div-el-button">
                                 下载mintcat
                             </el-button>
@@ -90,6 +90,7 @@ import head from '../assets/head.jpg';
 import drg from '../assets/drg.png';
 import { el } from 'element-plus/es/locales.mjs';
 import { compile } from 'vue';
+import Game from './Game.vue';
 
 export default {
     name: 'Home',
@@ -102,6 +103,9 @@ export default {
             modList: [],
             NickName: "",
             headurl: head,
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             isFetching: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             defaulturl: drg,
@@ -115,6 +119,7 @@ export default {
         this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
         $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
+        if (!this.GameId) { router.push('/game'); }
         //this.Role = localStorage.getItem('Role');
         this.fetchModTypes();
         this.fetchModList();
@@ -202,6 +207,9 @@ export default {
         fetchModTypes() {
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
+                },
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -226,6 +234,7 @@ export default {
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModListPage`,
                 method: 'POST',
                 data: {
+                    GameId: this.GameId,
                     Skip: this.skip,
                     Take: this.take,
                     Types: this.selectedTypes,
@@ -362,6 +371,7 @@ export default {
             localStorage.removeItem('Mail');
             router.push('/');
         },
+        handleGame() { router.push('/game'); },
         toModDetail(ModId) {
             // 处理点击事件跳转到 Mod 详情页
             router.push({

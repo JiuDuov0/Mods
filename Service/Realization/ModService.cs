@@ -28,16 +28,17 @@ namespace Service.Realization
             int Skip = Convert.ToInt32(json.Skip);
             int Take = Convert.ToInt32(json.Take);
             var Types = ((JArray)json.Types).ToObject<List<string>>();
+            var GameId = (string)json.GameId;
             Types.RemoveAll(x => x == null || x == "");
-            var RedisModList = _IRedisManageService.Get<List<ModListViewEntity>>("ModListPage", 1);
-            var RedisUserModSubscribe = _IRedisManageService.Get<List<UserModSubscribeEntity>>("SetUserModSubscribe" + UserId, 1);
+            var RedisModList = _IRedisManageService.Get<List<ModListViewEntity>>($"ModListPage:{GameId}", 1);
+            var RedisUserModSubscribe = _IRedisManageService.Get<List<UserModSubscribeEntity>>($"SetUserModSubscribe:{UserId}", 1);
             if (Skip + Take > 1000)
             {
                 return EFGetList(json, UserId);
             }
             if (RedisModList == null)
             {
-                Task.Run(() => SetModPageListToRedisAsync());
+                Task.Run(() => SetModPageListToRedisAsync(GameId));
 
                 return EFGetList(json, UserId);
             }
@@ -74,9 +75,10 @@ namespace Service.Realization
                     Context = Context.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
                 }
             }
+            var GameId = (string)json.GameId;
             Context = Context.Where(x =>
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
-            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) && x.GameId == GameId);
             #endregion
             var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
             var Subscribes = task.Result;
@@ -95,7 +97,7 @@ namespace Service.Realization
 
         private async Task<List<ModListViewEntity>> ModPageListRedis(List<ModListViewEntity> mods, dynamic json, string UserId, List<UserModSubscribeEntity> userModSubscribeEntities, List<string> Types)
         {
-            if (userModSubscribeEntities == null || userModSubscribeEntities.Count == 0)
+            if (userModSubscribeEntities == null)
             {
                 userModSubscribeEntities = await SetUserModSubscribeToRedisAsync(UserId);
             }
@@ -119,11 +121,12 @@ namespace Service.Realization
             var list = query.Skip(Skip).Take(Take).ToList();
             return list;
         }
-        private async Task SetModPageListToRedisAsync()
+        private async Task SetModPageListToRedisAsync(string GameId)
         {
             var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).Where(x =>
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
-            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()))).OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
+            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) && x.GameId == GameId)
+                .OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
             var PageList = new List<ModListViewEntity>();
             foreach (var item in list)
             {
@@ -134,7 +137,7 @@ namespace Service.Realization
                 }
                 PageList.Add(new ModListViewEntity() { ModId = item.ModId, Name = item.Name, PicUrl = item.PicUrl, ModTypeEntities = TypesList });
             }
-            await _IRedisManageService.SetAsync("ModListPage", PageList, new TimeSpan(0, 30, 0), 1);
+            await _IRedisManageService.SetAsync($"ModListPage:{GameId}", PageList, new TimeSpan(0, 30, 0), 1);
         }
 
         private async Task<List<UserModSubscribeEntity>> SetUserModSubscribeToRedisAsync(string UserId)
@@ -144,7 +147,7 @@ namespace Service.Realization
             {
                 return list;
             }
-            await _IRedisManageService.SetAsync("SetUserModSubscribe" + UserId, list, new TimeSpan(0, 2, 0), 1);
+            await _IRedisManageService.SetAsync($"SetUserModSubscribe:{UserId}", list, new TimeSpan(0, 2, 0), 1);
             return list;
         }
 
@@ -372,7 +375,7 @@ namespace Service.Realization
             {
                 entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
             }
-            GC.Collect();
+            //GC.Collect();
             return entity;
         }
 

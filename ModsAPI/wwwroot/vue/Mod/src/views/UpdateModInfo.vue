@@ -100,6 +100,9 @@ export default {
             headurl: head,
             ModIOURL: '',
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             tags: [], // 存储所有可选的 Mod 类型
             NickName: ''
         };
@@ -115,6 +118,9 @@ export default {
         fetchTags() {
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
+                },
                 method: 'POST',
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
@@ -242,6 +248,7 @@ export default {
                 Description: this.modForm.description,
                 VideoUrl: this.modForm.VideoUrl,
                 PicUrl: this.modForm.PicUrl,
+                GameId: this.GameId,
                 ModTypeEntities: this.modForm.tags.map((tag) => ({ TypesId: tag })),
                 ModDependenceEntities: this.modForm.ModDependenceEntities.map((dependence) => ({
                     ModDependenceId: dependence.ModDependenceId,

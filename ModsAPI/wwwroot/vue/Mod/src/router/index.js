@@ -90,6 +90,11 @@ const routes = [
         name: "changePassword",
         component: () => import('../views/ChangePassword.vue')
     },
+    {
+        path: "/game",
+        name: "game",
+        component: () => import('../views/Game.vue')
+    },
 ]
 
 const router = createRouter({
