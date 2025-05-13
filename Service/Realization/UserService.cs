@@ -175,7 +175,7 @@ namespace Service.Realization
                 SubscribedAt = DateTime.Now
             };
             context.UserModSubscribeEntity.Add(subscription);
-            _IRedisManageService.Remove($"SetUserModSubscribe{userId}", 1);
+            _IRedisManageService.Remove($"SetUserModSubscribe:{userId}", 1);
             return context.SaveChanges() > 0;
         }
 
@@ -196,7 +196,7 @@ namespace Service.Realization
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var entity = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
             Context.UserModSubscribeEntity.Remove(entity);
-            _IRedisManageService.Remove($"SetUserModSubscribe{UserId}", 1);
+            _IRedisManageService.Remove($"SetUserModSubscribe:{UserId}", 1);
             return Context.SaveChanges() > 0;
         }
 

@@ -119,6 +119,16 @@ namespace Service.Realization
             }
             #endregion
             var list = query.Skip(Skip).Take(Take).ToList();
+
+            foreach (var item in list)
+            {
+                if (userModSubscribeEntities.Where(x => x.ModId == item.ModId).Count() > 0)
+                {
+                    item.IsMySubscribe = true;
+                }
+            }
+
+
             return list;
         }
         private async Task SetModPageListToRedisAsync(string GameId)

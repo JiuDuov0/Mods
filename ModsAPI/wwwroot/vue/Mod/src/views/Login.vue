@@ -8,7 +8,7 @@
                 </div>
                 <h1 style="margin-bottom: 24px;font-size: 24px;">登录</h1>
                 <div>
-                    <input type="text" v-model="loginForm.username" placeholder="请输入登入邮箱" />
+                    <input type="text" v-model="loginForm.mail" placeholder="请输入登入邮箱" />
                     <input type="password" v-model="loginForm.password" placeholder="请输入密码" />
                     <div style="font-size: 0.8125rem;">没有账户？<a style="color: #0067b8;"
                             @click="handleRegister">立即创建一个！</a><a style="color: #0067b8;"
@@ -33,7 +33,7 @@ export default {
         return {
             colSpan: 8,
             loginForm: {
-                username: '',
+                mail: '',
                 password: ''
             }
         };
@@ -52,17 +52,17 @@ export default {
             this.colSpan = screenWidth < 600 ? 24 : 8;
         },
         handleLogin() {
-            if (!this.loginForm.username || !this.loginForm.password) {
+            if (!this.loginForm.mail || !this.loginForm.password) {
                 ElMessage.error('请填写完整的登录信息');
                 return;
             }
 
-            var mail = this.loginForm.username;
+            var mail = this.loginForm.mail;
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Login/UserLogin`,
                 method: 'POST',
                 data: {
-                    LoginAccount: this.loginForm.username,
+                    LoginAccount: this.loginForm.mail,
                     Password: sha256(this.loginForm.password)
                 },
                 contentType: "application/json; charset=utf-8",
