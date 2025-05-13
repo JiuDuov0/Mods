@@ -4,9 +4,9 @@
             <el-row class="head-row">
                 <el-col class="head-col">
                     <el-card class="head-el-card">
-                        <div class="head-el-card-div" @click="handleGame">
-                            <img :src="this.Icon" alt="" class="head-el-card-div-img">
-                            <h2>{{ this.GameName }}</h2>
+                        <div class="head-el-card-div">
+                            <img :src="this.Icon" alt="" class="head-el-card-div-img" @click="handleGame">
+                            <h2 @click="handleGame">{{ this.GameName }}</h2>
                             <el-button type="text" @click="handleDownloadmintcat" class="head-el-card-div-el-button">
                                 下载mintcat
                             </el-button>
@@ -119,7 +119,7 @@ export default {
         this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
         $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
-        if (!this.GameId) { router.push('/game'); }
+        if (!localStorage.getItem('GameId')) { router.push('/game'); }
         //this.Role = localStorage.getItem('Role');
         this.fetchModTypes();
         this.fetchModList();
@@ -371,7 +371,11 @@ export default {
             localStorage.removeItem('Mail');
             router.push('/');
         },
-        handleGame() { router.push('/game'); },
+        handleGame() {
+            setTimeout(() => {
+                router.push('/game');
+            }, 100);
+        },
         toModDetail(ModId) {
             // 处理点击事件跳转到 Mod 详情页
             router.push({

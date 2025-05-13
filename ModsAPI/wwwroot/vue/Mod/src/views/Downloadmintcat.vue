@@ -95,13 +95,14 @@ export default {
     mounted() {
         this.observeSections();
         this.download(); // 页面加载时自动触发下载
+        document.body.classList.remove('dark-theme');
     },
     methods: {
         download() {
             const fileUrl = new URL('../assets/mintcat_0.4.3_x64-setup.zip', import.meta.url).href;
             const link = document.createElement('a');
             link.href = fileUrl; // 设置文件路径
-            link.download = 'mintcat_3_x64-setup.zip'; // 设置下载文件名
+            link.download = 'mintcat_0.4.3_x64-setup.zip'; // 设置下载文件名
             link.click(); // 触发下载
         },
         scrollToSection(sectionId) {
