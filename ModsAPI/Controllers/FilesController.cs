@@ -92,6 +92,15 @@ namespace ModsAPI.Controllers
                 approveModVersionEntity.ApprovedAt = DateTime.Now;
                 approveModVersionEntity.Status = "20";
             }
+
+            if (file.ContentType == "application/json")
+            {
+                approveModVersionEntity.UserId = "0";
+                approveModVersionEntity.Comments = "json文件无需审批";
+                approveModVersionEntity.ApprovedAt = DateTime.Now;
+                approveModVersionEntity.Status = "20";
+            }
+
             var entity = new FilesEntity()
             {
                 FilesId = guid,
@@ -143,6 +152,24 @@ namespace ModsAPI.Controllers
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
+                }
+                if (entity.FilesType == ".json")
+                {
+                    // 读取文件内容并验证JSON格式
+                    using (var reader = new StreamReader(file.OpenReadStream()))
+                    {
+                        var content = await reader.ReadToEndAsync();
+                        try
+                        {
+                            Newtonsoft.Json.Linq.JToken.Parse(content);
+                        }
+                        catch (Exception)
+                        {
+                            result.ResultCode = 400;
+                            result.ResultMsg = "JSON文件格式不正确";
+                            return result;
+                        }
+                    }
                 }
                 if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
                 {
