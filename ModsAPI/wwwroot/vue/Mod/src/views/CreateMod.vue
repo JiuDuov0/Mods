@@ -43,7 +43,8 @@
                                     </template>
                                 </el-table-column>
                             </el-table>
-                            <el-button type="primary" block @click="handleSubmit">提交</el-button>
+                            <el-button type="primary" block @click="handleSubmit"
+                                :disabled="isSubmitting">提交</el-button>
                         </div>
                     </el-card>
                 </el-col>
@@ -98,6 +99,7 @@ export default {
                 tags: [],
                 ModDependenceEntities: []
             },
+            isSubmitting: false,
             tags: [],
             mods: [],
             modVersions: [],
@@ -266,6 +268,7 @@ export default {
                 });
             });
 
+            this.isSubmitting = true;
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/CreateMod`,
                 method: 'POST',
@@ -273,6 +276,7 @@ export default {
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
             }).then(response => {
+                this.isSubmitting = false;
                 if (response.data.ResultData == null) {
                     ElMessage.error('提交失败: ' + response.data.ResultMsg);
                 } else {
@@ -287,6 +291,7 @@ export default {
             }).catch(error => {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
+                this.isSubmitting = false;
             });
         },
         handleReset() {

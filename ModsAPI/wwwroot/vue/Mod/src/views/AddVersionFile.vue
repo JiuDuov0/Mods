@@ -38,7 +38,7 @@
                         </el-upload>
                         <el-progress v-if="uploadProgress > 0" :percentage="uploadProgress"
                             status="success"></el-progress>
-                        <el-button type="primary" block @click="submit">提交</el-button>
+                        <el-button type="primary" block @click="submit" :disabled="isSubmitting">提交</el-button>
                     </el-card>
                 </el-col>
             </el-row>
@@ -51,12 +51,14 @@ import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import head from '../assets/head.jpg';
 import $ from 'jquery';
+import { fa } from 'element-plus/es/locales.mjs';
 
 export default {
     name: 'AddVersionFile',
     data() {
         return {
             NickName: '',
+            isSubmitting: false,
             GameId: localStorage.getItem('GameId'),
             GameName: localStorage.getItem('GameName'),
             Icon: localStorage.getItem('Icon'),
@@ -131,6 +133,7 @@ export default {
             // 请求完成的回调
             xhr.onload = () => {
                 if (xhr.status === 200) {
+                    this.isSubmitting = false;
                     const response = JSON.parse(xhr.responseText);
                     if (response.ResultCode === 200) {
                         ElMessage.success('文件上传成功');
@@ -149,6 +152,7 @@ export default {
 
             // 请求失败的回调
             xhr.onerror = () => {
+                this.isSubmitting = false;
                 ElMessage.error('文件上传失败');
                 this.uploadProgress = 0; // 重置进度条
             };

@@ -36,7 +36,8 @@
                                 style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="versionForm.description" placeholder="请输入版本描述"
                                 style="margin-bottom: 16px;" />
-                            <el-button type="primary" block @click="submitVersion">提交</el-button>
+                            <el-button type="primary" block @click="submitVersion"
+                                :disabled="isSubmitting">提交</el-button>
                         </div>
                     </el-card>
                 </el-col>
@@ -50,12 +51,14 @@ import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
 import $ from 'jquery';
 import head from '../assets/head.jpg';
+import { tr } from 'element-plus/es/locales.mjs';
 
 export default {
     name: 'AddNewVersion',
     data() {
         return {
             NickName: '',
+            isSubmitting: false,
             GameId: localStorage.getItem('GameId'),
             GameName: localStorage.getItem('GameName'),
             Icon: localStorage.getItem('Icon'),
@@ -85,6 +88,7 @@ export default {
                 return;
             }
 
+            this.isSubmitting = true;
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModAddVersion`,
                 method: 'POST',
@@ -96,6 +100,7 @@ export default {
                 contentType: "application/json; charset=utf-8",
                 responseType: 'json'
             }).then(response => {
+                this.isSubmitting = false;
                 if (response.data.ResultCode === 200) {
                     ElMessage.success('版本添加成功');
                     this.versionForm.version = '';
@@ -114,6 +119,7 @@ export default {
             }).catch(error => {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
+                this.isSubmitting = false;
             });
         },
         detectDarkMode() {
