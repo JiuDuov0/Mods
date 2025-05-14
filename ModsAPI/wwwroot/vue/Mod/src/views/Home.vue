@@ -33,7 +33,8 @@
                         <el-col v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
                             <el-card class="el-card-table" name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%; height: 10rem;">
+                                    :src="mod.PicUrl || defaulturl" @error="handleImageError($event, mod)"
+                                    style="width: 100%; height: 10rem;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
@@ -380,6 +381,11 @@ export default {
             setTimeout(() => {
                 router.push('/game');
             }, 100);
+        },
+        handleImageError(event, mod) {
+            // 设置为默认图片
+            event.target.src = this.defaulturl;
+            console.error(`图片加载失败，ModId: ${mod.ModId}, PicUrl: ${mod.PicUrl}, 默认图片已设置,请联系mod创作者或JiuDuo更换`);
         },
         toModDetail(ModId) {
             // 处理点击事件跳转到 Mod 详情页
