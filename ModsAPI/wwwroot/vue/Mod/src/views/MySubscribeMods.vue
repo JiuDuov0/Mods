@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -229,6 +229,7 @@ export default {
                     Skip: this.skip,
                     Take: this.take,
                     Types: this.selectedTypes, // 传递选中的类型
+                    GameId: this.GameId,
                     Search: this.select // 传递搜索输入内容
                 },
                 contentType: "application/json; charset=utf-8",

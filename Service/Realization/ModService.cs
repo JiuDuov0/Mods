@@ -316,6 +316,7 @@ namespace Service.Realization
         {
             int Skip = Convert.ToInt32(json.Skip);
             int Take = Convert.ToInt32(json.Take);
+            var GameId = (string)json.GameId;
             var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
             Types.RemoveAll(x => x == null || x == "");
             IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
@@ -332,7 +333,7 @@ namespace Service.Realization
                     Context = Context.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
                 }
             }
-            Context = Context.Where(x => x.CreatorUserId == UserId);
+            Context = Context.Where(x => x.CreatorUserId == UserId && x.GameId == GameId);
             #endregion
             return Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
         }

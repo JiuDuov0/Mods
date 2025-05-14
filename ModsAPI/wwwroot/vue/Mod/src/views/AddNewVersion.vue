@@ -231,7 +231,6 @@ body.dark-theme .el-input__inner {
 
 body.dark-theme .el-input__inner:focus {
     border-color: #666666;
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 body.dark-theme .el-button {
@@ -337,6 +336,7 @@ body.dark-theme .el-textarea__inner {
     border-color: #444444;
     border-radius: 4px;
     padding: 8px;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 

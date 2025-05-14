@@ -183,8 +183,10 @@ namespace Service.Realization
         {
             var Skip = Convert.ToInt32((string)json.Skip);
             var Take = Convert.ToInt32((string)json.Take);
+            var GameId = (string)json.GameId;
             IQueryable<ModEntity> context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
             context = context.Where(x =>
+            x.GameId == GameId &&
             x.UserModSubscribeEntities.Any(y => y.UserId == UserId) &&
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
