@@ -337,7 +337,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 600px) {
     .el-row {
         padding: 0 10px;
@@ -398,7 +398,8 @@ export default {
     margin-right: 10px;
     font-size: 16px;
 }
-
+</style>
+<style>
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
     background-color: #1e1e1e;
     color: #ffffffa6;

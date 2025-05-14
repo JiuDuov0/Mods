@@ -39,7 +39,7 @@
                                 </nobr>
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                        }}</el-tag>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>
@@ -376,7 +376,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 1870px) {
     .col-sel {
         display: none;
@@ -544,7 +544,9 @@ h3 {
     border-color: #e4e7ed !important;
     box-shadow: none !important;
 }
+</style>
 
+<style>
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;

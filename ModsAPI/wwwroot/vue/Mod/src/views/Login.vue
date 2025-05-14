@@ -114,7 +114,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 600px) {
     .el-row {
         padding: 0 10px;
@@ -187,7 +187,9 @@ input {
     margin-left: 0.5rem;
     margin-bottom: 1rem;
 }
+</style>
 
+<style>
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;

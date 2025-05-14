@@ -343,7 +343,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 1870px) {
     .col-sel {
         display: none;
@@ -499,7 +499,9 @@ h3 {
     background-color: black !important;
     box-shadow: none !important;
 }
+</style>
 
+<style>
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;

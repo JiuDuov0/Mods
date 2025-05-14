@@ -334,7 +334,7 @@ export default {
 }
 
 .el-card-table {
-    min-width: 13rem;
+    min-width: 13.5rem;
     max-width: 16rem;
 }
 

@@ -129,7 +129,7 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip")//前面是Windows请求，后面是MACOS请求
+            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json")//前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
@@ -190,7 +190,8 @@ namespace ModsAPI.Controllers
             {
                 return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "作者已删除" });
             }
-            var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + ".zip");
+            var file = _IFilesService.GetFilesEntityById(FileId);
+            var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + file.FilesType);
             if (!System.IO.File.Exists(filePath))
             {
                 return NotFound(new ResultEntity<string> { ResultCode = 404, ResultMsg = "文件未找到" });
@@ -205,7 +206,16 @@ namespace ModsAPI.Controllers
 
             var entity = _IFilesService.AddModDownLoadCount(FileId);
 
-            var contentType = "application/x-zip-compressed";
+            var contentType = (file.FilesType ?? "").ToLowerInvariant().TrimStart('.') switch
+            {
+                "zip" => "application/zip",
+                "json" => "application/json",
+                "png" => "image/png",
+                "jpg" or "jpeg" => "image/jpeg",
+                "txt" => "text/plain",
+                "rar" => "application/x-rar-compressed",
+                _ => "application/octet-stream" // 默认二进制流
+            };
             var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}.zip";
             Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
             return File(memory, contentType);

@@ -118,7 +118,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .change-password-container {
     max-width: 400px;
     margin: 50px auto;
@@ -134,7 +134,9 @@ h2 {
     margin-bottom: 20px;
     color: #333;
 }
+</style>
 
+<style>
 body.dark-theme .el-input__wrapper {
     background-color: #2c2c2c;
     border: 1px solid #2c2c2c;

@@ -29,7 +29,7 @@ namespace Service.Realization
             if (list == null)
             {
                 var ReadContext = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
-                list = await ReadContext.TypesEntity.Where(x => x.GameId == GameId).ToListAsync();
+                list = await ReadContext.TypesEntity.Where(x => x.GameId == GameId).OrderBy(x => x.Sort).ToListAsync();
                 await ReadContext.DisposeAsync();
                 await _IRedisManageService.SetAsync($"TypesList:{GameId}", list, new TimeSpan(24, 0, 0), 1);
             }

@@ -418,7 +418,21 @@ export default {
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 const link = document.createElement('a');
                 link.href = url;
-                var fileName = this.entity.Name + VersionNumber + '.zip';
+
+                const contentType = response.headers['content-type'];
+                console.log(contentType);
+                let extension = '';
+
+                // 根据 Content-Type 设置扩展名
+                if (contentType === 'application/zip' || contentType === 'application/x-zip-compressed') {
+                    extension = '.zip';
+                } else if (contentType === 'application/json') {
+                    extension = '.json';
+                } else {
+                    extension = ''; // 如果类型未知，不添加扩展名
+                }
+
+                var fileName = this.entity.Name + VersionNumber + extension;
                 link.setAttribute('download', fileName); // 设置下载文件的名称
                 document.body.appendChild(link);
                 link.click();

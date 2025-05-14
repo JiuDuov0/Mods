@@ -216,7 +216,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .profile-summary {
     margin-top: 20px;
 }
@@ -250,7 +250,9 @@ export default {
     margin-right: 10px;
     font-size: 16px;
 }
+</style>
 
+<style>
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;

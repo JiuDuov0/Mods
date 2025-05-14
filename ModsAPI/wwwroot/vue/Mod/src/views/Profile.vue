@@ -40,7 +40,7 @@
 
                                 <div style="max-height: 4rem; height: 2rem;">
                                     <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                        }}</el-tag>
+                                    }}</el-tag>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -412,7 +412,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 1870px) {
     .el-col-sel {
         display: none;
@@ -504,7 +504,9 @@ export default {
     margin-left: -1%;
     margin-right: -1%;
 }
+</style>
 
+<style>
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
     background-color: #1e1e1e;
     color: #ffffffa6;

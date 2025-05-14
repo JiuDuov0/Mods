@@ -32,9 +32,9 @@
                     <el-card>
                         <h1 class="h1">上传版本文件</h1>
                         <el-upload class="upload-demo" action="" :auto-upload="false" :before-upload="beforeUpload"
-                            :on-change="handleFileChange" :file-list="fileList" accept=".zip">
+                            :on-change="handleFileChange" :file-list="fileList" accept=".zip,.json">
                             <el-button type="primary">选择文件</el-button>
-                            <div slot="tip" class="el-upload__tip">仅支持 .zip 格式文件</div>
+                            <div slot="tip" class="el-upload__tip">支持.zip .json格式文件</div>
                         </el-upload>
                         <el-progress v-if="uploadProgress > 0" :percentage="uploadProgress"
                             status="success"></el-progress>
@@ -188,7 +188,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @media (max-width: 600px) {
     .h1 {
         text-align: center;
@@ -277,7 +277,8 @@ export default {
     margin-right: 10px;
     font-size: 16px;
 }
-
+</style>
+<style>
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
     background-color: #1e1e1e;
     color: #ffffffa6;
@@ -323,13 +324,11 @@ body.dark-theme .account-info {
 </style>
 
 <style>
-/* 全局黑暗模式背景和字体颜色 */
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;
 }
 
-/* 黑暗模式下卡片样式 */
 body.dark-theme .el-card {
     background-color: #1e1e1e;
     color: #ffffffa6;
@@ -337,38 +336,32 @@ body.dark-theme .el-card {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* 黑暗模式下标题样式 */
 body.dark-theme h1 {
     color: #ffffff;
 }
 
-/* 黑暗模式下输入框样式 */
 body.dark-theme .el-input__inner {
     background-color: #2c2c2c;
     color: #ffffffa6;
     border-color: #444444;
 }
 
-/* 输入框聚焦样式 */
 body.dark-theme .el-input__inner:focus {
     border-color: #666666;
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
-/* 黑暗模式下按钮样式 */
 body.dark-theme .el-button {
     background-color: #333333;
     color: #ffffffa6;
     border-color: #444444;
 }
 
-/* 按钮悬停样式 */
 body.dark-theme .el-button:hover {
     background-color: #444444;
     border-color: #555555;
 }
 
-/* 黑暗模式下上传组件样式 */
 body.dark-theme .el-upload {
     background-color: #1e1e1e;
     border: 1px solid #333333;
@@ -379,14 +372,12 @@ body.dark-theme .el-upload__tip {
     color: #888888;
 }
 
-/* 黑暗模式下下拉菜单样式 */
 body.dark-theme .el-dropdown-menu {
     background-color: #1e1e1e;
     color: #ffffffa6;
     border-color: #333333;
 }
 
-/* 黑暗模式下下拉菜单项 */
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
     background-color: #1e1e1e;
     color: #ffffffa6;
@@ -407,12 +398,10 @@ body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
-/* 黑暗模式下头像信息 */
 body.dark-theme .account-info {
     color: #ffffffa6;
 }
 
-/* 黑暗模式下上传按钮样式 */
 body.dark-theme .el-upload .el-button {
     background-color: #333333;
     color: #ffffffa6;
@@ -424,17 +413,14 @@ body.dark-theme .el-upload .el-button:hover {
     border-color: #555555;
 }
 
-/* 黑暗模式下表单标签 */
 body.dark-theme .el-form-item__label {
     color: #ffffffa6;
 }
 
-/* 黑暗模式下表单校验错误提示 */
 body.dark-theme .el-form-item__error {
     color: #ff6b6b;
 }
 
-/* 黑暗模式下链接样式 */
 body.dark-theme a {
     color: #4a90e2;
 }
@@ -443,4 +429,3 @@ body.dark-theme a:hover {
     color: #82b1ff;
 }
 </style>
-```
