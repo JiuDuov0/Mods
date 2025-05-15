@@ -14,8 +14,8 @@
                     <iframe v-if="GameId !== 'drgchcode'" class="myiframe" width="100%" height="700rem" :src="videoUrl"
                         frameborder="0" allowfullscreen></iframe>
 
-                    <el-card style="max-height: 40rem;">
-                        <div v-if="GameId === 'drgchcode'" class="code-preview">
+                    <el-card v-if="GameId === 'drgchcode'" style="max-height: 40rem;">
+                        <div class="code-preview">
                             <h3>代码预览 <el-button type="primary" size="mini" @click="copyToClipboard" class="copy-button">
                                     复制到剪切板
                                 </el-button></h3>
