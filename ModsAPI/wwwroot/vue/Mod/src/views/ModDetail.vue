@@ -420,7 +420,6 @@ export default {
                 link.href = url;
 
                 const contentType = response.headers['content-type'];
-                console.log(contentType);
                 let extension = '';
 
                 // 根据 Content-Type 设置扩展名
@@ -470,13 +469,17 @@ export default {
 <style>
 @media (max-width: 1000px) {
     .sticky-subscribe {
-        display: none;
+        display: none !important;
     }
 }
 
 @media (max-width: 500px) {
     .el-dialog-rating {
-        width: 10rem;
+        width: 10rem !important;
+    }
+
+    .sticky-subscribe {
+        display: none !important;
     }
 }
 

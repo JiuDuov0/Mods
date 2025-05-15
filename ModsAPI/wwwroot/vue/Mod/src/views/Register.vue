@@ -13,7 +13,7 @@
                     <input type="password" v-model="registerForm.password" placeholder="请输入密码" />
                     <div style="font-size: 0.8125rem;">已有账号？<a style="color: #0067b8;" @click="handleLogin">返回登录</a>
                     </div>
-                    <el-button type="primary" block @click="handleRegister">注册</el-button>
+                    <el-button type="primary" block @click="handleRegister" :disabled="isSubmitting">注册</el-button>
                     <!-- <el-button type="primary" block @click="handleLogin">登录</el-button> -->
                 </div>
             </el-card>
@@ -32,6 +32,7 @@ export default {
     data() {
         return {
             colSpan: 8,
+            isSubmitting: false,
             registerForm: {
                 mail: '',
                 nickname: '',
@@ -70,6 +71,7 @@ export default {
                 return;
             }
             var mail = this.registerForm.mail;
+            this.isSubmitting = true;
             this.$axios({
                 url: `${import.meta.env.VITE_API_BASE_URL}/Login/UserRegister`,
                 method: 'POST',
@@ -100,6 +102,7 @@ export default {
                 }
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
+                this.isSubmitting = false;
             });
         },
         validateEmail(email) {
