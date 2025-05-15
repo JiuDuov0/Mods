@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Service.Interface;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
@@ -57,10 +58,10 @@ namespace ModsAPI.Controllers
         public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含VersionId的JSON数据")] string VersionId)
         {
             #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
-            var Role = _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
+            var _token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(_token, "UserId");
+            var UserRoleIDs = _JwtHelper.GetTokenStr(_token, "UserRoleIDs");
+            var Role = _JwtHelper.GetTokenStr(_token, ClaimTypes.Role);
             await _IAPILogService.WriteLogAsync("FilesController/UploadMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
@@ -156,20 +157,48 @@ namespace ModsAPI.Controllers
                 }
                 if (entity.FilesType == ".json" || entity.FilesType == ".txt")
                 {
-                    // 读取文件内容并验证JSON格式
-                    using (var reader = new StreamReader(file.OpenReadStream()))
+                    string fileContent = await System.IO.File.ReadAllTextAsync(filePath);
+                    bool isJson = false;
+                    object? jsonObj = null;
+                    try
                     {
-                        var content = await reader.ReadToEndAsync();
-                        try
+                        jsonObj = JsonConvert.DeserializeObject(fileContent);
+                        isJson = true;
+                    }
+                    catch
+                    {
+                        isJson = false;
+                    }
+                    if (isJson && jsonObj is JToken token)
+                    {
+                        void ReplaceNewLineInJToken(JToken t)
                         {
-                            Newtonsoft.Json.Linq.JToken.Parse(content);
+                            if (t.Type == JTokenType.Object)
+                            {
+                                foreach (var prop in ((JObject)t).Properties())
+                                {
+                                    ReplaceNewLineInJToken(prop.Value);
+                                }
+                            }
+                            else if (t.Type == JTokenType.Array)
+                            {
+                                foreach (var item in (JArray)t)
+                                {
+                                    ReplaceNewLineInJToken(item);
+                                }
+                            }
+                            else if (t.Type == JTokenType.String)
+                            {
+                                string? val = t.Value<string>();
+                                if (val != null && (val.Contains('\n') || val.Contains('\r')))
+                                {
+                                    string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                                    ((JValue)t).Value = newVal;
+                                }
+                            }
                         }
-                        catch (Exception)
-                        {
-                            result.ResultCode = 400;
-                            result.ResultMsg = "JSON文件格式不正确";
-                            return result;
-                        }
+                        ReplaceNewLineInJToken(token);
+                        await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
                     }
                 }
                 if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
