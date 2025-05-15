@@ -24,11 +24,7 @@
                                     复制
                                 </el-button>
                             </h3>
-                            <pre>
-            <code>
-                {{ codeContent }}
-            </code>
-        </pre>
+                            <div id="monaco-editor" style="height: 30rem;"></div>
                         </div>
                     </el-card>
 
@@ -148,7 +144,7 @@ import drg from '../assets/drg.png';
 export default {
     name: 'ModDetail',
     components: {
-        CopyDocument, // 注册图标组件
+        CopyDocument,
     },
     data() {
         return {
@@ -184,7 +180,7 @@ export default {
             rating: 5, // 当前评分
             AVGPoint: 0.0, // 平均评分
             pointentity: null,
-            codeContent: ``,
+            codeContent: {},
             ratingWindowVisible: false // 评分窗口是否可见
         };
     },
@@ -205,6 +201,9 @@ export default {
             };
         }
         this.detectDarkMode();
+        if (this.GameId === 'drgchcode') {
+            this.initMonacoEditor(); // 初始化 Monaco Editor
+        }
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.updateColSpan);
@@ -486,7 +485,7 @@ export default {
         },
         async handlePreview(FileId) {
             if (!FileId) {
-                ElMessage.error('文件 ID 不存在，无法下载');
+                ElMessage.error('文件 ID 不存在，无法预览');
                 return;
             }
             this.progress = 0;
@@ -505,19 +504,29 @@ export default {
                     }
                 });
 
-                const reader = new FileReader();
-                reader.onload = () => {
-                    //console.log('文件内容 (文本):', reader.result); // 打印文本内容
-                    this.codeContent = reader.result;
-                };
-                reader.onerror = (error) => {
-                    console.error('预览失败:', error);
-                };
-                reader.readAsText(response.data);
+                const contentType = response.headers['content-type'];
+
+                if (contentType === 'application/json' || contentType === 'text/plain') {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            // 将文件内容解析为 JSON
+                            const jsonContent = JSON.parse(reader.result);
+                            this.codeContent = jsonContent; // 将 JSON 数据赋值给 codeContent
+                            this.initMonacoEditor(); // 更新 Monaco Editor 内容
+                        } catch (error) {
+                            console.error('JSON 解析失败:', error);
+                            ElMessage.error('文件内容不是有效的 JSON 格式');
+                        }
+                    };
+                    reader.onerror = (error) => {
+                        console.error('文件读取失败:', error);
+                    };
+                    reader.readAsText(response.data);
+                }
                 this.showPreviewStatus = false;
                 this.progress = 0;
-            }
-            catch (error) {
+            } catch (error) {
                 this.showPreviewStatus = false;
                 this.progress = 0;
                 ElMessage.error('预览文件失败:' + error);
@@ -525,25 +534,58 @@ export default {
             }
         },
         copyToClipboard() {
-            if (!this.codeContent) {
+            if (!this.codeContent || Object.keys(this.codeContent).length === 0) {
                 ElMessage.warning('没有可复制的内容');
                 return;
             }
 
-            // 创建一个临时的 textarea 元素
-            const textarea = document.createElement('textarea');
-            textarea.value = this.codeContent;
-            document.body.appendChild(textarea);
+            // 将 JSON 数据格式化为字符串
+            const contentToCopy = JSON.stringify(this.codeContent, null, 2);
 
-            // 选中并复制内容
-            textarea.select();
-            document.execCommand('copy');
+            // 使用 Clipboard API 复制内容
+            navigator.clipboard.writeText(contentToCopy)
+                .then(() => {
+                    ElMessage.success('代码已复制到剪切板');
+                })
+                .catch((error) => {
+                    console.error('复制失败:', error);
+                    ElMessage.error('复制失败，请重试');
+                });
+        },
+        async initMonacoEditor() {
+            const editorContainer = document.getElementById('monaco-editor');
+            if (editorContainer) {
+                // 检查是否已经存在编辑器实例
+                if (editorContainer.__monacoEditorInstance) {
+                    editorContainer.__monacoEditorInstance.dispose(); // 销毁已有实例
+                }
 
-            // 移除临时元素
-            document.body.removeChild(textarea);
+                // 配置 Monaco Editor 的 CDN 路径
+                window.require.config({
+                    paths: {
+                        vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs', // CDN 路径
+                    },
+                });
 
-            // 显示复制成功的提示
-            ElMessage.success('代码已复制到剪切板');
+                // 加载 Monaco Editor
+                window.require(['vs/editor/editor.main'], (monaco) => {
+                    // 检测是否是黑暗模式
+                    const isDarkMode = document.body.classList.contains('dark-theme');
+                    const theme = isDarkMode ? 'vs-dark' : 'vs'; // 根据模式设置主题
+
+                    const editorInstance = monaco.editor.create(editorContainer, {
+                        value: JSON.stringify(this.codeContent, null, 2), // 显示 JSON 数据
+                        language: 'json',
+                        theme: theme, // 动态设置主题
+                        //readOnly: true,
+                    });
+
+                    // 将编辑器实例存储在容器上，防止重复初始化
+                    editorContainer.__monacoEditorInstance = editorInstance;
+                });
+            } else {
+                console.error('Monaco Editor 容器未找到');
+            }
         },
         goToModDetail(ModId) {
             if (!ModId) {
