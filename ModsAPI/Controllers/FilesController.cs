@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Service.Interface;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace ModsAPI.Controllers
 {
@@ -138,7 +139,7 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json")//前面是Windows请求，后面是MACOS请求
+            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json" && file.ContentType!= "text/plain")//前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
@@ -153,7 +154,7 @@ namespace ModsAPI.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
-                if (entity.FilesType == ".json")
+                if (entity.FilesType == ".json" || entity.FilesType == ".txt")
                 {
                     // 读取文件内容并验证JSON格式
                     using (var reader = new StreamReader(file.OpenReadStream()))
@@ -243,7 +244,8 @@ namespace ModsAPI.Controllers
                 "rar" => "application/x-rar-compressed",
                 _ => "application/octet-stream" // 默认二进制流
             };
-            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}.zip";
+            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}{file.FilesType}".Replace(' ','_');
+            fileName = Regex.Replace(fileName, "[\u4e00-\u9fa5]", "");
             Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
             return File(memory, contentType);
         }

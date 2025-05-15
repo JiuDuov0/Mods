@@ -11,9 +11,21 @@
                     <h2>{{ Name }}</h2>
                 </el-col>
                 <el-col :span="colSpan">
-                    <iframe class="myiframe" width="100%" height="700rem" :src="videoUrl" frameborder="0"
-                        allowfullscreen>
-                    </iframe>
+                    <iframe v-if="GameId !== 'drgchcode'" class="myiframe" width="100%" height="700rem" :src="videoUrl"
+                        frameborder="0" allowfullscreen></iframe>
+
+                    <el-card style="max-height: 40rem;">
+                        <div v-if="GameId === 'drgchcode'" class="code-preview">
+                            <h3>代码预览 <el-button type="primary" size="mini" @click="copyToClipboard" class="copy-button">
+                                    复制到剪切板
+                                </el-button></h3>
+                            <pre>
+            <code>
+                {{ codeContent }}
+            </code>
+        </pre>
+                        </div>
+                    </el-card>
 
                     <el-card v-if="ModDependenceEntities.length > 0" style="margin-top: 20px;">
                         <h3>前置依赖</h3>
@@ -65,10 +77,16 @@
                             <el-table-column prop="VersionNumber" label="版本号" width="150"></el-table-column>
                             <el-table-column prop="Description" label="描述"></el-table-column>
                             <el-table-column prop="CreatedAt" label="更新时间" width="200"></el-table-column>
-                            <el-table-column prop="FilesId" label="下载" width="200">
+                            <el-table-column prop="FilesId" label="操作" width="200">
                                 <template #default="scope">
-                                    <el-button v-if="scope.row.FilesId" type="primary" block
-                                        @click="handleDownload(scope.row.FilesId, scope.row.VersionNumber)">下载</el-button>
+                                    <el-button v-if="GameId === 'drgchcode'" type="primary"
+                                        @click="handlePreview(scope.row.FilesId)">
+                                        预览
+                                    </el-button>
+                                    <el-button type="primary"
+                                        @click="handleDownload(scope.row.FilesId, scope.row.VersionNumber)">
+                                        下载
+                                    </el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -105,6 +123,12 @@
                 <p style="margin-top: 10px;">下载进度: {{ progress }}%</p>
             </div>
         </el-dialog>
+
+        <el-dialog title="预览进度" v-model="showPreviewStatus" width="30%">
+            <div style="text-align: center;">
+                <p style="margin-top: 10px;">预览进度: {{ progress }}%</p>
+            </div>
+        </el-dialog>
     </el-container>
 </template>
 <script>
@@ -132,6 +156,7 @@ export default {
             tags: [],
             progress: 0,
             showStatus: false,
+            showPreviewStatus: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             GameId: localStorage.getItem('GameId'),
             GameName: localStorage.getItem('GameName'),
@@ -150,6 +175,7 @@ export default {
             rating: 5, // 当前评分
             AVGPoint: 0.0, // 平均评分
             pointentity: null,
+            codeContent: ``,
             ratingWindowVisible: false // 评分窗口是否可见
         };
     },
@@ -159,14 +185,16 @@ export default {
         this.updateColSpan();
         window.addEventListener('resize', this.updateColSpan);
         const iframe = document.querySelector('.myiframe');
-        iframe.onload = () => {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            const img = iframeDoc.querySelector('img');
-            if (img) {
-                img.style.width = '100%';
-                img.style.height = '100%';
-            }
-        };
+        if (iframe) {
+            iframe.onload = () => {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const img = iframeDoc.querySelector('img');
+                if (img) {
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                }
+            };
+        }
         this.detectDarkMode();
     },
     beforeDestroy() {
@@ -248,6 +276,9 @@ export default {
                     this.latestVersion.CreatedAt = response.data.ResultData.ModVersionEntities[0].CreatedAt;
                     if (response.data.ResultData.AVGPoint != null) {
                         this.AVGPoint = response.data.ResultData.AVGPoint;
+                    }
+                    if (this.GameId === 'drgchcode') {
+                        this.handlePreview(response.data.ResultData.ModVersionEntities[0].FilesId);
                     }
                 }
             }).catch(error => {
@@ -444,6 +475,67 @@ export default {
                 console.log('下载文件失败:', error);
             }
         },
+        async handlePreview(FileId) {
+            if (!FileId) {
+                ElMessage.error('文件 ID 不存在，无法下载');
+                return;
+            }
+            this.progress = 0;
+            this.showPreviewStatus = true;
+            this.versionDialogVisible = false;
+            try {
+                const response = await this.$axios({
+                    url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFile`,
+                    method: 'POST',
+                    timeout: 300000,
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')) },
+                    data: { FileId: FileId },
+                    responseType: 'blob',
+                    onDownloadProgress: (progressEvent) => {
+                        this.progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    }
+                });
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    //console.log('文件内容 (文本):', reader.result); // 打印文本内容
+                    this.codeContent = reader.result;
+                };
+                reader.onerror = (error) => {
+                    console.error('预览失败:', error);
+                };
+                reader.readAsText(response.data);
+                this.showPreviewStatus = false;
+                this.progress = 0;
+            }
+            catch (error) {
+                this.showPreviewStatus = false;
+                this.progress = 0;
+                ElMessage.error('预览文件失败:' + error);
+                console.log('预览文件失败:', error);
+            }
+        },
+        copyToClipboard() {
+            if (!this.codeContent) {
+                ElMessage.warning('没有可复制的内容');
+                return;
+            }
+
+            // 创建一个临时的 textarea 元素
+            const textarea = document.createElement('textarea');
+            textarea.value = this.codeContent;
+            document.body.appendChild(textarea);
+
+            // 选中并复制内容
+            textarea.select();
+            document.execCommand('copy');
+
+            // 移除临时元素
+            document.body.removeChild(textarea);
+
+            // 显示复制成功的提示
+            ElMessage.success('代码已复制到剪切板');
+        },
         goToModDetail(ModId) {
             if (!ModId) {
                 return;
@@ -501,6 +593,37 @@ export default {
     border-style: solid;
     border-color: #e4e7ed;
 }
+
+.el-button+.el-button {
+    margin-left: 0px;
+    margin-top: 0.2rem;
+}
+
+.code-preview {
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.code-preview pre {
+    padding: 10px;
+    border-radius: 5px;
+    overflow: auto;
+    white-space: pre;
+    word-wrap: normal;
+    max-height: 350px;
+}
+
+.code-preview h3 {
+    margin-bottom: 10px;
+}
+
+.copy-button {
+    width: 7rem;
+    border: none;
+    cursor: pointer;
+}
+
 
 .rating-float {
     position: fixed;
@@ -789,5 +912,32 @@ body.dark-theme .el-pagination__button:hover {
 
 body.dark-theme .el-dialog__title {
     color: #ffffff;
+}
+
+body.dark-theme .code-preview {
+    color: #ffffffa6;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-thumb {
+    background-color: #555555;
+    border-radius: 4px;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-thumb:hover {
+    background-color: #777777;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-track {
+    background-color: #1e1e1e;
+    border-radius: 4px;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-corner {
+    background-color: #1e1e1e;
 }
 </style>

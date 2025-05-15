@@ -32,9 +32,9 @@
                     <el-card>
                         <h1 class="h1">上传版本文件</h1>
                         <el-upload class="upload-demo" action="" :auto-upload="false" :before-upload="beforeUpload"
-                            :on-change="handleFileChange" :file-list="fileList" accept=".zip,.json">
+                            :on-change="handleFileChange" :file-list="fileList" accept=".zip,.json,.txt">
                             <el-button type="primary">选择文件</el-button>
-                            <div slot="tip" class="el-upload__tip">支持.zip .json格式文件</div>
+                            <div slot="tip" class="el-upload__tip">支持.zip .json .txt格式文件</div>
                         </el-upload>
                         <el-progress v-if="uploadProgress > 0" :percentage="uploadProgress"
                             status="success"></el-progress>
