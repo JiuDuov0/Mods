@@ -16,9 +16,14 @@
 
                     <el-card v-if="GameId === 'drgchcode'" style="max-height: 40rem;">
                         <div class="code-preview">
-                            <h3>代码预览 <el-button type="primary" size="mini" @click="copyToClipboard" class="copy-button">
-                                    复制到剪切板
-                                </el-button></h3>
+                            <h3>代码预览
+                                <el-button type="primary" size="mini" @click="copyToClipboard" class="copy-button">
+                                    <el-icon>
+                                        <CopyDocument />
+                                    </el-icon>
+                                    复制
+                                </el-button>
+                            </h3>
                             <pre>
             <code>
                 {{ codeContent }}
@@ -132,6 +137,7 @@
     </el-container>
 </template>
 <script>
+import { CopyDocument } from '@element-plus/icons-vue';
 import { watch } from 'vue'
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
@@ -141,6 +147,9 @@ import drg from '../assets/drg.png';
 
 export default {
     name: 'ModDetail',
+    components: {
+        CopyDocument, // 注册图标组件
+    },
     data() {
         return {
             colSpan: 19,
@@ -619,7 +628,7 @@ export default {
 }
 
 .copy-button {
-    width: 7rem;
+    width: 5rem;
     border: none;
     cursor: pointer;
 }
