@@ -38,18 +38,7 @@
     "Expirces": 3600, //Token过期时间 s
     "RefreshTokenExpirces": 86400 //refresh_Token过期时间 s
   },
-  "Smtp": [
-    {
-      "Server": "smtp.yeah.net",
-      "SenderEmail": "modcat@yeah.net",
-      "SenderPassword": "KVNtn32qk8CcUiMW"
-    },
-    {
-      "Server": "smtp.yeah.net",
-      "SenderEmail": "modcat@yeah.net",
-      "SenderPassword": "PZNt83APGGFrTrVn"
-    }
-  ]
+  "Smtp": []
 }
 
 ```
