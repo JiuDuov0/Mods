@@ -95,7 +95,7 @@ namespace ModsAPI.Controllers
                 approveModVersionEntity.Status = "20";
             }
 
-            if (file.ContentType == "application/json")
+            if (file.ContentType == "application/json" || file.ContentType == "text/plain")
             {
                 approveModVersionEntity.UserId = "0";
                 approveModVersionEntity.Comments = "json文件无需审批";
