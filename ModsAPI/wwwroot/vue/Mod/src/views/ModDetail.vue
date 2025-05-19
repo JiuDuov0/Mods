@@ -466,6 +466,18 @@ export default {
                     extension = '.zip';
                 } else if (contentType === 'application/json') {
                     extension = '.json';
+                } else if (contentType === 'text/plain') {
+                    extension = '.txt';
+                } else if (contentType === 'application/octet-stream') {
+                    extension = '.bin'; // 二进制文件
+                } else if (contentType === 'application/x-7z-compressed') {
+                    extension = '.7z'; // 7z 压缩文件
+                } else if (contentType === 'application/x-rar-compressed') {
+                    extension = '.rar'; // RAR 压缩文件
+                } else if (contentType === 'application/x-tar') {
+                    extension = '.tar'; // TAR 压缩文件
+                } else if (contentType === 'application/x-gzip') {
+                    extension = '.gz'; // GZ 压缩文件
                 } else {
                     extension = ''; // 如果类型未知，不添加扩展名
                 }
