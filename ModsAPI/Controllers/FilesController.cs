@@ -140,7 +140,7 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json" && file.ContentType!= "text/plain")//前面是Windows请求，后面是MACOS请求
+            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json" && file.ContentType != "text/plain")//前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
@@ -153,54 +153,63 @@ namespace ModsAPI.Controllers
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
+                    if (entity.FilesType == ".json" || entity.FilesType == ".txt")
+                    {
+                        var reader = new StreamReader(file.OpenReadStream());
+                        string fileContent = await reader.ReadToEndAsync();
+                        reader.Dispose();
+                        bool isJson = false;
+                        object? jsonObj = null;
+                        try
+                        {
+                            jsonObj = JsonConvert.DeserializeObject(fileContent);
+                            isJson = true;
+                        }
+                        catch
+                        {
+                            isJson = false;
+                        }
+                        if (isJson && jsonObj is JToken token)
+                        {
+                            void ReplaceNewLineInJToken(JToken t)
+                            {
+                                if (t.Type == JTokenType.Object)
+                                {
+                                    foreach (var prop in ((JObject)t).Properties())
+                                    {
+                                        ReplaceNewLineInJToken(prop.Value);
+                                    }
+                                }
+                                else if (t.Type == JTokenType.Array)
+                                {
+                                    foreach (var item in (JArray)t)
+                                    {
+                                        ReplaceNewLineInJToken(item);
+                                    }
+                                }
+                                else if (t.Type == JTokenType.String)
+                                {
+                                    string? val = t.Value<string>();
+                                    if (val != null && (val.Contains('\n') || val.Contains('\r')))
+                                    {
+                                        string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                                        ((JValue)t).Value = newVal;
+                                    }
+                                }
+                            }
+                            ReplaceNewLineInJToken(token);
+                            await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
+                        }
+                        else
+                        {
+                            result.ResultCode = 400;
+                            result.ResultMsg = "JSON格式错误";
+                            return result;
+                        }
+                    }
                     await file.CopyToAsync(stream);
                 }
-                if (entity.FilesType == ".json" || entity.FilesType == ".txt")
-                {
-                    string fileContent = await System.IO.File.ReadAllTextAsync(filePath);
-                    bool isJson = false;
-                    object? jsonObj = null;
-                    try
-                    {
-                        jsonObj = JsonConvert.DeserializeObject(fileContent);
-                        isJson = true;
-                    }
-                    catch
-                    {
-                        isJson = false;
-                    }
-                    if (isJson && jsonObj is JToken token)
-                    {
-                        void ReplaceNewLineInJToken(JToken t)
-                        {
-                            if (t.Type == JTokenType.Object)
-                            {
-                                foreach (var prop in ((JObject)t).Properties())
-                                {
-                                    ReplaceNewLineInJToken(prop.Value);
-                                }
-                            }
-                            else if (t.Type == JTokenType.Array)
-                            {
-                                foreach (var item in (JArray)t)
-                                {
-                                    ReplaceNewLineInJToken(item);
-                                }
-                            }
-                            else if (t.Type == JTokenType.String)
-                            {
-                                string? val = t.Value<string>();
-                                if (val != null && (val.Contains('\n') || val.Contains('\r')))
-                                {
-                                    string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
-                                    ((JValue)t).Value = newVal;
-                                }
-                            }
-                        }
-                        ReplaceNewLineInJToken(token);
-                        await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
-                    }
-                }
+                
                 if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
                 {
                     result.ResultCode = 200;
@@ -273,7 +282,7 @@ namespace ModsAPI.Controllers
                 "rar" => "application/x-rar-compressed",
                 _ => "application/octet-stream" // 默认二进制流
             };
-            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}{file.FilesType}".Replace(' ','_');
+            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}{file.FilesType}".Replace(' ', '_');
             fileName = Regex.Replace(fileName, "[\u4e00-\u9fa5]", "");
             Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
             return File(memory, contentType);

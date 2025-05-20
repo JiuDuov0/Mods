@@ -554,15 +554,31 @@ export default {
             // 将 JSON 数据格式化为字符串
             const contentToCopy = JSON.stringify(this.codeContent, null, 2);
 
-            // 使用 Clipboard API 复制内容
-            navigator.clipboard.writeText(contentToCopy)
-                .then(() => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                // 使用 Clipboard API
+                navigator.clipboard.writeText(contentToCopy)
+                    .then(() => {
+                        ElMessage.success('代码已复制到剪切板');
+                    })
+                    .catch((error) => {
+                        console.error('复制失败:', error);
+                        ElMessage.error('复制失败，请重试');
+                    });
+            } else {
+                // 回退到传统方法
+                const textarea = document.createElement('textarea');
+                textarea.value = contentToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
                     ElMessage.success('代码已复制到剪切板');
-                })
-                .catch((error) => {
+                } catch (error) {
                     console.error('复制失败:', error);
                     ElMessage.error('复制失败，请重试');
-                });
+                }
+                document.body.removeChild(textarea);
+            }
         },
         async initMonacoEditor() {
             const editorContainer = document.getElementById('monaco-editor');
