@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
 using Swashbuckle.AspNetCore.Annotations;
+using System.IO;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 
@@ -151,65 +152,67 @@ namespace ModsAPI.Controllers
             {
                 var filePath = Path.Combine(_IConfiguration["FilePath"], guid + filetype);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                if (entity.FilesType == ".json" || entity.FilesType == ".txt")
                 {
-                    if (entity.FilesType == ".json" || entity.FilesType == ".txt")
+                    var reader = new StreamReader(file.OpenReadStream());
+                    string fileContent = await reader.ReadToEndAsync();
+                    reader.Dispose();
+                    bool isJson = false;
+                    object? jsonObj = null;
+                    try
                     {
-                        var reader = new StreamReader(file.OpenReadStream());
-                        string fileContent = await reader.ReadToEndAsync();
-                        reader.Dispose();
-                        bool isJson = false;
-                        object? jsonObj = null;
-                        try
+                        jsonObj = JsonConvert.DeserializeObject(fileContent);
+                        isJson = true;
+                    }
+                    catch
+                    {
+                        isJson = false;
+                    }
+                    if (isJson && jsonObj is JToken token)
+                    {
+                        void ReplaceNewLineInJToken(JToken t)
                         {
-                            jsonObj = JsonConvert.DeserializeObject(fileContent);
-                            isJson = true;
-                        }
-                        catch
-                        {
-                            isJson = false;
-                        }
-                        if (isJson && jsonObj is JToken token)
-                        {
-                            void ReplaceNewLineInJToken(JToken t)
+                            if (t.Type == JTokenType.Object)
                             {
-                                if (t.Type == JTokenType.Object)
+                                foreach (var prop in ((JObject)t).Properties())
                                 {
-                                    foreach (var prop in ((JObject)t).Properties())
-                                    {
-                                        ReplaceNewLineInJToken(prop.Value);
-                                    }
-                                }
-                                else if (t.Type == JTokenType.Array)
-                                {
-                                    foreach (var item in (JArray)t)
-                                    {
-                                        ReplaceNewLineInJToken(item);
-                                    }
-                                }
-                                else if (t.Type == JTokenType.String)
-                                {
-                                    string? val = t.Value<string>();
-                                    if (val != null && (val.Contains('\n') || val.Contains('\r')))
-                                    {
-                                        string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
-                                        ((JValue)t).Value = newVal;
-                                    }
+                                    ReplaceNewLineInJToken(prop.Value);
                                 }
                             }
-                            ReplaceNewLineInJToken(token);
-                            await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
+                            else if (t.Type == JTokenType.Array)
+                            {
+                                foreach (var item in (JArray)t)
+                                {
+                                    ReplaceNewLineInJToken(item);
+                                }
+                            }
+                            else if (t.Type == JTokenType.String)
+                            {
+                                string? val = t.Value<string>();
+                                if (val != null && (val.Contains('\n') || val.Contains('\r')))
+                                {
+                                    string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                                    ((JValue)t).Value = newVal;
+                                }
+                            }
                         }
-                        else
-                        {
-                            result.ResultCode = 400;
-                            result.ResultMsg = "JSON格式错误";
-                            return result;
-                        }
+                        ReplaceNewLineInJToken(token);
+                        await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
                     }
-                    await file.CopyToAsync(stream);
+                    else
+                    {
+                        result.ResultCode = 400;
+                        result.ResultMsg = "JSON格式错误";
+                        return result;
+                    }
                 }
-                
+                else
+                {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+                }
                 if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
                 {
                     result.ResultCode = 200;
