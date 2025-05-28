@@ -37,9 +37,15 @@
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
-                                <div style="max-height: 4rem; height: 2rem;">
-                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                <div style="max-height: 4rem;">
+                                    <nobr>
+                                        <el-tag v-for="(tag, index) in mod.ModTypeEntities.slice(0, 2)" :key="index">
+                                            {{ tag.TypeName }}
+                                        </el-tag>
+                                        <el-tag v-if="mod.ModTypeEntities.length > 2" type="info">
+                                            +{{ mod.ModTypeEntities.length - 2 }}
+                                        </el-tag>
+                                    </nobr>
                                 </div>
                                 <!-- <p>{{ getShortDescription(mod.Description) }}</p> -->
                                 <div class="line"></div>

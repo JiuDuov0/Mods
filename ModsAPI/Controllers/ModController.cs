@@ -79,7 +79,7 @@ namespace ModsAPI.Controllers
             }
             #endregion
             var list = _IModService.ModListPage(json, UserId);
-            GC.Collect();
+            //GC.Collect();
             return new ResultEntity<List<ModListViewEntity>> { ResultData = list };
         }
 
@@ -351,7 +351,7 @@ namespace ModsAPI.Controllers
         /// <returns></returns>
         [HttpPost(Name = "GetMyCreateMod")]
         [Authorize]
-        public ResultEntity<List<ModEntity>> GetMyCreateMod([FromBody] dynamic json)
+        public ResultEntity<List<ModListViewEntity>> GetMyCreateMod([FromBody] dynamic json)
         {
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
@@ -362,14 +362,14 @@ namespace ModsAPI.Controllers
             #region 验证
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
+            return new ResultEntity<List<ModListViewEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
         }
 
         /// <summary>

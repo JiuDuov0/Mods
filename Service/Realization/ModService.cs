@@ -4,6 +4,7 @@ using Entity.Approve;
 using Entity.Mod;
 using Entity.User;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Redis.Interface;
 using Service.Interface;
@@ -312,7 +313,7 @@ namespace Service.Realization
             return entity == null;
         }
 
-        public List<ModEntity> GetMyCreateMod(string UserId, dynamic json)
+        public List<ModListViewEntity> GetMyCreateMod(string UserId, dynamic json)
         {
             int Skip = Convert.ToInt32(json.Skip);
             int Take = Convert.ToInt32(json.Take);
@@ -335,7 +336,36 @@ namespace Service.Realization
             }
             Context = Context.Where(x => x.CreatorUserId == UserId && x.GameId == GameId);
             #endregion
-            return Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
+            var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
+
+            var result = new List<ModListViewEntity>();
+            foreach (var mod in list)
+            {
+                var typesList = new List<ModTypesListViewEntity>();
+                if (mod.ModTypeEntities != null)
+                {
+                    foreach (var typeEntity in mod.ModTypeEntities)
+                    {
+                        if (typeEntity.Types != null)
+                        {
+                            typesList.Add(new ModTypesListViewEntity
+                            {
+                                TypesId = typeEntity.TypesId,
+                                TypeName = typeEntity.Types.TypeName
+                            });
+                        }
+                    }
+                }
+                result.Add(new ModListViewEntity
+                {
+                    ModId = mod.ModId,
+                    Name = mod.Name,
+                    PicUrl = mod.PicUrl,
+                    ModTypeEntities = typesList
+                });
+            }
+
+            return result;
         }
 
         private async Task<List<ModEntity>> GetMyCreateModRedisAsync(string UserId)
