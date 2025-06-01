@@ -5,10 +5,10 @@
                 <el-col class="head-col">
                     <el-card class="head-el-card">
                         <div class="head-el-card-div">
-                            <img src="../assets/Game-Icon-DRG.jpg" alt="Game Icon" class="head-el-card-div-img">
-                            <h2>深岩银河</h2>
-                            <el-button type="text" @click="handleCreateMod" class="head-el-card-div-el-button">
-                                发布Mod
+                            <img :src="this.Icon" alt="" class="head-el-card-div-img" @click="handleGame">
+                            <h2 @click="handleGame">{{ this.GameName }}</h2>
+                            <el-button type="text" @click="handleDownloadmintcat" class="head-el-card-div-el-button">
+                                下载mintcat
                             </el-button>
                         </div>
                     </el-card>
@@ -33,14 +33,20 @@
                         <el-col v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
                             <el-card class="el-card-table" name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%; height: 10rem;">
+                                    :src="mod.PicUrl || defaulturl" @error="handleImageError($event, mod)"
+                                    style="width: 100%; height: 10rem;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
-                                <div style="max-height: 4rem; height: 2rem;">
-                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">
-                                        {{ tag.Types.TypeName }}
-                                    </el-tag>
+                                <div style="max-height: 4rem;">
+                                    <nobr>
+                                        <el-tag v-for="(tag, index) in mod.ModTypeEntities.slice(0, 2)" :key="index">
+                                            {{ tag.TypeName }}
+                                        </el-tag>
+                                        <el-tag v-if="mod.ModTypeEntities.length > 2" type="info">
+                                            +{{ mod.ModTypeEntities.length - 2 }}
+                                        </el-tag>
+                                    </nobr>
                                 </div>
                                 <div class="line"></div>
                                 <el-button v-if="!mod.IsMySubscribe" @click="UserModSubscribe(mod.ModId)"
@@ -51,6 +57,7 @@
                         </el-col>
                     </el-row>
                     <div ref="bottomObserver" style="height: 1px;"></div>
+                    <div id="show" style="text-align: center;display: none;">正在获取数据，请稍候</div>
                 </el-col>
                 <div class="account-info">
                     <el-avatar :src="headurl"></el-avatar>
@@ -89,6 +96,7 @@ import head from '../assets/head.jpg';
 import drg from '../assets/drg.png';
 import { el } from 'element-plus/es/locales.mjs';
 import { compile } from 'vue';
+import Game from './Game.vue';
 
 export default {
     name: 'Home',
@@ -96,11 +104,15 @@ export default {
         return {
             colSpan: 21,
             skip: 0,
-            take: 18,
+            take: 100,
             modTypes: [],
             modList: [],
             NickName: "",
             headurl: head,
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
+            isFetching: false,
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
             defaulturl: drg,
             selectedTypes: [], // 用于存储选中的类型
@@ -113,6 +125,7 @@ export default {
         this.NickName = localStorage.getItem('NickName' + localStorage.getItem('Mail'));
         $('img').attr('referrerPolicy', 'no-referrer');
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
+        if (!localStorage.getItem('GameId')) { router.push('/game'); }
         //this.Role = localStorage.getItem('Role');
         this.fetchModTypes();
         this.fetchModList();
@@ -121,6 +134,7 @@ export default {
         window.addEventListener('resize', this.updateColWidth);
         this.updateColSpan(); // 初始化 colSpan
         window.addEventListener('resize', this.updateColSpan);
+        this.detectDarkMode();
     },
     watch: {
         selectedTypes() {
@@ -142,6 +156,23 @@ export default {
                 }, 100);
             } else { this.colSpan = 21 }
             //this.colSpan =  ? 24 : 21; // 动态设置 colSpan
+        },
+        detectDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme'); // 添加夜间主题样式
+            } else {
+                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
+            }
+
+            // 监听主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            });
         },
         updateColWidth() {
             const allwidth = document.getElementById('allwidth').offsetWidth; // 获取父容器宽度
@@ -180,86 +211,59 @@ export default {
             this.fetchModList(); // 调用 fetchModList 方法重新获取 mod 列表
         },
         fetchModTypes() {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: "POST",
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
+                },
+                method: 'POST',
                 contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
-                },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        if (data.ResultCode == "500") { router.push('/'); }
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modTypes = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
-                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
-                    else if (err.status == "408") { ElMessage.error('请求超时'); }
-                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
-                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
-                    else if (err.status == "504") { ElMessage.error('网关超时'); }
-                    else if (err.status == "401") { router.push('/'); }
-                    else if (err.status == "403") { ElMessage.error('没有权限访问'); }
-                    else if (err.status == "404") { ElMessage.error('请求的资源不存在'); }
-                    else if (err.status == "408") { ElMessage.error('请求超时'); }
-                    else if (err.status == "429") { ElMessage.error('请求过于频繁'); }
-                    else if (err.status == "503") { ElMessage.error('服务不可用'); }
-                    else if (err.status == "504") { ElMessage.error('网关超时'); }
-                    else if (err.status == "500") { router.push('/'); }
-                    else { ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg); }
-                    console.log(err);
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modTypes = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchModList() {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/ModListPage',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+            if (this.isFetching) {
+                return;
+            }
+            this.isFetching = true;
+            $('#show').show();
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModListPage`,
+                method: 'POST',
+                data: {
+                    GameId: this.GameId,
                     Skip: this.skip,
                     Take: this.take,
-                    Types: this.selectedTypes, // 传递选中的类型
-                    Search: this.select // 传递搜索输入内容
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
+                    Types: this.selectedTypes,
+                    Search: this.select
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.modList = this.modList.concat(data.ResultData); // 将新数据附加到 modList
-                        this.skip += this.take; // 更新 skip 值
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
-                },
-                complete: () => {
-                    setTimeout(() => {
-                        this.updateColWidth();
-                    }, 100);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modList = this.modList.concat(response.data.ResultData); // 将新数据附加到 modList
+                    this.skip += this.take; // 更新 skip 值
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
+            }).finally(() => {
+                this.isFetching = false;
+                $('#show').hide();
+                setTimeout(() => {
+                    this.updateColWidth();
+                }, 100);
             });
             //this.updateColWidth();
         },
@@ -274,7 +278,11 @@ export default {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         if (this.skip <= this.modList.length) {
-                            this.fetchModList();
+                            if (this.isFetching) {
+                                return;
+                            } else {
+                                this.fetchModList();
+                            }
                         }
                     }
                 });
@@ -284,75 +292,53 @@ export default {
         },
         btnUnsubscribeClick(ModId) {
             // 处理取消订阅按钮点击事件
-            $.ajax({
-                url: 'https://modcat.top:8089/api/User/UserUnsubscribeMod',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/User/UserUnsubscribeMod`,
+                method: 'POST',
+                data: {
                     ModId: ModId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == false || data.ResultData == null) {
-                        ElMessage.error('取消订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('取消订阅成功！');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == ModId) {
-                                item.IsMySubscribe = false;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('请求失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('取消订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('取消订阅成功！');
+                    this.modList.forEach((item) => {
+                        if (item.ModId == ModId) {
+                            item.IsMySubscribe = false;
+                        }
+                    });
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         UserModSubscribe(modId) {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/User/ModSubscribe',
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/User/ModSubscribe`,
+                method: 'POST',
+                data: {
                     ModId: modId
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('订阅失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('订阅成功');
-                        this.modList.forEach((item) => {
-                            if (item.ModId == modId) {
-                                item.IsMySubscribe = true;
-                            }
-                        });
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('订阅失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == false || response.data.ResultData == null) {
+                    ElMessage.error('订阅失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('订阅成功！');
+                    this.modList.forEach((item) => {
+                        if (item.ModId == modId) {
+                            item.IsMySubscribe = true;
+                        }
+                    });
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         handleDropdownClick() {
@@ -377,6 +363,9 @@ export default {
             // 处理发布新Mod点击事件
             router.push('/createMod');
         },
+        handleDownloadmintcat() {
+            router.push('/downloadmintcat');
+        },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');
@@ -387,6 +376,16 @@ export default {
             localStorage.removeItem('Role' + localStorage.getItem('Mail'));
             localStorage.removeItem('Mail');
             router.push('/');
+        },
+        handleGame() {
+            setTimeout(() => {
+                router.push('/game');
+            }, 100);
+        },
+        handleImageError(event, mod) {
+            // 设置为默认图片
+            event.target.src = this.defaulturl;
+            console.error(`图片加载失败，ModId: ${mod.ModId}, PicUrl: ${mod.PicUrl}, 默认图片已设置,请联系mod创作者或JiuDuo更换`);
         },
         toModDetail(ModId) {
             // 处理点击事件跳转到 Mod 详情页
@@ -549,6 +548,180 @@ h3 {
     margin-left: auto;
     background-color: black;
     color: white;
-    width: 5rem;
+    width: 5.2rem;
+}
+
+.head-el-card-div-el-button:hover {
+    color: white !important;
+    background-color: black !important;
+    box-shadow: none !important;
+}
+</style>
+<style>
+body.dark-theme {
+    background-color: #121212;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-card {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .el-input__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button:hover {
+    background-color: #444444;
+    border-color: #555555;
+}
+
+body.dark-theme .el-tag {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .line {
+    background-color: #444444;
+}
+
+body.dark-theme .account-info {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-dropdown-menu {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+}
+
+body.dark-theme .el-form-item__label {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-form-item__error {
+    color: #ff6b6b;
+}
+
+body.dark-theme .el-input {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme [name="cardsetwidth"] {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme h3 {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-avatar {
+    border: 1px solid #444444;
+}
+
+body.dark-theme .head-row {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333333;
+}
+
+body.dark-theme .head-el-card-div-el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .head-el-card-div-el-button:hover {
+    background-color: #444444;
+    border-color: #444444;
+}
+
+body.dark-theme .el-checkbox {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-checkbox__input.is-checked .el-checkbox__inner {
+    background-color: #444444;
+    border-color: #555555;
+}
+
+body.dark-theme .el-checkbox__inner:hover {
+    border-color: #666666;
+}
+
+body.dark-theme .el-pagination {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button:hover {
+    background-color: #444444;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-item {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-item:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-item.is-active {
+    background-color: #444444;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
+    background-color: #444444;
+    color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .el-input__wrapper {
+    background-color: #2c2c2c;
+    border: 1px solid #2c2c2c;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 </style>

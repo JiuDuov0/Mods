@@ -24,6 +24,7 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly IAPILogService _IAPILogService;
+        private readonly IMailService _IMailService;
 
         /// <summary>
         /// 构造函数依赖注入
@@ -32,12 +33,13 @@ namespace ModsAPI.Controllers
         /// <param name="jwtHelper"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="iAPILogService"></param>
-        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService)
+        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService, IMailService iMailService)
         {
             _IUserService = iUserService;
             _JwtHelper = jwtHelper;
             _IHttpContextAccessor = iHttpContextAccessor;
             _IAPILogService = iAPILogService;
+            _IMailService = iMailService;
         }
 
         /// <summary>
@@ -50,7 +52,7 @@ namespace ModsAPI.Controllers
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
             #region 记录访问
-            _IAPILogService.WriteLogAsync("LoginController/UserLogin", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("LoginController/UserLogin", (string)json.LoginAccount, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
 
@@ -126,7 +128,7 @@ namespace ModsAPI.Controllers
         public ResultEntity<ResponseToken> UserRegister([FromBody] dynamic json)
         {
             #region 记录访问
-            _IAPILogService.WriteLogAsync("LoginController/UserRegister", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            _IAPILogService.WriteLogAsync("LoginController/UserRegister", (string)json.LoginAccount, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             #endregion
 
@@ -167,6 +169,124 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "邮箱已注册" };
             }
             return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "信息错误" };
+        }
+
+        /// <summary>
+        /// 发送验证码
+        /// </summary>
+        /// <param name="json">{"Mail":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "SendVerificationCode")]
+        public async Task<ResultEntity<bool>> SendVerificationCodeAsync([FromBody] dynamic json)
+        {
+            var Mail = string.Empty;
+            #region 记录访问
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            Mail = (string)json.Mail;
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/SendVerificationCodeAsync", Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            var resultMsg = await _IMailService.SendVerificationCodeAsync(Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            if (resultMsg == string.Empty)
+            {
+                return new ResultEntity<bool> { ResultData = true, ResultMsg = resultMsg };
+            }
+            else
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = resultMsg };
+            }
+        }
+
+        /// <summary>
+        /// 验证验证码，修改密码
+        /// </summary>
+        /// <param name="json">{"Mail":"","VerificationCode":"","Password":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "VerifyEmailCodeAndChangePassWord")]
+        public async Task<ResultEntity<bool>> VerifyEmailCodeAndChangePassWordAsync([FromBody] dynamic json)
+        {
+            var Mail = string.Empty;
+            var VerificationCode = string.Empty;
+            var Password = string.Empty;
+            #region 记录访问
+            json = JsonConvert.DeserializeObject(Convert.ToString(json));
+            Mail = (string)json.Mail;
+            VerificationCode = (string)json.VerificationCode;
+            Password = (string)json.Password;
+            await _IAPILogService.WriteLogAsync($"{GetType().Name}/VerifyEmailCodeAndChangePassWordAsync", Mail, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+            #region 验证
+            if (string.IsNullOrWhiteSpace(Mail))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少Mail" };
+            }
+            if (string.IsNullOrWhiteSpace(VerificationCode))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少VerificationCode" };
+            }
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "缺少Password" };
+            }
+            #endregion
+            if (await _IMailService.VerifyEmailCodeAsync(Mail, VerificationCode))
+            {
+                if (await _IUserService.UpdateUserPasswordAsync(Mail, Password))
+                {
+                    await _IMailService.UpdateCatchState(Mail);
+                }
+            }
+            else
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "验证码不正确" };
+            }
+            return new ResultEntity<bool> { ResultData = true };
+        }
+
+        /// <summary>
+        /// Token续签接口
+        /// </summary>
+        /// <param name="json">{"Token":"","RefreshToken":""}</param>
+        /// <returns></returns>
+        [HttpPost(Name = "RefreshToken")]
+        [EnableRateLimiting("Concurrency")]
+        public ResultEntity<ResponseToken> RefreshToken([FromBody] dynamic json)
+        {
+            #region 记录访问
+            var token = (string)json.Token;
+            string UserId = string.Empty;
+            if (string.IsNullOrWhiteSpace(token)) { UserId = _JwtHelper.GetTokenStr(token, "UserId"); }
+            var refreshToken = (string)json.RefreshToken;
+            _IAPILogService.WriteLogAsync("LoginController/RefreshToken", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            #endregion
+
+            #region 验证参数
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "缺少Token" };
+            }
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 400, ResultMsg = "缺少RefreshToken" };
+            }
+            #endregion
+
+            try
+            {
+                // 调用 JwtHelper 的 Refresh 方法进行 Token 续签
+                var newToken = _JwtHelper.Refresh(token, refreshToken, HttpContext);
+                if (newToken != null)
+                {
+                    return new ResultEntity<ResponseToken> { ResultData = newToken, ResultMsg = "Token续签成功" };
+                }
+                else
+                {
+                    return new ResultEntity<ResponseToken> { ResultCode = 401, ResultMsg = "Token续签失败" };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ResultEntity<ResponseToken> { ResultCode = 500, ResultMsg = $"Token续签异常: {ex.Message}" };
+            }
         }
 
         /// <summary>

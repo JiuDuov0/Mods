@@ -60,8 +60,12 @@ namespace ModsAPI.tools
             string token = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
             string refreshToken = CreateRefreshToken();
 
-            _RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
-            _RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+            //_RedisManage.SetAsync(userInfo.UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
+            //_RedisManage.SetAsync(userInfo.UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+
+            _RedisManage.SetAsync($"Token:{userInfo.UserId}", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
+            _RedisManage.SetAsync($"RefreshToken:{userInfo.UserId}", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+
             return new ResponseToken() { Token = token, Refresh_Token = refreshToken, NickName = userInfo.NickName, Role = rolenames, HeadPic = userInfo.HeadPic };
         }
 
@@ -150,8 +154,8 @@ namespace ModsAPI.tools
             var handler = new JwtSecurityTokenHandler();
             var payload = handler.ReadJwtToken(Token).Payload;
             var claims = payload.Claims;
-            var UserId = claims.First(claim => claim.Type == "userid").Value;
-            var OldRefreshToken = _RedisManage.GetValue(UserId + "RefreshToken").ToString().Replace("\"", "");
+            var UserId = claims.First(claim => claim.Type == "UserId").Value;
+            var OldRefreshToken = _RedisManage.GetValue($"RefreshToken:{UserId}").ToString().Replace("\"", "");
             if (OldRefreshToken == null || refresh_Token != OldRefreshToken)
             {
                 throw new SecurityTokenException("Token不合法");
@@ -169,8 +173,11 @@ namespace ModsAPI.tools
             var token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
             var refreshToken = CreateRefreshToken();
 
-            _RedisManage.SetAsync(UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
-            _RedisManage.SetAsync(UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+            //_RedisManage.SetAsync(UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
+            //_RedisManage.SetAsync(UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+
+            _RedisManage.SetAsync($"Token:{UserId}", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
+            _RedisManage.SetAsync($"RefreshToken:{UserId}", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
 
             return new ResponseToken() { Token = token, Refresh_Token = refreshToken };
         }

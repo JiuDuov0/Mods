@@ -37,7 +37,8 @@
     "SecrentKey": "", //秘钥
     "Expirces": 3600, //Token过期时间 s
     "RefreshTokenExpirces": 86400 //refresh_Token过期时间 s
-  }
+  },
+  "Smtp": []
 }
 
 ```

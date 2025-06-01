@@ -53,10 +53,12 @@
                                 <el-option v-for="version in modVersions" :key="version.VersionId"
                                     :label="version.VersionNumber" :value="version.VersionId"></el-option>
                             </el-select>
+                            <el-input v-model="ModIOURL" placeholder="请输入ModIO依赖URL" style="margin-bottom: 16px;" />
                             <el-button type="primary" @click="addModDependence">添加依赖</el-button>
                             <el-table :data="modForm.ModDependenceEntities" style="width: 100%; margin-top: 16px;">
                                 <el-table-column prop="ModName" label="Mod 名称"></el-table-column>
                                 <el-table-column prop="VersionNumber" label="版本号"></el-table-column>
+                                <el-table-column prop="ModIOURL" label="ModIO依赖"></el-table-column>
                                 <el-table-column label="操作">
                                     <template v-slot="scope">
                                         <el-button @click="removeModDependence(scope.$index)" type="text"
@@ -77,7 +79,6 @@
 import $ from 'jquery';
 import { ElMessage } from 'element-plus';
 import router from '../router/index.js';
-import { th } from 'element-plus/es/locale/index.mjs';
 import head from '../assets/head.jpg';
 
 export default {
@@ -97,7 +98,11 @@ export default {
             selectedMod: '',
             selectedModVersion: '',
             headurl: head,
+            ModIOURL: '',
             Role: localStorage.getItem('Role' + localStorage.getItem('Mail')),
+            GameId: localStorage.getItem('GameId'),
+            GameName: localStorage.getItem('GameName'),
+            Icon: localStorage.getItem('Icon'),
             tags: [], // 存储所有可选的 Mod 类型
             NickName: ''
         };
@@ -108,106 +113,89 @@ export default {
         if (localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== 'null' && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== null && localStorage.getItem('HeadPic' + localStorage.getItem('Mail')) !== '') { this.headurl = localStorage.getItem('HeadPic' + localStorage.getItem('Mail')); }
         this.fetchTags();
         this.fetchModDetails();
+        this.detectDarkMode();
     },
     methods: {
         fetchTags() {
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/GetAllModTypes',
-                type: 'POST',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetAllModTypes`,
+                data: {
+                    GameId: this.GameId
                 },
-                cache: false,
-                dataType: 'json',
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取标签失败: ' + data.ResultMsg);
-                    } else {
-                        this.tags = data.ResultData;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取标签失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                method: 'POST',
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取标签失败: ' + response.data.ResultMsg);
+                } else {
+                    this.tags = response.data.ResultData;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchModDetails() {
             const formData = {
                 ModId: this.$route.query.ModId
             };
-            $.ajax({
-                url: `https://modcat.top:8089/api/Mod/GetModDetailUpdate`,
-                type: 'POST',
+
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/GetModDetailUpdate`,
+                method: 'POST',
                 data: JSON.stringify(formData),
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取 Mod 详情失败: ' + data.ResultMsg);
-                    } else {
-                        this.modForm.name = data.ResultData.Name;
-                        this.modForm.description = data.ResultData.Description;
-                        this.modForm.VideoUrl = data.ResultData.VideoUrl.substring(39, data.ResultData.VideoUrl.indexOf('&'));
-                        this.modForm.PicUrl = data.ResultData.PicUrl;
-                        this.modForm.tags = data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
-                        this.modForm.ModDependenceEntities = data.ResultData.ModDependenceEntities;
-                        this.modForm.ModDependenceEntities.forEach((dependence) => {
-                            dependence.ModDependenceId = dependence.ModDependenceId;
-                            dependence.ModId = dependence.ModId;
-                            dependence.ModName = dependence.DependenceModVersion.Mod.Name;
-                            dependence.VersionId = dependence.DependenceModVersion.VersionId;
-                            dependence.VersionNumber = dependence.DependenceModVersion.VersionNumber;
-                        });
-                        console.log(this.modForm.ModDependenceEntities);
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取 Mod 详情失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取 Mod 详情失败: ' + response.data.ResultMsg);
+                } else {
+                    this.modForm.name = response.data.ResultData.Name;
+                    this.modForm.description = response.data.ResultData.Description;
+                    this.modForm.VideoUrl = response.data.ResultData.VideoUrl.substring(39, response.data.ResultData.VideoUrl.indexOf('&'));
+                    this.modForm.PicUrl = response.data.ResultData.PicUrl;
+                    this.modForm.tags = response.data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
+                    this.modForm.ModDependenceEntities = response.data.ResultData.ModDependenceEntities;
+                    this.modForm.ModDependenceEntities.forEach((dependence) => {
+                        dependence.ModDependenceId = dependence.ModDependenceId;
+                        dependence.ModId = dependence.ModId;
+                        dependence.ModName = dependence.DependenceModVersion?.Mod.Name;
+                        dependence.VersionId = dependence.DependenceModVersion?.VersionId;
+                        dependence.VersionNumber = dependence.DependenceModVersion?.VersionNumber;
+                    });
+                    //console.log(this.modForm.ModDependenceEntities);
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchMods(query) {
             if (query === null || query === undefined || query === '') {
                 return;
             }
-            $.ajax({
-                url: `https://modcat.top:8089/api/Mod/ModListPageSearch`,
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                data: JSON.stringify({
+
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/ModListPageSearch`,
+                method: 'POST',
+                data: {
                     Skip: '0',
-                    Take: '10',
+                    Take: '100',
                     Search: query
-                }),
-                cache: false,
-                dataType: "json",
-                xhrFields: {
-                    withCredentials: true
                 },
-                async: false,
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('获取失败: ' + data.ResultMsg);
-                    } else {
-                        this.mods = data.ResultData;
-                        //this.modVersions = data.ResultData.ModVersionEntities;
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('获取失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('获取失败: ' + response.data.ResultMsg);
+                } else {
+                    this.mods = response.data.ResultData;
+                    //this.modVersions = data.ResultData.ModVersionEntities;
                 }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
             });
         },
         fetchModVersions(modId) {
@@ -216,7 +204,6 @@ export default {
         },
         addModDependence() {
             const selectedMod = this.mods.find(mod => mod.ModId === this.selectedMod);
-            console.log(selectedMod);
             const selectedModVersion = this.modVersions.find(version => version.VersionId === this.selectedModVersion);
             if (selectedMod && selectedModVersion) {
                 this.modForm.ModDependenceEntities.push({
@@ -227,6 +214,15 @@ export default {
                 });
                 this.selectedMod = '';
                 this.selectedModVersion = '';
+            } else if (this.ModIOURL) {
+                this.modForm.ModDependenceEntities.push({
+                    ModId: null,
+                    ModName: 'ModIO 依赖',
+                    VersionId: '未知',
+                    VersionNumber: null,
+                    ModIOURL: this.ModIOURL
+                });
+                this.ModIOURL = '';
             } else {
                 ElMessage.error('请选择有效的 Mod 和 Mod 版本');
             }
@@ -239,40 +235,62 @@ export default {
                 ElMessage.error('请输入 Mod 描述');
                 return;
             }
+            if (this.modForm.tags.length == 0) {
+                ElMessage.error('请选择标签');
+                return;
+            }
+            if (this.modForm.PicUrl.length > 200) {
+                ElMessage.error('图片链接过长！');
+                return;
+            }
 
             const formData = {
                 ModId: this.$route.query.ModId,
                 Description: this.modForm.description,
                 VideoUrl: this.modForm.VideoUrl,
                 PicUrl: this.modForm.PicUrl,
+                GameId: this.GameId,
                 ModTypeEntities: this.modForm.tags.map((tag) => ({ TypesId: tag })),
                 ModDependenceEntities: this.modForm.ModDependenceEntities.map((dependence) => ({
                     ModDependenceId: dependence.ModDependenceId,
                     ModId: this.$route.query.ModId,
-                    DependenceModVersionId: dependence.VersionId
+                    DependenceModVersionId: dependence.VersionId,
+                    ModIOURL: dependence.ModIOURL
                 }))
             };
 
-            $.ajax({
-                url: 'https://modcat.top:8089/api/Mod/UpdateModInfo',
-                type: 'POST',
+            this.$axios({
+                url: `${import.meta.env.VITE_API_BASE_URL}/Mod/UpdateModInfo`,
+                method: 'POST',
                 data: JSON.stringify(formData),
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    Authorization: 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail'))
-                },
-                success: (data) => {
-                    if (data.ResultData == null) {
-                        ElMessage.error('提交失败: ' + data.ResultMsg);
-                    } else {
-                        ElMessage.success('提交成功');
-                        router.push('/myCreateMods');
-                    }
-                },
-                error: (err) => {
-                    if (err.status == "401") { router.push('/'); }
-                    ElMessage.error('提交失败: ' + err.responseJSON.ResultMsg);
-                    console.log(err);
+                contentType: "application/json; charset=utf-8",
+                responseType: 'json'
+            }).then(response => {
+                if (response.data.ResultData == null) {
+                    ElMessage.error('提交失败: ' + response.data.ResultMsg);
+                } else {
+                    ElMessage.success('提交成功');
+                    router.push('/myCreateMods');
+                }
+            }).catch(error => {
+                ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                console.log(error);
+            });
+        },
+        detectDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDarkMode) {
+                document.body.classList.add('dark-theme'); // 添加夜间主题样式
+            } else {
+                document.body.classList.remove('dark-theme'); // 移除夜间主题样式
+            }
+
+            // 监听主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
                 }
             });
         },
@@ -335,5 +353,264 @@ export default {
     margin-left: 10px;
     margin-right: 10px;
     font-size: 16px;
+}
+</style>
+<style>
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
+    background-color: #444444;
+    color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .head-el-card-div-el-button:hover {
+    background-color: #444444;
+    border-color: #444444;
+}
+
+.head-el-card-div-el-button:hover {
+    color: white !important;
+    background-color: black !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme .el-input.is-disabled .el-input__wrapper {
+    background-color: #2c2c2c;
+    border: 1px solid #2c2c2c;
+}
+
+body.dark-theme .el-input__wrapper {
+    background-color: #2c2c2c;
+    border-radius: 4px;
+    padding: 4px;
+    border: 1px solid #2c2c2c;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme {
+    background-color: #121212;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-card {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme h1 {
+    color: #ffffff;
+}
+
+body.dark-theme .el-input__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-input__inner:focus {
+    border-color: #666666;
+}
+
+body.dark-theme .el-button {
+    background-color: #333333;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme .el-button:hover {
+    background-color: #444444;
+    border-color: #555555;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-dropdown-menu {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-dropdown-menu__item:not(.is-disabled):focus {
+    background-color: #444444;
+    color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .account-info {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-form-item__label {
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-form-item__error {
+    color: #ff6b6b;
+}
+
+body.dark-theme .el-table {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+    border-color: #333333;
+}
+
+body.dark-theme .el-table th {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-table td {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-pagination__button:hover {
+    background-color: #444444;
+    color: #ffffff;
+}
+
+body.dark-theme .el-tag {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+}
+
+body.dark-theme a {
+    color: #4a90e2;
+}
+
+body.dark-theme a:hover {
+    color: #82b1ff;
+}
+
+body.dark-theme .el-textarea__inner {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+    border-color: #444444;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+body.dark-theme .el-textarea__inner:focus {
+    background-color: #333333;
+    border-color: #666666;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+    outline: none;
+}
+
+body.dark-theme .el-textarea__inner[disabled] {
+    background-color: #1e1e1e;
+    color: #888888;
+    border-color: #333333;
+    cursor: not-allowed;
+}
+
+body.dark-theme .el-select {
+    background-color: #2c2c2c;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-select-dropdown {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-select-dropdown__item {
+    background-color: #1e1e1e;
+    color: #ffffffa6;
+}
+
+body.dark-theme .el-select-dropdown__item:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+body.dark-theme .el-select-dropdown__item.selected {
+    background-color: #444444;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+body.dark-theme .el-select:focus {
+    border-color: #666666;
+}
+
+body.dark-theme .el-select.is-disabled {
+    background-color: #1e1e1e;
+    color: #888888;
+}
+
+body.dark-theme .el-select__wrapper {
+    background-color: #2c2c2c;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .el-select__wrapper:focus-within {
+    border-color: #666666;
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .el-select__wrapper.is-disabled {
+    background-color: #1e1e1e;
+    border-color: #333333;
+    cursor: not-allowed;
+}
+
+body.dark-theme .el-select-dropdown__item.is-hovering {
+    background-color: #333333;
+    color: #ffffff;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-select__wrapper.is-hovering {
+    background-color: #2c2c2c;
+    border-color: #2c2c2c;
+    box-shadow: 0 0 5px #2c2c2c;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body.dark-theme .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+    background-color: #333333;
+    color: #ffffff;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+    border-color: #444444;
 }
 </style>

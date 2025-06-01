@@ -6,9 +6,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Service.Interface;
 using Swashbuckle.AspNetCore.Annotations;
+using System.IO;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace ModsAPI.Controllers
 {
@@ -56,10 +59,10 @@ namespace ModsAPI.Controllers
         public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含VersionId的JSON数据")] string VersionId)
         {
             #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            var UserRoleIDs = _JwtHelper.GetTokenStr(token, "UserRoleIDs");
-            var Role = _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
+            var _token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            var UserId = _JwtHelper.GetTokenStr(_token, "UserId");
+            var UserRoleIDs = _JwtHelper.GetTokenStr(_token, "UserRoleIDs");
+            var Role = _JwtHelper.GetTokenStr(_token, ClaimTypes.Role);
             await _IAPILogService.WriteLogAsync("FilesController/UploadMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
@@ -92,6 +95,15 @@ namespace ModsAPI.Controllers
                 approveModVersionEntity.ApprovedAt = DateTime.Now;
                 approveModVersionEntity.Status = "20";
             }
+
+            if (file.ContentType == "application/json" || file.ContentType == "text/plain")
+            {
+                approveModVersionEntity.UserId = "0";
+                approveModVersionEntity.Comments = "json文件无需审批";
+                approveModVersionEntity.ApprovedAt = DateTime.Now;
+                approveModVersionEntity.Status = "20";
+            }
+
             var entity = new FilesEntity()
             {
                 FilesId = guid,
@@ -129,7 +141,7 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip")//前面是Windows请求，后面是MACOS请求
+            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json" && file.ContentType != "text/plain")//前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
@@ -140,9 +152,66 @@ namespace ModsAPI.Controllers
             {
                 var filePath = Path.Combine(_IConfiguration["FilePath"], guid + filetype);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                if (entity.FilesType == ".json" || entity.FilesType == ".txt")
                 {
-                    await file.CopyToAsync(stream);
+                    var reader = new StreamReader(file.OpenReadStream());
+                    string fileContent = await reader.ReadToEndAsync();
+                    reader.Dispose();
+                    bool isJson = false;
+                    object? jsonObj = null;
+                    try
+                    {
+                        jsonObj = JsonConvert.DeserializeObject(fileContent);
+                        isJson = true;
+                    }
+                    catch
+                    {
+                        isJson = false;
+                    }
+                    if (isJson && jsonObj is JToken token)
+                    {
+                        void ReplaceNewLineInJToken(JToken t)
+                        {
+                            if (t.Type == JTokenType.Object)
+                            {
+                                foreach (var prop in ((JObject)t).Properties())
+                                {
+                                    ReplaceNewLineInJToken(prop.Value);
+                                }
+                            }
+                            else if (t.Type == JTokenType.Array)
+                            {
+                                foreach (var item in (JArray)t)
+                                {
+                                    ReplaceNewLineInJToken(item);
+                                }
+                            }
+                            else if (t.Type == JTokenType.String)
+                            {
+                                string? val = t.Value<string>();
+                                if (val != null && (val.Contains('\n') || val.Contains('\r')))
+                                {
+                                    string newVal = val.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+                                    ((JValue)t).Value = newVal;
+                                }
+                            }
+                        }
+                        ReplaceNewLineInJToken(token);
+                        await System.IO.File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
+                    }
+                    else
+                    {
+                        result.ResultCode = 400;
+                        result.ResultMsg = "JSON格式错误";
+                        return result;
+                    }
+                }
+                else
+                {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
                 }
                 if (_IFilesService.AddFilesAndApprove(entity, approveModVersionEntity))
                 {
@@ -176,7 +245,7 @@ namespace ModsAPI.Controllers
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            await _IAPILogService.WriteLogAsync("FilesController/DownloadFile", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+            await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile/{json.FileId}", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             #endregion
 
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
@@ -190,7 +259,8 @@ namespace ModsAPI.Controllers
             {
                 return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "作者已删除" });
             }
-            var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + ".zip");
+            var file = _IFilesService.GetFilesEntityById(FileId);
+            var filePath = Path.Combine(_IConfiguration["FilePath"], FileId + file.FilesType);
             if (!System.IO.File.Exists(filePath))
             {
                 return NotFound(new ResultEntity<string> { ResultCode = 404, ResultMsg = "文件未找到" });
@@ -205,8 +275,18 @@ namespace ModsAPI.Controllers
 
             var entity = _IFilesService.AddModDownLoadCount(FileId);
 
-            var contentType = "application/x-zip-compressed";
-            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}.zip";
+            var contentType = (file.FilesType ?? "").ToLowerInvariant().TrimStart('.') switch
+            {
+                "zip" => "application/zip",
+                "json" => "application/json",
+                "png" => "image/png",
+                "jpg" or "jpeg" => "image/jpeg",
+                "txt" => "text/plain",
+                "rar" => "application/x-rar-compressed",
+                _ => "application/octet-stream" // 默认二进制流
+            };
+            var fileName = $"{entity.Name}{entity.ModVersionEntities[0].VersionNumber}{file.FilesType}".Replace(' ', '_');
+            fileName = Regex.Replace(fileName, "[\u4e00-\u9fa5]", "");
             Response.Headers.Add("Content-Disposition", $"attachment; filename={fileName}");
             return File(memory, contentType);
         }

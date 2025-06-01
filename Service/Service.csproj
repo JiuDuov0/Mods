@@ -15,6 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.11.0" />
+    <PackageReference Include="MimeKit" Version="4.11.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
@@ -22,6 +24,7 @@
     <ProjectReference Include="..\EF\EF.csproj" />
     <ProjectReference Include="..\Entity\Entity.csproj" />
     <ProjectReference Include="..\Redis\Redis.csproj" />
+    <ProjectReference Include="..\ViewEntity\ViewEntity.csproj" />
   </ItemGroup>
 
 </Project>

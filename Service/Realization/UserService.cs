@@ -163,6 +163,10 @@ namespace Service.Realization
         public bool SubscribeToMod(string userId, string modId)
         {
             var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            if (_IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.FirstOrDefault(x => x.UserId == userId && x.ModId == modId) != null)
+            {
+                return true;
+            }
             var subscription = new UserModSubscribeEntity
             {
                 SubscribeId = Guid.NewGuid().ToString(),
@@ -171,6 +175,7 @@ namespace Service.Realization
                 SubscribedAt = DateTime.Now
             };
             context.UserModSubscribeEntity.Add(subscription);
+            _IRedisManageService.Remove($"SetUserModSubscribe:{userId}", 1);
             return context.SaveChanges() > 0;
         }
 
@@ -178,8 +183,10 @@ namespace Service.Realization
         {
             var Skip = Convert.ToInt32((string)json.Skip);
             var Take = Convert.ToInt32((string)json.Take);
+            var GameId = (string)json.GameId;
             IQueryable<ModEntity> context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
             context = context.Where(x =>
+            x.GameId == GameId &&
             x.UserModSubscribeEntities.Any(y => y.UserId == UserId) &&
             (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())));
@@ -191,6 +198,7 @@ namespace Service.Realization
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
             var entity = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
             Context.UserModSubscribeEntity.Remove(entity);
+            _IRedisManageService.Remove($"SetUserModSubscribe:{UserId}", 1);
             return Context.SaveChanges() > 0;
         }
 
@@ -225,6 +233,22 @@ namespace Service.Realization
             }
             Context.UserEntity.Update(updateentity);
             return await Context.SaveChangesAsync() > 0;
+        }
+
+        public Task<bool> UpdateUserPasswordAsync(string mail, string password)
+        {
+            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+            var entity = Context.UserEntity.FirstOrDefault(x => x.Mail == mail);
+            if (entity != null)
+            {
+                entity.Password = password;
+                Context.UserEntity.Update(entity);
+                return Task.FromResult(Context.SaveChanges() > 0);
+            }
+            else
+            {
+                return Task.FromResult(false);
+            }
         }
     }
 }

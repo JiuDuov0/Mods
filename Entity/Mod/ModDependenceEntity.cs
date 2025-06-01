@@ -28,6 +28,11 @@ namespace Entity.Mod
         public string? DependenceModVersionId { get; set; }
 
         /// <summary>
+        /// 来自于ModIO的前置Mod
+        /// </summary>
+        public string? ModIOURL { get; set; }
+
+        /// <summary>
         /// 导航属性，指向所属的Mod
         /// </summary>
         [ForeignKey("ModId")]

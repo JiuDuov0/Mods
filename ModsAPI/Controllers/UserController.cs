@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Service.Interface;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ModsAPI.Controllers

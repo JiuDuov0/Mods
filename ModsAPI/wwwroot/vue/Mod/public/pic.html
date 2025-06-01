@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 获取图片路径
+            const imgPath = localStorage.getItem('imgPath');
+            const imgwidth = localStorage.getItem('imgwidth');
+            const imgheight = localStorage.getItem('imgheight');
+
+            if (imgPath) {
+                // 创建 img 元素并设置 src 属性
+                const imgElement = $('<img>').attr('src', imgPath).css({
+                    'max-width': imgwidth + 'px',
+                    'max-height': imgheight + 'px',
+                    'display': 'block',
+                    'margin': '0 auto'
+                }).attr('referrerPolicy', 'no-referrer');
+
+                // 添加图片加载失败的处理逻辑
+                imgElement.on('error', function () {
+                    // 移除加载失败的图片
+                    $(this).remove();
+
+                    // 显示替代文字
+                    const errorText = $('<div>').text('图片加载失败，请检查路径或网络连接。如继续出现此问题请联系mod创作者').css({
+                        'text-align': 'center',
+                        'color': 'red',
+                        'font-size': '16px',
+                        'margin-top': '20px'
+                    });
+                    $('body').append(errorText);
+                });
+
+                // 将 img 元素添加到页面
+                $('body').append(imgElement);
+            } else {
+                // 如果没有图片路径，显示提示信息
+                const noImageText = $('<div>').text('未找到图片路径，请联系mod创作者').css({
+                    'text-align': 'center',
+                    'color': 'gray',
+                    'font-size': '16px',
+                    'margin-top': '20px'
+                });
+                $('body').append(noImageText);
+            }
+        });
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>

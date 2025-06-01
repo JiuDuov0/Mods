@@ -14,6 +14,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using ViewEntity.Mod;
 
 namespace ModsAPI.Controllers
 {
@@ -26,6 +27,7 @@ namespace ModsAPI.Controllers
     {
         private readonly IModService _IModService;
         private readonly IAPILogService _IAPILogService;
+        private readonly ITypesService _ITypesService;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly JwtHelper _JwtHelper;
 
@@ -36,12 +38,13 @@ namespace ModsAPI.Controllers
         /// <param name="iAPILogService"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="jwtHelper"></param>
-        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper)
+        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, ITypesService iTypesService)
         {
             _IModService = iModService;
             _IAPILogService = iAPILogService;
             _IHttpContextAccessor = iHttpContextAccessor;
             _JwtHelper = jwtHelper;
+            _ITypesService = iTypesService;
         }
         /// <summary>
         /// 分页获取Mod列表
@@ -49,7 +52,7 @@ namespace ModsAPI.Controllers
         /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
         /// <returns></returns>
         [HttpPost(Name = "ModListPage")]
-        public ResultEntity<List<ModEntity>> ModListPage([FromBody] dynamic json)
+        public ResultEntity<List<ModListViewEntity>> ModListPage([FromBody] dynamic json)
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
@@ -68,14 +71,16 @@ namespace ModsAPI.Controllers
             #region 验证
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultMsg = "无Take" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.ModListPage(json, UserId) };
+            var list = _IModService.ModListPage(json, UserId);
+            //GC.Collect();
+            return new ResultEntity<List<ModListViewEntity>> { ResultData = list };
         }
 
         /// <summary>
@@ -116,9 +121,10 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获取所有mod类型
         /// </summary>
+        /// <param name="json">{"":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetAllModTypes")]
-        public ResultEntity<List<TypesEntity>> GetAllModTypes()
+        public ResultEntity<List<TypesEntity>> GetAllModTypes([FromBody] dynamic json)
         {
             #region 记录访问 不确定是否含有Token
             string UserId = null;
@@ -133,7 +139,7 @@ namespace ModsAPI.Controllers
                 _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
             }
             #endregion
-            return new ResultEntity<List<TypesEntity>>() { ResultData = new TypesEntity().GetRoleList() };
+            return new ResultEntity<List<TypesEntity>>() { ResultData = _ITypesService.GetTypesListAsync((string)json.GameId).Result };
         }
 
         /// <summary>
@@ -201,6 +207,7 @@ namespace ModsAPI.Controllers
                 CreatedAt = DateTime.Now,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
+                GameId = (string)json.GameId,
                 DownloadCount = 0
             };
             Mod.Description = Mod.Description.Replace("\n", "</br>");
@@ -344,7 +351,7 @@ namespace ModsAPI.Controllers
         /// <returns></returns>
         [HttpPost(Name = "GetMyCreateMod")]
         [Authorize]
-        public ResultEntity<List<ModEntity>> GetMyCreateMod([FromBody] dynamic json)
+        public ResultEntity<List<ModListViewEntity>> GetMyCreateMod([FromBody] dynamic json)
         {
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
@@ -355,14 +362,14 @@ namespace ModsAPI.Controllers
             #region 验证
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
+                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
             }
             #endregion
-            return new ResultEntity<List<ModEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
+            return new ResultEntity<List<ModListViewEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
         }
 
         /// <summary>
@@ -466,6 +473,7 @@ namespace ModsAPI.Controllers
                 Description = (string)json.Description,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
+                GameId = (string)json.GameId,
                 ModTypeEntities = ListTypes,
                 ModDependenceEntities = ModDependenceList
             };

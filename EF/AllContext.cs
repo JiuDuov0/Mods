@@ -1,5 +1,6 @@
 ﻿using Entity.Approve;
 using Entity.File;
+using Entity.Game;
 using Entity.Mod;
 using Entity.Type;
 using Entity.User;
@@ -32,7 +33,7 @@ namespace EF
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(MyLogFactory);
-            optionsBuilder.UseSqlServer(_strConn);
+            optionsBuilder.UseSqlServer(_strConn, x => { x.CommandTimeout(120); });
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,5 +53,6 @@ namespace EF
         public DbSet<FilesEntity> FilesEntity { get; set; }
         public DbSet<ModPointEntity> ModPointEntity { get; set; }
         public DbSet<ModDependenceEntity> ModDependenceEntity { get; set; }
+        public DbSet<GameEntity> GameEntity { get; set; }
     }
 }

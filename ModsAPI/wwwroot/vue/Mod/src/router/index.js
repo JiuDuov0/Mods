@@ -85,11 +85,30 @@ const routes = [
         name: "downloadmintcat",
         component: () => import('../views/Downloadmintcat.vue')
     },
+    {
+        path: "/changePassword",
+        name: "changePassword",
+        component: () => import('../views/ChangePassword.vue')
+    },
+    {
+        path: "/game",
+        name: "game",
+        component: () => import('../views/Game.vue')
+    },
 ]
 
 const router = createRouter({
     history: createWebHashHistory(),
     routes: routes,
+    scrollBehavior(to, from, savedPosition) {
+        if (to.hash) {
+            return {
+                el: to.hash,
+                behavior: 'smooth',
+            };
+        }
+        return { top: 0 };
+    },
 })
 
 export default router
