@@ -109,7 +109,12 @@ export default {
                 ElMessage.error('请选择文件');
                 return;
             }
-
+            // 限制文件大小为10MB
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (this.fileList[0].size > maxSize) {
+                ElMessage.error('文件大小不能超过10MB');
+                return;
+            }
             const formData = new FormData();
             formData.append('VersionId', this.VersionId);
             formData.append('file', this.fileList[0].raw);
