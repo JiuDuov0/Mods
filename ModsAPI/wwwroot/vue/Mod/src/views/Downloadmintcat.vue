@@ -99,10 +99,10 @@ export default {
     },
     methods: {
         download() {
-            const fileUrl = new URL('../assets/mintcat_0.4.3_x64-setup.zip', import.meta.url).href;
+            const fileUrl = new URL('../assets/mintcat_0.4.5_x64-setup.zip', import.meta.url).href;
             const link = document.createElement('a');
             link.href = fileUrl; // 设置文件路径
-            link.download = 'mintcat_0.4.3_x64-setup.zip'; // 设置下载文件名
+            link.download = 'mintcat_0.4.5_x64-setup.zip'; // 设置下载文件名
             link.click(); // 触发下载
         },
         scrollToSection(sectionId) {
