@@ -38,9 +38,15 @@
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
 
-                                <div style="max-height: 4rem; height: 2rem;">
-                                    <el-tag v-for="tag in mod.ModTypeEntities" :key="tag">{{ tag.Types.TypeName
-                                    }}</el-tag>
+                                <div style="max-height: 4rem;">
+                                    <nobr>
+                                        <el-tag v-for="(tag, index) in mod.ModTypeEntities.slice(0, 2)" :key="index">
+                                            {{ tag.TypeName }}
+                                        </el-tag>
+                                        <el-tag v-if="mod.ModTypeEntities.length > 2" type="info">
+                                            +{{ mod.ModTypeEntities.length - 2 }}
+                                        </el-tag>
+                                    </nobr>
                                 </div>
 
                                 <!-- <p id="" + mod.ModId>{{ getShortDescription(mod.Description) }}</p> -->
@@ -268,6 +274,7 @@ export default {
                     UserId: this.UserId,
                     Skip: this.skip,
                     Take: this.take,
+                    GameId: this.GameId,
                     Types: this.selectedTypes, // 传递选中的类型
                     Search: this.select // 传递搜索输入内容
                 },
