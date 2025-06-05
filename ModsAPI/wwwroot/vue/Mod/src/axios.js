@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus';
 
 const instance = axios.create({
     baseURL: 'https://modcat.top:8089/api', // API 基础路径
-    timeout: 60000, // 请求超时时间
+    timeout: 180000, // 请求超时时间
     headers: {
         'Content-Type': 'application/json',
     },

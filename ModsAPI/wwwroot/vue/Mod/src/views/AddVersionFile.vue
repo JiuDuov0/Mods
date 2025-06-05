@@ -437,4 +437,9 @@ body.dark-theme a {
 body.dark-theme a:hover {
     color: #82b1ff;
 }
+
+body.dark-theme .el-upload-list__item:hover {
+    background-color: #333333;
+    color: #ffffffa6;
+}
 </style>

@@ -68,7 +68,7 @@
                     <el-card style="margin-top: 20px;" @click="showVersionDetails">
                         <h3>最新版本</h3>
                         <p>版本号: {{ latestVersion.version }}</p>
-                        <p>版本描述: {{ latestVersion.description }}</p>
+                        <p>版本描述: <span v-html="formatDescription(latestVersion.description)"></span></p>
                         <p>更新时间: {{ latestVersion.CreatedAt }}</p>
                         <div style="text-align: center;">选择版本下载</div>
                         <!-- <el-button type="primary" block @click="downloadLatestVersion(ModId)">下载</el-button> -->
@@ -76,7 +76,12 @@
                     <el-dialog title="版本详细信息" v-model="versionDialogVisible" width="80%">
                         <el-table :data="versionDetails" style="width: 100%">
                             <el-table-column prop="VersionNumber" label="版本号" width="150"></el-table-column>
-                            <el-table-column prop="Description" label="描述"></el-table-column>
+                            <el-table-column prop="Description" label="描述">
+                                <template #default="scope">
+                                    <div style="text-align: left;" v-html="formatDescription(scope.row.Description)">
+                                    </div>
+                                </template>
+                            </el-table-column>
                             <el-table-column prop="CreatedAt" label="更新时间" width="200"></el-table-column>
                             <el-table-column prop="FilesId" label="操作" width="200">
                                 <template #default="scope">
@@ -633,6 +638,10 @@ export default {
             setTimeout(() => {
                 window.location.reload();
             }, 100);
+        },
+        formatDescription(desc) {
+            if (!desc) return '';
+            return desc.replace(/(<\/?br\s*\/?>|\n)/gi, '<br>');
         }
     }
 };
