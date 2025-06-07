@@ -127,10 +127,10 @@ namespace ModsAPI.Controllers
                 {
                     //有权限
                     approveModVersionEntity.Status = "20";
-                    if (file.Length > 1024 * 1024 * 10)
+                    if (file.Length > 1024 * 1024 * 50)
                     {
                         result.ResultCode = 400;
-                        result.ResultMsg = "文件大小不能超过10M";
+                        result.ResultMsg = "文件大小不能超过50M";
                         return result;
                     }
                 }
@@ -141,7 +141,14 @@ namespace ModsAPI.Controllers
                     return result;
                 }
             }
-            else if (file.ContentType != "application/x-zip-compressed" && file.ContentType != "application/zip" && file.ContentType != "application/json" && file.ContentType != "text/plain")//前面是Windows请求，后面是MACOS请求
+            else if (
+                file.ContentType != "application/x-zip-compressed" &&
+                file.ContentType != "application/zip" &&
+                file.ContentType != "application/json" &&
+                file.ContentType != "text/plain" &&
+                file.ContentType != "application/x-rar-compressed" &&
+                file.ContentType != "application/vnd.rar"
+            ) //前面是Windows请求，后面是MACOS请求
             {
                 result.ResultCode = 400;
                 result.ResultMsg = "文件格式错误";
