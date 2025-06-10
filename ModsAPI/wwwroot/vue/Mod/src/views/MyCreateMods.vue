@@ -33,7 +33,7 @@
                         <el-col :span="4" v-for="mod in modList" :key="mod.ModId" name="colsetwidth">
                             <el-card name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toModDetail(mod.ModId)"
-                                    :src="mod.PicUrl || defaulturl" style="width: 100%;height: 10rem;">
+                                    :src="mod.PicUrl || defaulturl" style="width: 100%;height: 10rem;cursor: pointer;">
                                 <nobr>
                                     <h3>{{ mod.Name }}</h3>
                                 </nobr>
@@ -398,6 +398,14 @@ export default {
     .el-card-table {
         display: contents;
     }
+}
+
+.head-el-card-div-img {
+    cursor: pointer;
+}
+
+.head-el-card-div h2 {
+    cursor: pointer;
 }
 
 .account-info {

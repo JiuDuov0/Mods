@@ -57,7 +57,7 @@
                     <el-button type="danger" block @click="handleUnsubscribe(ModId)" v-else>取消订阅</el-button>
                     <el-card style="margin-top: 20px;">
                         <h3>Mod 信息</h3>
-                        <p @click="handleProfile(modAuthorId)">作者: {{ modAuthor }}</p>
+                        <p @click="handleProfile(modAuthorId)" style="cursor: pointer;">作者: {{ modAuthor }}</p>
                         <p>下载次数: {{ downloads }}</p>
                         <p>创建时间: {{ createdAt }}</p>
                         <p>标签: <el-tag v-for="tag in tags" :key="tag">{{ tag }}</el-tag></p>
@@ -65,7 +65,7 @@
                             <el-rate v-model="AVGPoint" disabled show-score text-color="#ff9900"></el-rate>
                         </p>
                     </el-card>
-                    <el-card style="margin-top: 20px;" @click="showVersionDetails">
+                    <el-card style="margin-top: 20px;cursor: pointer;" @click="showVersionDetails">
                         <h3>最新版本</h3>
                         <p>版本号: {{ latestVersion.version }}</p>
                         <p>版本描述: <span v-html="formatDescription(latestVersion.description)"></span></p>
@@ -754,6 +754,7 @@ export default {
 .fullicon {
     width: 100%;
     height: 100%;
+    cursor: pointer;
 }
 
 .myiframe {}

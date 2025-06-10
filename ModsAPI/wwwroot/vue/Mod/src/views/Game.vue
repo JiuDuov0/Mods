@@ -7,7 +7,7 @@
                         <el-col v-for="mod in modList" :key="mod.GameId" name="colsetwidth">
                             <el-card class="el-card-table" name="cardsetwidth">
                                 <img referrerPolicy="no-referrer" @click="toHome(mod.GameId, mod.GameName, mod.Icon)"
-                                    :src="mod.Picture" style="width: 100%; height: 10rem;">
+                                    :src="mod.Picture" style="width: 100%; height: 10rem;cursor: pointer;">
                                 <nobr>
                                     <h3>{{ mod.GameName }}</h3>
                                 </nobr>

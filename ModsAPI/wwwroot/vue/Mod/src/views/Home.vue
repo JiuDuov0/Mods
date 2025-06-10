@@ -417,6 +417,18 @@ export default {
     }
 }
 
+.head-el-card-div-img {
+    cursor: pointer;
+}
+
+.head-el-card-div h2 {
+    cursor: pointer;
+}
+
+.el-card-table img {
+    cursor: pointer;
+}
+
 .el-card {
     margin-bottom: 20px;
     border-radius: 2%;
