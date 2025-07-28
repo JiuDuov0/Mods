@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using Redis.Interface;
 using Service.Interface;
 using System.Diagnostics;
+using System.Xml.Linq;
 using ViewEntity.Mod;
 
 namespace Service.Realization
@@ -409,7 +410,21 @@ namespace Service.Realization
                 entity.CreatorEntity = user;
                 entity.IsMySubscribe = subscribe != null;
 
-                entity.ModVersionEntities = entity.ModVersionEntities.Where(x => x.ApproveModVersionEntity.Status == "20").Where(x => !string.IsNullOrWhiteSpace(x.FilesId)).OrderByDescending(x => x.CreatedAt).ToList();
+                entity.ModVersionEntities = entity.ModVersionEntities
+                    .Where(x => x.ApproveModVersionEntity.Status == "20")
+                    .Where(x => !string.IsNullOrWhiteSpace(x.FilesId))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToList();
+
+                foreach (var modVersion in entity.ModVersionEntities)
+                {
+                    if (modVersion.ApproveModVersionEntity != null)
+                    {
+                        modVersion.ApproveModVersionEntity.User = null;
+                        modVersion.ApproveModVersionEntity.Comments = null;
+                        modVersion.ApproveModVersionEntity.ApprovedAt = null;
+                    }
+                }
             }
 
             if (avg != null)
@@ -444,6 +459,15 @@ namespace Service.Realization
                 entity.CreatorEntity = user;
                 entity.IsMySubscribe = subscribe != null;
                 entity.ModVersionEntities = entity.ModVersionEntities.Where(x => !string.IsNullOrWhiteSpace(x.FilesId)).OrderByDescending(x => x.CreatedAt).ToList();
+                foreach (var modVersion in entity.ModVersionEntities)
+                {
+                    if (modVersion.ApproveModVersionEntity != null)
+                    {
+                        modVersion.ApproveModVersionEntity.User = null;
+                        modVersion.ApproveModVersionEntity.Comments = null;
+                        modVersion.ApproveModVersionEntity.ApprovedAt = null;
+                    }
+                }
             }
 
             if (avg != null)
