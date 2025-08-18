@@ -95,6 +95,11 @@ const routes = [
         name: "game",
         component: () => import('../views/Game.vue')
     },
+    {
+        path: "/statistics",
+        name: "statistics",
+        component: () => import('../views/Statistics.vue')
+    },
 ]
 
 const router = createRouter({

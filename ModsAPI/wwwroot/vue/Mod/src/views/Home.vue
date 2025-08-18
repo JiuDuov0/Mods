@@ -74,6 +74,8 @@
                                     @click.native="handleapproveModVersion">审核Mod</el-dropdown-item>
                                 <el-dropdown-item v-if="Role === 'Developer'"
                                     @click.native="handleroleAuthorization">添加审核人</el-dropdown-item>
+                                <el-dropdown-item v-if="Role === 'Developer'"
+                                    @click.native="handleroleStatistics">数据面板</el-dropdown-item>
 
                                 <el-dropdown-item @click.native="handleCreateMod">发布新Mod</el-dropdown-item>
                                 <el-dropdown-item @click.native="handleMyCreateMods">我发布的Mod</el-dropdown-item>
@@ -366,6 +368,7 @@ export default {
         handleDownloadmintcat() {
             router.push('/downloadmintcat');
         },
+        handleroleStatistics() { router.push('/statistics'); },
         handleLogout() {
             // 处理退出登录点击事件
             ElMessage.info('退出登录');

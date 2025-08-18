@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Entity.Log;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Service.Interface;
 using System;
@@ -19,130 +20,169 @@ namespace Service.Realization
             _IConfiguration = iConfiguration;
         }
 
-        public async Task WriteLogAsync(string API, string UserId, string IP)
+        public async ValueTask WriteLogAsync(string API, string UserId, string IP)
         {
-            //System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
-            //watch.Start();
-            using SqlConnection sqlConnection = new SqlConnection(_IConfiguration["WriteConnectionString"]);
-            await sqlConnection.OpenAsync();
-            var strsql = "insert into APILog(Id,API,UserId,IP,CreatedAt) values(@Id, @API, @UserId, @IP, @CreatedAt)";
-            SqlParameter[] sqlParameters = new SqlParameter[5];
-            sqlParameters[0] = new SqlParameter("@Id", Guid.NewGuid());
-            sqlParameters[1] = new SqlParameter("@API", API);
-            sqlParameters[2] = new SqlParameter("@UserId", UserId);
-            sqlParameters[3] = new SqlParameter("@IP", IP);
-            sqlParameters[4] = new SqlParameter("@CreatedAt", DateTime.Now);
-            await ExecuteNonQueryAsync(sqlConnection, CommandType.Text, strsql, sqlParameters);
-            //watch.Stop();
-            //var timeSpan = watch.Elapsed.TotalMilliseconds;
-        }
-
-        private static async Task<int> ExecuteNonQueryAsync(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters)
-        {
-            if (connection == null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            SqlCommand sqlCommand = new SqlCommand();
-            bool mustCloseConnection = false;
-            PrepareCommand(sqlCommand, connection, null, commandType, commandText, commandParameters, out mustCloseConnection);
-            int result = await sqlCommand.ExecuteNonQueryAsync();
-            sqlCommand.Parameters.Clear();
-            if (mustCloseConnection)
-            {
-                await connection.CloseAsync();
-            }
-
-            return result;
-        }
-
-        private static int ExecuteNonQuery(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters)
-        {
-            if (connection == null)
-            {
-                throw new ArgumentNullException("connection");
-            }
-
-            SqlCommand sqlCommand = new SqlCommand();
-            bool mustCloseConnection = false;
-            PrepareCommand(sqlCommand, connection, null, commandType, commandText, commandParameters, out mustCloseConnection);
-            int result = sqlCommand.ExecuteNonQuery();
-            sqlCommand.Parameters.Clear();
-            if (mustCloseConnection)
-            {
-                connection.Close();
-            }
-
-            return result;
-        }
-
-        private static void PrepareCommand(SqlCommand command, SqlConnection connection, SqlTransaction transaction, CommandType commandType, string commandText, SqlParameter[] commandParameters, out bool mustCloseConnection)
-        {
-            if (command == null)
-            {
-                throw new ArgumentNullException("command");
-            }
-
-            if (commandText == null || commandText.Length == 0)
-            {
-                throw new ArgumentNullException("commandText");
-            }
-
-            if (connection.State != ConnectionState.Open)
-            {
-                mustCloseConnection = true;
-                connection.Open();
-            }
-            else
-            {
-                mustCloseConnection = false;
-            }
-
-            command.Connection = connection;
-            command.CommandText = commandText;
-            if (transaction != null)
-            {
-                if (transaction.Connection == null)
-                {
-                    throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
-                }
-
-                command.Transaction = transaction;
-            }
-
-            command.CommandType = commandType;
-            if (commandParameters != null)
-            {
-                AttachParameters(command, commandParameters);
-            }
-        }
-
-        private static void AttachParameters(SqlCommand command, SqlParameter[] commandParameters)
-        {
-            if (command == null)
-            {
-                throw new ArgumentNullException("command");
-            }
-
-            if (commandParameters == null)
-            {
+            if (string.IsNullOrWhiteSpace(API) || string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(IP))
                 return;
-            }
 
-            foreach (SqlParameter sqlParameter in commandParameters)
+            const string strsql = "insert into APILog(Id,API,UserId,IP,CreatedAt) values(@Id, @API, @UserId, @IP, @CreatedAt)";
+            var sqlParameters = new[]
             {
-                if (sqlParameter != null)
-                {
-                    if ((sqlParameter.Direction == ParameterDirection.InputOutput || sqlParameter.Direction == ParameterDirection.Input) && sqlParameter.Value == null)
-                    {
-                        sqlParameter.Value = DBNull.Value;
-                    }
+        new SqlParameter("@Id", Guid.NewGuid()),
+        new SqlParameter("@API", API),
+        new SqlParameter("@UserId", UserId),
+        new SqlParameter("@IP", IP),
+        new SqlParameter("@CreatedAt", DateTime.Now)
+    };
 
-                    command.Parameters.Add(sqlParameter);
-                }
-            }
+            await using var sqlConnection = new SqlConnection(_IConfiguration["WriteConnectionString"]);
+            await sqlConnection.OpenAsync().ConfigureAwait(false);
+            await using var sqlCommand = new SqlCommand(strsql, sqlConnection)
+            {
+                CommandType = CommandType.Text
+            };
+            sqlCommand.Parameters.AddRange(sqlParameters);
+            await sqlCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+            sqlCommand.Parameters.Clear();
         }
 
+        /// <summary>
+        /// 显示最近一段时间的登录日志
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        public async Task<List<APILogEntity>> GetLoginLogsAsync(DateTime start, DateTime end)
+        {
+            var result = new List<APILogEntity>();
+            const string strsql = @"
+        SELECT t.Id, t.API, t.UserId, t.IP, t.CreatedAt
+        FROM (
+            SELECT
+                l.Id, l.API, l.UserId, l.IP, l.CreatedAt,
+                ROW_NUMBER() OVER (PARTITION BY l.UserId ORDER BY l.CreatedAt DESC) AS rn
+            FROM APILog l
+            INNER JOIN [User] u ON l.UserId = u.UserId
+            WHERE l.CreatedAt >= @Start AND l.CreatedAt < @End AND l.API <> @ExcludeAPI
+        ) t
+        WHERE t.rn = 1";
+
+            var sqlParameters = new[]
+            {
+        new SqlParameter("@Start", start),
+        new SqlParameter("@End", end),
+        new SqlParameter("@ExcludeAPI", "LoginController/UserLogin")
+    };
+
+            await using var sqlConnection = new SqlConnection(_IConfiguration["ReadConnectionString"]);
+            await sqlConnection.OpenAsync().ConfigureAwait(false);
+            await using var cmd = new SqlCommand(strsql, sqlConnection)
+            {
+                CommandType = CommandType.Text
+            };
+            cmd.Parameters.AddRange(sqlParameters);
+            await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+            while (await reader.ReadAsync().ConfigureAwait(false))
+            {
+                var entity = new APILogEntity
+                {
+                    Id = reader["Id"]?.ToString(),
+                    API = reader["API"]?.ToString(),
+                    UserId = reader["UserId"]?.ToString(),
+                    IP = reader["IP"]?.ToString(),
+                    CreatedAt = reader["CreatedAt"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["CreatedAt"])
+                };
+                result.Add(entity);
+            }
+            return result;
+        }
+
+        /// 显示最近 N 天（最多 30 天）内每天流失的用户数量
+        /// </summary>
+        /// <param name="days">统计天数（1~30）</param>
+        /// <returns>每天流失用户数量字典，key为日期字符串，value为数量</returns>
+        public async Task<Dictionary<string, int>> GetLostUsersAsync(int days)
+        {
+            if (days < 1) days = 1;
+            if (days > 30) days = 30;
+            var today = DateTime.Now.Date;
+            var start = today.AddDays(-days + 1);
+
+            // 获取所有用户ID和注册时间（CreatedAt）
+            var userInfoDict = new Dictionary<string, DateTime>();
+            const string userSql = "SELECT UserId, CreatedAt FROM [User]";
+            await using (var userConn = new SqlConnection(_IConfiguration["ReadConnectionString"]))
+            {
+                await userConn.OpenAsync().ConfigureAwait(false);
+                await using (var userCmd = new SqlCommand(userSql, userConn))
+                await using (var userReader = await userCmd.ExecuteReaderAsync().ConfigureAwait(false))
+                {
+                    while (await userReader.ReadAsync().ConfigureAwait(false))
+                    {
+                        var userId = userReader["UserId"]?.ToString();
+                        var regTime = userReader["CreatedAt"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(userReader["CreatedAt"]);
+                        if (!string.IsNullOrEmpty(userId) && regTime.HasValue)
+                            userInfoDict[userId] = regTime.Value.Date;
+                    }
+                }
+            }
+
+            // 查询所有用户的最后一次登录时间
+            var lastLoginDict = new Dictionary<string, DateTime>();
+            const string loginSql = "SELECT UserId, MAX(CreatedAt) AS LastLogin FROM APILog WHERE API = @API GROUP BY UserId";
+            var loginParams = new[]
+            {
+        new SqlParameter("@API", "LoginController/UserLogin")
+    };
+            await using (var sqlConnection = new SqlConnection(_IConfiguration["ReadConnectionString"]))
+            {
+                await sqlConnection.OpenAsync().ConfigureAwait(false);
+                await using (var cmd = new SqlCommand(loginSql, sqlConnection))
+                {
+                    cmd.Parameters.AddRange(loginParams);
+                    await using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            var userId = reader["UserId"]?.ToString();
+                            var lastLogin = reader["LastLogin"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["LastLogin"]);
+                            if (!string.IsNullOrEmpty(userId) && lastLogin.HasValue)
+                                lastLoginDict[userId] = lastLogin.Value.Date;
+                        }
+                    }
+                }
+            }
+
+            // 统计每天累计流失用户数
+            var result = new Dictionary<string, int>(days);
+            var lostUserIds = new HashSet<string>();
+            for (int i = 0; i < days; i++)
+            {
+                var date = start.AddDays(i);
+                foreach (var kvp in userInfoDict)
+                {
+                    var userId = kvp.Key;
+                    if (lostUserIds.Contains(userId))
+                        continue;
+
+                    DateTime baseTime;
+                    if (lastLoginDict.TryGetValue(userId, out baseTime))
+                    {
+                        // 有登录记录，按最后登录时间判定
+                        if (date >= baseTime.AddDays(30))
+                            lostUserIds.Add(userId);
+                    }
+                    else
+                    {
+                        // 无登录记录，按注册时间（CreatedAt）判定
+                        if (date >= kvp.Value.AddDays(30))
+                            lostUserIds.Add(userId);
+                    }
+                }
+                result[date.ToString("yyyy-MM-dd")] = lostUserIds.Count;
+            }
+
+            return result;
+        }
     }
 }
