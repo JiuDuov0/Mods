@@ -27,7 +27,6 @@
 </template>
 
 <script>
-import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { TooltipComponent, GridComponent } from 'echarts/components'
@@ -37,28 +36,49 @@ import { ElMessage } from 'element-plus'
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent])
 
+function getChartOption(isDark, name, color) {
+  return {
+    backgroundColor: isDark ? '#232323' : '#fff',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: isDark ? '#232323' : '#fff',
+      borderColor: isDark ? '#121212' : 'rgb(255, 255, 255)',
+      borderWidth: 2,
+      textStyle: { color: isDark ? '#fff' : '#333', fontWeight: 'bold' },
+      extraCssText: isDark ? 'box-shadow: 0 2px 8px #121212; border-radius: 8px;' : ''
+    },
+    xAxis: {
+      type: 'category',
+      data: [],
+      axisLine: { lineStyle: { color: isDark ? '#bbb' : '#333' } },
+      axisLabel: { color: isDark ? '#bbb' : '#333' },
+      splitLine: { lineStyle: { color: isDark ? '#444' : '#eee' } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { lineStyle: { color: isDark ? '#bbb' : '#333' } },
+      axisLabel: { color: isDark ? '#bbb' : '#333' },
+      splitLine: { lineStyle: { color: isDark ? '#444' : '#eee' } }
+    },
+    series: [{
+      type: 'line',
+      data: [],
+      name,
+      color: color
+    }]
+  }
+}
+
 export default {
   components: { VChart },
   data() {
     return {
       dateRange: [],
       loading: false,
-      // 登录统计
       tableDataLogin: [],
-      chartOptionLogin: {
-        tooltip: { trigger: 'axis' },
-        xAxis: { type: 'category', data: [] },
-        yAxis: { type: 'value' },
-        series: [{ type: 'line', data: [], name: '登录数量' }]
-      },
-      // 流失用户统计
+      chartOptionLogin: getChartOption(false, '登录数量', '#4fc3f7'),
       tableDataLost: [],
-      chartOptionLost: {
-        tooltip: { trigger: 'axis' },
-        xAxis: { type: 'category', data: [] },
-        yAxis: { type: 'value' },
-        series: [{ type: 'line', data: [], name: '流失用户数量', color: '#e74c3c' }]
-      }
+      chartOptionLost: getChartOption(false, '流失用户数量', '#e74c3c')
     }
   },
   methods: {
@@ -71,6 +91,11 @@ export default {
         params = { days: 7 }
       }
       const token = localStorage.getItem('token' + localStorage.getItem('Mail'))
+
+      // 判断当前是否黑暗模式
+      const isDark = document.body.classList.contains('dark-theme')
+      this.chartOptionLogin = getChartOption(isDark, '登录数量', '#4fc3f7')
+      this.chartOptionLost = getChartOption(isDark, '流失用户数量', '#e74c3c')
 
       // 登录统计
       const loginPromise = this.$axios({
@@ -131,18 +156,35 @@ export default {
         this.loading = false
       }
     },
+    detectDarkMode() {
+      const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) {
+        document.body.classList.add('dark-theme');
+      } else {
+        document.body.classList.remove('dark-theme');
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (e.matches) {
+          document.body.classList.add('dark-theme');
+        } else {
+          document.body.classList.remove('dark-theme');
+        }
+        // 主题切换时刷新图表样式
+        this.fetchData();
+      });
+    },
     getDays() {
       if (this.dateRange && this.dateRange.length === 2) {
         const start = new Date(this.dateRange[0])
         const end = new Date(this.dateRange[1])
-        // 计算天数，包含起止
         return Math.min(30, Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1))
       }
       return 7
     }
   },
   mounted() {
-    this.fetchData()
+    this.detectDarkMode();
+    this.fetchData();
   }
 }
 </script>
@@ -151,5 +193,143 @@ export default {
 .el-card {
   max-width: 800px;
   margin: 32px auto;
+}
+</style>
+
+<style>
+body.dark-theme {
+  background-color: #121212;
+  color: #ffffffa6;
+}
+
+body.dark-theme .el-card {
+  background-color: #1e1e1e;
+  color: #ffffffa6;
+  border-color: #333333;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .el-input__inner {
+  background-color: #2c2c2c;
+  color: #ffffffa6;
+  border-color: #444444;
+}
+
+body.dark-theme .el-button {
+  background-color: #333333;
+  color: #ffffffa6;
+  border-color: #444444;
+}
+
+body.dark-theme .el-button:hover {
+  background-color: #444444;
+  border-color: #555555;
+}
+
+body.dark-theme .el-tag {
+  background-color: #2c2c2c;
+  color: #ffffffa6;
+  border-color: #444444;
+}
+
+body.dark-theme .line {
+  background-color: #444444;
+}
+
+body.dark-theme .el-table {
+  background-color: #1e1e1e;
+  color: #ffffffa6;
+  border-color: #333333;
+}
+
+body.dark-theme .el-table th,
+body.dark-theme .el-table td {
+  background-color: #1e1e1e;
+  color: #ffffffa6;
+  border-color: #333333;
+}
+
+body.dark-theme .el-table-column {
+  color: #ffffffa6;
+}
+
+body.dark-theme .el-loading {
+  color: #ffffffa6;
+}
+
+body.dark-theme h3,
+body.dark-theme h2 {
+  color: #ffffffa6;
+}
+
+body.dark-theme .el-date-picker,
+body.dark-theme .el-picker-panel,
+body.dark-theme .el-date-range-picker,
+body.dark-theme .el-picker-panel__body,
+body.dark-theme .el-picker-panel__content,
+body.dark-theme .el-picker-panel__footer {
+  background-color: #232323 !important;
+  color: #ffffffa6 !important;
+  border-color: #444444 !important;
+}
+
+body.dark-theme .el-date-picker .el-input__inner {
+  background-color: #2c2c2c !important;
+  color: #ffffffa6 !important;
+  border-color: #444444 !important;
+}
+
+body.dark-theme .el-picker-panel__icon,
+body.dark-theme .el-date-table th,
+body.dark-theme .el-date-table td {
+  color: #ffffffa6 !important;
+}
+
+body.dark-theme .el-date-table td.in-range,
+body.dark-theme .el-date-table td.in-range:hover {
+  background-color: #333333 !important;
+}
+
+body.dark-theme .el-date-table td.current,
+body.dark-theme .el-date-table td.today {
+  color: #fff !important;
+}
+
+body.dark-theme .el-picker-panel__btn {
+  background-color: #333333 !important;
+  color: #ffffffa6 !important;
+  border-color: #444444 !important;
+}
+
+body.dark-theme .el-picker-panel__btn:hover {
+  background-color: #444444 !important;
+  border-color: #555555 !important;
+}
+
+body.dark-theme .el-date-editor,
+body.dark-theme .el-date-editor .el-input__inner {
+  background-color: #232323 !important;
+  color: #ffffffa6 !important;
+  border-color: #444444 !important;
+}
+
+body.dark-theme .el-date-editor .el-input__inner::placeholder {
+  color: #bbbbbb !important;
+  opacity: 1;
+}
+
+body.dark-theme .el-date-editor .el-range-separator {
+  color: #bbbbbb !important;
+}
+
+body.dark-theme .el-date-editor .el-icon {
+  color: #bbbbbb !important;
+}
+
+body.dark-theme .el-table__body tr:hover>td,
+body.dark-theme .el-table__body tr.hover-row>td {
+  background-color: #232323 !important;
+  color: #fff !important;
+  transition: background 0.2s;
 }
 </style>
