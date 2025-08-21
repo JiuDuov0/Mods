@@ -33,7 +33,7 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
-        /// 获取登录日志
+        /// 获取最近一段时间每天的登录数量（只统计成功数量）
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
@@ -59,15 +59,7 @@ namespace ModsAPI.Controllers
                 }
             }
 
-            var loginLogs = await _IAPILogService.GetLoginLogsAsync(startTime, endTime);
-
-            var dailyCounts = loginLogs
-    .GroupBy(log => log.CreatedAt?.Date)
-    .OrderBy(g => g.Key)
-    .ToDictionary(
-        g => g.Key?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty,
-        g => g.Count()
-    );
+            var dailyCounts = await _IAPILogService.GetDailyActiveUserCountAsync(startTime, endTime);
 
             return new ResultEntity<Dictionary<string, int>>
             {

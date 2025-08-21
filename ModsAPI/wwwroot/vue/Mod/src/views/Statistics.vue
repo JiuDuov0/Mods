@@ -13,7 +13,7 @@
         <v-chart :option="chartOptionLogin" style="height: 400px;" />
         <el-table :data="tableDataLogin" style="margin-top: 24px;">
           <el-table-column prop="date" label="日期" />
-          <el-table-column prop="count" label="登录数量" />
+          <el-table-column prop="count" label="当日活跃用户数量" />
         </el-table>
         <div style="margin-top:40px;"></div>
         <v-chart :option="chartOptionLost" style="height: 400px;" />

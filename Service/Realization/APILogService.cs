@@ -184,5 +184,54 @@ namespace Service.Realization
 
             return result;
         }
+
+        /// <summary>
+        /// 查询每天去重后的活跃用户数
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        public async Task<Dictionary<string, int>> GetDailyActiveUserCountAsync(DateTime start, DateTime end)
+        {
+            const string strsql = @"
+        SELECT 
+            CAST(CreatedAt AS DATE) AS Day,
+            COUNT(DISTINCT UserId) AS UserCount
+        FROM APILog
+        WHERE CreatedAt >= @Start AND CreatedAt < @End
+          AND API NOT IN (@ExcludeAPI1, @ExcludeAPI2, @ExcludeAPI3)
+          AND UserId IS NOT NULL AND UserId <> ''
+        GROUP BY CAST(CreatedAt AS DATE)
+        ORDER BY Day ASC";
+
+            var sqlParameters = new[]
+            {
+        new SqlParameter("@Start", start),
+        new SqlParameter("@End", end),
+        new SqlParameter("@ExcludeAPI1", "LoginController/UserLogin"),
+        new SqlParameter("@ExcludeAPI2", "LoginController/UserRegister"),
+        new SqlParameter("@ExcludeAPI3", "LoginController/RefreshToken")
+    };
+
+            var result = new Dictionary<string, int>();
+            await using var sqlConnection = new SqlConnection(_IConfiguration["ReadConnectionString"]);
+            await sqlConnection.OpenAsync().ConfigureAwait(false);
+            await using var cmd = new SqlCommand(strsql, sqlConnection)
+            {
+                CommandType = CommandType.Text
+            };
+            cmd.Parameters.AddRange(sqlParameters);
+            await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+            while (await reader.ReadAsync().ConfigureAwait(false))
+            {
+                string day = reader["Day"] != DBNull.Value
+                    ? Convert.ToDateTime(reader["Day"]).ToString("yyyy-MM-dd")
+                    : string.Empty;
+                int count = reader["UserCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["UserCount"]);
+                if (!string.IsNullOrEmpty(day))
+                    result[day] = count;
+            }
+            return result;
+        }
     }
 }
