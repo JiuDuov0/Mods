@@ -199,7 +199,7 @@ namespace Service.Realization
             COUNT(DISTINCT UserId) AS UserCount
         FROM APILog
         WHERE CreatedAt >= @Start AND CreatedAt < @End
-          AND API NOT IN (@ExcludeAPI1, @ExcludeAPI2, @ExcludeAPI3)
+          AND API NOT IN (@ExcludeAPI1, @ExcludeAPI2, @ExcludeAPI3, @ExcludeAPI4, @ExcludeAPI5)
           AND UserId IS NOT NULL AND UserId <> ''
         GROUP BY CAST(CreatedAt AS DATE)
         ORDER BY Day ASC";
@@ -210,7 +210,9 @@ namespace Service.Realization
         new SqlParameter("@End", end),
         new SqlParameter("@ExcludeAPI1", "LoginController/UserLogin"),
         new SqlParameter("@ExcludeAPI2", "LoginController/UserRegister"),
-        new SqlParameter("@ExcludeAPI3", "LoginController/RefreshToken")
+        new SqlParameter("@ExcludeAPI3", "LoginController/RefreshToken"),
+        new SqlParameter("@ExcludeAPI4", "LoginController/VerifyEmailCodeAndChangePassWordAsync"),
+        new SqlParameter("@ExcludeAPI5", "LoginController/SendVerificationCodeAsync")
     };
 
             var result = new Dictionary<string, int>();
