@@ -37,3 +37,8 @@
 /ModsAPI/wwwroot/vue/Mod/src/assets/mintcat_0.4.0_x64-setup.zip
 /ModsAPI/wwwroot/vue/Mod/src/assets/mintcat_0.4.5_x64-setup.zip
 /ModsAPI/wwwroot/vue/Mod/src/assets/mintcat_0.4.6_x64-setup.zip
+/EF/bin/Debug/net10.0
+/Entity/bin/Debug/net10.0
+/Redis/bin/Debug/net10.0
+/Service/bin/Debug/net10.0
+/ModsAPI/bin/Debug/net10.0
