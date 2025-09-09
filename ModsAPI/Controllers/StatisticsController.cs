@@ -41,13 +41,12 @@ namespace ModsAPI.Controllers
         [SwaggerOperation(Summary = "获取最近一段时间每天的登录数量")]
         public async Task<ActionResult<ResultEntity<Dictionary<string, int>>>> GetDailyLoginCount([FromBody] dynamic json)
         {
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-
             DateTime startTime = DateTime.Today.AddDays(-7);
             DateTime endTime = DateTime.Today.AddDays(1);
 
             if (json != null)
             {
+                json = JsonConvert.DeserializeObject(Convert.ToString(json));
                 var obj = JsonConvert.DeserializeObject(Convert.ToString(json));
                 if (!string.IsNullOrWhiteSpace((string)obj.start))
                 {
@@ -98,6 +97,40 @@ namespace ModsAPI.Controllers
                 ResultCode = 200,
                 ResultMsg = "success",
                 ResultData = lostUserCounts
+            };
+        }
+
+        /// <summary>
+        /// 统计每个接口的请求次数
+        /// </summary>
+        /// <param name="json">{ "start": "2024-09-01", "end": "2024-09-09" }</param>
+        /// <returns></returns>
+        [HttpPost(Name = "GetApiRequestCounts")]
+        public async Task<ActionResult<ResultEntity<Dictionary<string, int>>>> GetApiRequestCountsAsync([FromBody] dynamic json)
+        {
+            DateTime startTime = DateTime.Today.AddDays(-7);
+            DateTime endTime = DateTime.Today.AddDays(1);
+
+            if (json != null)
+            {
+                json = JsonConvert.DeserializeObject(Convert.ToString(json));
+                if (!string.IsNullOrWhiteSpace((string)json.start))
+                {
+                    DateTime.TryParse((string)json.start, out startTime);
+                }
+                if (!string.IsNullOrWhiteSpace((string)json.end))
+                {
+                    DateTime.TryParse((string)json.end, out endTime);
+                }
+            }
+
+            var apiCounts = await _IAPILogService.GetApiRequestCountsAsync(startTime, endTime);
+
+            return new ResultEntity<Dictionary<string, int>>
+            {
+                ResultCode = 200,
+                ResultMsg = "success",
+                ResultData = apiCounts
             };
         }
     }

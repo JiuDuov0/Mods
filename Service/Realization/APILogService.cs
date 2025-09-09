@@ -235,5 +235,59 @@ namespace Service.Realization
             }
             return result;
         }
+
+        /// <summary>
+        /// 统计每个接口的请求次数，DownloadFile忽略ModFileId统一统计，支持时间区间筛选，兼容API无/多/少斜杠等异常数据
+        /// </summary>
+        public async Task<Dictionary<string, int>> GetApiRequestCountsAsync(DateTime start, DateTime end)
+        {
+            var result = new Dictionary<string, int>();
+            // DownloadFile统一统计到 FilesController/DownloadFile，其它接口只统计到控制器/方法
+            // 兼容API字段异常（无/多/少斜杠）
+            const string sql = @"
+SELECT 
+    CASE 
+        WHEN API LIKE 'FilesController/DownloadFile/%' THEN 'FilesController/DownloadFile'
+        WHEN API = 'FilesController/DownloadFile' THEN 'FilesController/DownloadFile'
+        WHEN CHARINDEX('/', API) > 0 AND CHARINDEX('/', API, CHARINDEX('/', API) + 1) > 0 THEN
+            LEFT(API, CHARINDEX('/', API, CHARINDEX('/', API) + 1) - 1)
+        ELSE API
+    END AS ApiKey,
+    COUNT(*) AS Cnt
+FROM APILog
+WHERE CreatedAt >= @Start AND CreatedAt < @End
+GROUP BY 
+    CASE 
+        WHEN API LIKE 'FilesController/DownloadFile/%' THEN 'FilesController/DownloadFile'
+        WHEN API = 'FilesController/DownloadFile' THEN 'FilesController/DownloadFile'
+        WHEN CHARINDEX('/', API) > 0 AND CHARINDEX('/', API, CHARINDEX('/', API) + 1) > 0 THEN
+            LEFT(API, CHARINDEX('/', API, CHARINDEX('/', API) + 1) - 1)
+        ELSE API
+    END
+ORDER BY Cnt DESC";
+
+            var sqlParameters = new[]
+            {
+        new SqlParameter("@Start", start),
+        new SqlParameter("@End", end)
+    };
+
+            await using var sqlConnection = new SqlConnection(_IConfiguration["ReadConnectionString"]);
+            await sqlConnection.OpenAsync().ConfigureAwait(false);
+            await using var cmd = new SqlCommand(sql, sqlConnection)
+            {
+                CommandType = CommandType.Text
+            };
+            cmd.Parameters.AddRange(sqlParameters);
+            await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+            while (await reader.ReadAsync().ConfigureAwait(false))
+            {
+                var apiKey = reader["ApiKey"]?.ToString() ?? "";
+                var count = reader["Cnt"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Cnt"]);
+                if (!string.IsNullOrWhiteSpace(apiKey))
+                    result[apiKey] = count;
+            }
+            return result;
+        }
     }
 }

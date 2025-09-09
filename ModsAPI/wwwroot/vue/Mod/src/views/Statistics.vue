@@ -21,6 +21,17 @@
           <el-table-column prop="date" label="日期" />
           <el-table-column prop="count" label="流失用户数量" />
         </el-table>
+        <div style="margin-top:40px;"></div>
+        <div style="margin-bottom: 16px;">
+          <el-date-picker v-model="apiDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+            end-placeholder="结束日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" @change="fetchApiData" />
+          <el-button type="primary" @click="fetchApiData" style="margin-left: 8px;">查询接口请求</el-button>
+        </div>
+        <v-chart :option="chartOptionApi" style="height: 400px;" />
+        <el-table :data="tableDataApi" style="margin-top: 24px;">
+          <el-table-column prop="api" label="接口" />
+          <el-table-column prop="count" label="请求次数" />
+        </el-table>
       </div>
     </el-card>
   </div>
@@ -28,13 +39,13 @@
 
 <script>
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
+import { LineChart, BarChart } from 'echarts/charts'
 import { TooltipComponent, GridComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { ElMessage } from 'element-plus'
 
-use([CanvasRenderer, LineChart, TooltipComponent, GridComponent])
+use([CanvasRenderer, LineChart, BarChart, TooltipComponent, GridComponent])
 
 function getChartOption(isDark, name, color) {
   return {
@@ -74,11 +85,25 @@ export default {
   data() {
     return {
       dateRange: [],
+      apiDateRange: [], // 新增
       loading: false,
       tableDataLogin: [],
       chartOptionLogin: getChartOption(false, '登录数量', '#4fc3f7'),
       tableDataLost: [],
-      chartOptionLost: getChartOption(false, '流失用户数量', '#e74c3c')
+      chartOptionLost: getChartOption(false, '流失用户数量', '#e74c3c'),
+      tableDataApi: [],
+      chartOptionApi: {
+        backgroundColor: '#fff',
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: [], axisLabel: { rotate: 30 } },
+        yAxis: { type: 'value' },
+        series: [{
+          type: 'bar',
+          data: [],
+          name: '请求次数',
+          color: '#81c784'
+        }]
+      }
     }
   },
   methods: {
@@ -156,6 +181,81 @@ export default {
         this.loading = false
       }
     },
+    async fetchApiData() {
+      this.loading = true
+      let params = {}
+      if (this.apiDateRange && this.apiDateRange.length === 2) {
+        params = {
+          start: this.apiDateRange[0] + ' 00:00:00',
+          end: this.apiDateRange[1] + ' 23:59:59'
+        }
+      } else {
+        const today = new Date().toISOString().slice(0, 10)
+        params = {
+          start: today + ' 00:00:00',
+          end: today + ' 23:59:59'
+        }
+      }
+      const token = localStorage.getItem('token' + localStorage.getItem('Mail'))
+
+      // 判断当前是否黑暗模式
+      const isDark = document.body.classList.contains('dark-theme')
+
+      try {
+        const apiRes = await this.$axios({
+          url: `${import.meta.env.VITE_API_BASE_URL}/Statistics/GetApiRequestCounts`,
+          method: 'POST',
+          data: { start: params.start, end: params.end },
+          contentType: "application/json; charset=utf-8",
+          responseType: 'json',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (apiRes.data && apiRes.data.ResultCode === 200) {
+          const dict = apiRes.data.ResultData || {}
+          const apis = Object.keys(dict)
+          const counts = Object.values(dict)
+          // 直接整体替换 chartOptionApi，确保响应式
+          this.chartOptionApi = {
+            backgroundColor: isDark ? '#232323' : '#fff',
+            tooltip: {
+              trigger: 'axis',
+              backgroundColor: isDark ? '#232323' : '#fff',
+              borderColor: isDark ? '#444' : '#fff',
+              textStyle: { color: isDark ? '#fff' : '#666' }
+            },
+            xAxis: {
+              type: 'category',
+              data: apis,
+              axisLabel: { rotate: 30, color: isDark ? '#bbb' : '#333' },
+              axisLine: { lineStyle: { color: isDark ? '#bbb' : '#333' } }
+            },
+            yAxis: {
+              type: 'value',
+              axisLine: { lineStyle: { color: isDark ? '#bbb' : '#333' } },
+              axisLabel: { color: isDark ? '#bbb' : '#333' }
+            },
+            series: [{
+              type: 'bar',
+              data: counts,
+              name: '请求次数',
+              color: isDark ? '#aed581' : '#81c784'
+            }]
+          }
+          this.tableDataApi = apis.map((api, idx) => ({
+            api,
+            count: counts[idx]
+          }))
+        } else {
+          ElMessage.error(apiRes.data?.ResultMsg || '获取接口请求次数失败')
+        }
+      } catch (error) {
+        ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+        console.log(error);
+      } finally {
+        this.loading = false
+      }
+    },
     detectDarkMode() {
       const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDarkMode) {
@@ -171,6 +271,7 @@ export default {
         }
         // 主题切换时刷新图表样式
         this.fetchData();
+        this.fetchApiData();
       });
     },
     getDays() {
@@ -185,6 +286,7 @@ export default {
   mounted() {
     this.detectDarkMode();
     this.fetchData();
+    this.fetchApiData();
   }
 }
 </script>

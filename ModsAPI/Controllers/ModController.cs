@@ -30,21 +30,29 @@ namespace ModsAPI.Controllers
         private readonly ITypesService _ITypesService;
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly JwtHelper _JwtHelper;
+        private readonly HttpClient _httpClient;
 
         /// <summary>
-        /// 构造函数依赖注入
+        /// 构造函数
         /// </summary>
         /// <param name="iModService"></param>
         /// <param name="iAPILogService"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="jwtHelper"></param>
-        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, ITypesService iTypesService)
+        /// <param name="iTypesService"></param>
+        /// <param name="httpClient"></param>
+        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, ITypesService iTypesService, HttpClient httpClient)
         {
             _IModService = iModService;
             _IAPILogService = iAPILogService;
             _IHttpContextAccessor = iHttpContextAccessor;
             _JwtHelper = jwtHelper;
             _ITypesService = iTypesService;
+            _httpClient = httpClient;
+            if (!_httpClient.DefaultRequestHeaders.Accept.Any(h => h.MediaType == "application/json"))
+            {
+                _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            }
         }
         /// <summary>
         /// 分页获取Mod列表
@@ -149,7 +157,7 @@ namespace ModsAPI.Controllers
         /// <returns></returns>
         [HttpPost(Name = "CreateMod")]
         [Authorize]
-        public ResultEntity<ModEntity> CreateMod([FromBody] dynamic json)
+        public async Task<ResultEntity<ModEntity>> CreateMod([FromBody] dynamic json)
         {
             #region 记录访问
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
@@ -212,17 +220,13 @@ namespace ModsAPI.Controllers
             };
             Mod.Description = Mod.Description.Replace("\n", "</br>");
             #region Get方法获取视频封面信息
-            string Get(string url, string content)
+            async Task<string?> GetAsync(string url, string content)
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
-                        return client.GetStringAsync(url + content).Result;
-                    }
+                    return await _httpClient.GetStringAsync(url + content);
                 }
-                catch (Exception ex)
+                catch
                 {
                     return null;
                 }
@@ -230,7 +234,7 @@ namespace ModsAPI.Controllers
             #endregion
             if (!string.IsNullOrWhiteSpace(Mod.VideoUrl))
             {
-                var res = Get($"https://api.bilibili.com/x/web-interface/view?bvid={Mod.VideoUrl}", "");
+                var res = await GetAsync($"https://api.bilibili.com/x/web-interface/view?bvid={Mod.VideoUrl}", "");
                 if (res == null)
                 {
                     return new ResultEntity<ModEntity>() { ResultCode = 400, ResultMsg = "BV号不正确" };

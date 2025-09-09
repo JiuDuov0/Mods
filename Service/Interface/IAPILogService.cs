@@ -13,5 +13,6 @@ namespace Service.Interface
         public Task<List<APILogEntity>> GetLoginLogsAsync(DateTime start, DateTime end);
         public Task<Dictionary<string, int>> GetLostUsersAsync(int days);
         public Task<Dictionary<string, int>> GetDailyActiveUserCountAsync(DateTime start, DateTime end);
+        public Task<Dictionary<string, int>> GetApiRequestCountsAsync(DateTime start, DateTime end);
     }
 }

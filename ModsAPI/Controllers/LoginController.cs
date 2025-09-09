@@ -33,6 +33,7 @@ namespace ModsAPI.Controllers
         /// <param name="jwtHelper"></param>
         /// <param name="iHttpContextAccessor"></param>
         /// <param name="iAPILogService"></param>
+        /// <param name="iMailService"></param>
         public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService, IMailService iMailService)
         {
             _IUserService = iUserService;
@@ -48,7 +49,7 @@ namespace ModsAPI.Controllers
         /// <param name="json">LoginAccount=账号（Email），Password=密码 json示例：{"LoginAccount":"","Password":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "UserLogin")]
-        [EnableRateLimiting("Concurrency")]
+        [EnableRateLimiting("Concurrency")] 
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
             #region 记录访问
@@ -284,7 +285,7 @@ namespace ModsAPI.Controllers
                 }
             }
             catch (Exception ex)
-            {
+            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
                 return new ResultEntity<ResponseToken> { ResultCode = 500, ResultMsg = $"Token续签异常: {ex.Message}" };
             }
         }
