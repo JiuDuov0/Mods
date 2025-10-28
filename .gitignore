@@ -42,3 +42,8 @@
 /Redis/bin/Debug/net10.0
 /Service/bin/Debug/net10.0
 /ModsAPI/bin/Debug/net10.0
+/Service/bin/Release/net10.0
+/Redis/bin/Release/net10.0
+/ModsAPI/bin/Release/net10.0
+/Entity/bin/Release/net10.0
+/EF/bin/Release/net10.0
