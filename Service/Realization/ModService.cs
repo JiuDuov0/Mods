@@ -400,7 +400,7 @@ namespace Service.Realization
                     .Where(x => x.SoftDeleted == false)
                     .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
                     .FirstOrDefaultAsync(x => x.ModId == ModId);
-                await _IRedisManageService.SetAsync($"ModDetail:{entity.ModId}", entity, new TimeSpan(12, 0, 0), 1);
+                await _IRedisManageService.SetAsync($"ModDetail:{entity.ModId}", entity, new TimeSpan(0, 10, 0), 1);
             }
 
             var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
