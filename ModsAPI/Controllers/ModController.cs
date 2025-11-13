@@ -129,7 +129,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获取所有mod类型
         /// </summary>
-        /// <param name="json">{"":""}</param>
+        /// <param name="json">{"GameId":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetAllModTypes")]
         public ResultEntity<List<TypesEntity>> GetAllModTypes([FromBody] dynamic json)
@@ -606,7 +606,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获得Mod评分
         /// </summary>
-        /// <param name="json"></param>
+        /// <param name="json">{"ModId":"","UserId":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetModPointByModId")]
         [Authorize]

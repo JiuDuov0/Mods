@@ -27,130 +27,221 @@ namespace Service.Realization
 
         public List<ModListViewEntity> ModListPage(dynamic json, string UserId)
         {
-            int Skip = Convert.ToInt32(json.Skip);
-            int Take = Convert.ToInt32(json.Take);
-            var Types = ((JArray)json.Types).ToObject<List<string>>();
-            var GameId = (string)json.GameId;
-            Types.RemoveAll(x => x == null || x == "");
-            var RedisModList = _IRedisManageService.Get<List<ModListViewEntity>>($"ModListPage:{GameId}", 1);
-            var RedisUserModSubscribe = _IRedisManageService.Get<List<UserModSubscribeEntity>>($"SetUserModSubscribe:{UserId}", 1);
-            if (Skip + Take > 1000)
-            {
-                return EFGetList(json, UserId);
-            }
-            if (RedisModList == null)
-            {
-                Task.Run(() => SetModPageListToRedisAsync(GameId));
+            // 解析输入（容错 dynamic）
+            int skip = SafeToInt(json?.Skip);
+            int take = SafeToInt(json?.Take);
+            if (skip < 0) skip = 0;
+            if (take <= 0) take = 10;
+            string gameId = (string?)json?.GameId ?? string.Empty;
+            string search = (string?)json?.Search ?? string.Empty;
+            var types = ExtractTypes(json?.Types);
 
-                return EFGetList(json, UserId);
-            }
-            if (!string.IsNullOrWhiteSpace((string)json.Search))
+            bool canUseRedis = string.IsNullOrWhiteSpace(search)
+                               && types.Count == 0
+                               && (skip + take) <= 1000
+                               && !string.IsNullOrWhiteSpace(gameId);
+
+            // 尝试读取缓存
+            List<ModListViewEntity>? cachedBase = canUseRedis
+                ? _IRedisManageService.Get<List<ModListViewEntity>>($"ModListPage:{gameId}", 1)
+                : null;
+
+            // 用户订阅缓存（可选）
+            List<UserModSubscribeEntity>? cachedUserSubs = !string.IsNullOrWhiteSpace(UserId)
+                ? _IRedisManageService.Get<List<UserModSubscribeEntity>>($"SetUserModSubscribe:{UserId}", 1)
+                : null;
+
+            if (cachedBase == null && canUseRedis)
             {
-                return EFGetList(json, UserId);
+                // 无阻塞预热缓存
+                _ = EnsureModListCacheAsync(gameId);
             }
-            if (Types.Count > 0)
+
+            if (cachedBase != null && canUseRedis)
             {
-                return EFGetList(json, UserId);
+                return SliceFromRedis(cachedBase, skip, take, UserId, cachedUserSubs);
             }
-            return ModPageListRedis(RedisModList, json, UserId, RedisUserModSubscribe, Types).Result;
+
+            // 走数据库查询
+            return QueryFromEF(gameId, skip, take, types, search, UserId);
         }
 
-        private List<ModListViewEntity> EFGetList(dynamic json, string UserId)
+        #region 内部方法
+
+        private List<ModListViewEntity> QueryFromEF(string gameId, int skip, int take, List<string> types, string search, string userId)
         {
-            var task = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).UserModSubscribeEntity.Where(x => x.UserId == UserId).ToListAsync();
-            int Skip = Convert.ToInt32(json.Skip);
-            int Take = Convert.ToInt32(json.Take);
-            var Types = ((JArray)json.Types).ToObject<List<string>>();//Newtonsoft.Json纯纯的勾失
-            Types.RemoveAll(x => x == null || x == "");
-            IQueryable<ModEntity> Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModTypeEntities).ThenInclude(x => x.Types);
-            #region 条件
-            Context = Context.Where(x => x.SoftDeleted == false);
-            if (!string.IsNullOrWhiteSpace((string)json.Search))
-            {
-                string Search = json.Search;
-                Context = Context.Where(x => x.Name.Contains(Search));
-            }
-            if (Types.Count > 0)
-            {
-                foreach (var item in Types)
-                {
-                    Context = Context.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
-                }
-            }
-            var GameId = (string)json.GameId;
-            Context = Context.Where(x =>
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
-            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) && x.GameId == GameId);
-            #endregion
-            var list = Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToList();
-            var Subscribes = task.Result;
-            var PageList = new List<ModListViewEntity>();
-            foreach (var item in list)
-            {
-                var TypesList = new List<ModTypesListViewEntity>();
-                foreach (var item0 in item.ModTypeEntities)
-                {
-                    TypesList.Add(new ModTypesListViewEntity() { TypesId = item0.TypesId, TypeName = item0.Types.TypeName });
-                }
-                PageList.Add(new ModListViewEntity() { ModId = item.ModId, Name = item.Name, PicUrl = item.PicUrl, ModTypeEntities = TypesList, IsMySubscribe = Subscribes.Any(x => x.ModId == item.ModId) });
-            }
-            return PageList;
-        }
+            var ctx = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
 
-        private async Task<List<ModListViewEntity>> ModPageListRedis(List<ModListViewEntity> mods, dynamic json, string UserId, List<UserModSubscribeEntity> userModSubscribeEntities, List<string> Types)
-        {
-            if (userModSubscribeEntities == null)
-            {
-                userModSubscribeEntities = await SetUserModSubscribeToRedisAsync(UserId);
-            }
-            int Skip = Convert.ToInt32(json.Skip);
-            int Take = Convert.ToInt32(json.Take);
-            var query = mods.Where(x => { return true; });
-            #region 条件
-            if (!string.IsNullOrWhiteSpace((string)json.Search))
-            {
-                string Search = json.Search;
-                query = query.Where(x => x.Name.Contains(Search));
-            }
-            if (Types.Count > 0)
-            {
-                foreach (var item in Types)
-                {
-                    query = query.Where(x => x.ModTypeEntities.Any(y => y.TypesId == item));
-                }
-            }
-            #endregion
-            var list = query.Skip(Skip).Take(Take).ToList();
+            IQueryable<ModEntity> query = ctx.ModEntity
+                .Where(m => !m.SoftDeleted && m.GameId == gameId)
+                .Where(m =>
+                    m.ModVersionEntities.Any(v => v.ApproveModVersionEntity.Status == "20") ||
+                    m.ModVersionEntities.Any(v => v.Status == "20"));
 
-            foreach (var item in list)
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                if (userModSubscribeEntities.Where(x => x.ModId == item.ModId).Count() > 0)
+                query = query.Where(m => m.Name.Contains(search));
+            }
+
+            // AND 语义：每个类型都必须存在
+            if (types.Count > 0)
+            {
+                foreach (var t in types)
                 {
-                    item.IsMySubscribe = true;
+                    query = query.Where(m => m.ModTypeEntities.Any(mt => mt.TypesId == t));
                 }
             }
 
+            // 投影：避免过度 Include 导致笛卡尔乘积
+            var projected = query
+                .OrderByDescending(m => m.DownloadCount)
+                .ThenBy(m => m.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(m => new
+                {
+                    m.ModId,
+                    m.Name,
+                    m.PicUrl,
+                    Types = m.ModTypeEntities.Select(mt => new { mt.TypesId, TypeName = mt.Types.TypeName }),
+                    Avg = m.ModPointEntities.Any(p => p.Point.HasValue)
+                        ? Math.Round(m.ModPointEntities.Where(p => p.Point.HasValue).Average(p => p.Point!.Value), 2)
+                        : (double?)null,
+                    IsSub = !string.IsNullOrWhiteSpace(userId) &&
+                            m.UserModSubscribeEntities.Any(s => s.UserId == userId)
+                })
+                .ToList();
 
+            var list = new List<ModListViewEntity>(projected.Count);
+            foreach (var m in projected)
+            {
+                list.Add(new ModListViewEntity
+                {
+                    ModId = m.ModId,
+                    Name = m.Name,
+                    PicUrl = m.PicUrl,
+                    ModTypeEntities = m.Types.Select(t => new ModTypesListViewEntity
+                    {
+                        TypesId = t.TypesId,
+                        TypeName = t.TypeName
+                    }).ToList(),
+                    IsMySubscribe = m.IsSub,
+                    AVGPoint = m.Avg
+                });
+            }
             return list;
         }
-        private async Task SetModPageListToRedisAsync(string GameId)
+
+        private List<ModListViewEntity> SliceFromRedis(List<ModListViewEntity> cached, int skip, int take, string userId, List<UserModSubscribeEntity>? subs)
         {
-            var list = await _IDbContextServices.CreateContext(ReadOrWriteEnum.Read).ModEntity.Include(x => x.ModVersionEntities).ThenInclude(x => x.ApproveModVersionEntity).Include(x => x.ModTypeEntities).ThenInclude(x => x.Types).Where(x => x.SoftDeleted == false).Where(x =>
-            (x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
-            x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString())) && x.GameId == GameId)
-                .OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Take(1000).ToListAsync();
-            var PageList = new List<ModListViewEntity>();
-            foreach (var item in list)
+            var slice = cached.Skip(skip).Take(take).ToList();
+            if (string.IsNullOrWhiteSpace(userId) || slice.Count == 0)
+                return slice;
+
+            HashSet<string>? subSet = subs != null
+                ? new HashSet<string>(subs.Where(s => !string.IsNullOrWhiteSpace(s.ModId)).Select(s => s.ModId!))
+                : null;
+
+            if (subSet != null)
             {
-                var TypesList = new List<ModTypesListViewEntity>();
-                foreach (var item0 in item.ModTypeEntities)
+                foreach (var m in slice)
                 {
-                    TypesList.Add(new ModTypesListViewEntity() { TypesId = item0.TypesId, TypeName = item0.Types.TypeName });
+                    if (m.ModId != null && subSet.Contains(m.ModId))
+                        m.IsMySubscribe = true;
                 }
-                PageList.Add(new ModListViewEntity() { ModId = item.ModId, Name = item.Name, PicUrl = item.PicUrl, ModTypeEntities = TypesList });
             }
-            await _IRedisManageService.SetAsync($"ModListPage:{GameId}", PageList, new TimeSpan(0, 30, 0), 1);
+            else
+            {
+                // 若订阅缓存不存在，避免错误标记，保持默认 false/null
+            }
+
+            return slice;
         }
+
+        private async Task EnsureModListCacheAsync(string gameId)
+        {
+            if (string.IsNullOrWhiteSpace(gameId)) return;
+            // 双检：避免高并发重复构建
+            if (_IRedisManageService.Get<List<ModListViewEntity>>($"ModListPage:{gameId}", 1) != null)
+                return;
+
+            var ctx = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+
+            var baseQuery = ctx.ModEntity
+                .Where(m => !m.SoftDeleted && m.GameId == gameId)
+                .Where(m =>
+                    m.ModVersionEntities.Any(v => v.ApproveModVersionEntity.Status == "20") ||
+                    m.ModVersionEntities.Any(v => v.Status == "20"))
+                .OrderByDescending(m => m.DownloadCount)
+                .ThenBy(m => m.CreatedAt)
+                .Take(1000)
+                .Select(m => new
+                {
+                    m.ModId,
+                    m.Name,
+                    m.PicUrl,
+                    Types = m.ModTypeEntities.Select(mt => new { mt.TypesId, TypeName = mt.Types.TypeName }),
+                    Avg = m.ModPointEntities.Any(p => p.Point.HasValue)
+                        ? Math.Round(m.ModPointEntities.Where(p => p.Point.HasValue).Average(p => p.Point!.Value), 2)
+                        : (double?)null
+                });
+
+            var raw = await baseQuery.ToListAsync();
+            var list = new List<ModListViewEntity>(raw.Count);
+            foreach (var m in raw)
+            {
+                list.Add(new ModListViewEntity
+                {
+                    ModId = m.ModId,
+                    Name = m.Name,
+                    PicUrl = m.PicUrl,
+                    ModTypeEntities = m.Types.Select(t => new ModTypesListViewEntity
+                    {
+                        TypesId = t.TypesId,
+                        TypeName = t.TypeName
+                    }).ToList(),
+                    // 缓存不存订阅状态（与用户相关），仅保留平均分
+                    AVGPoint = m.Avg
+                });
+            }
+
+            await _IRedisManageService.SetAsync($"ModListPage:{gameId}", list, TimeSpan.FromMinutes(30), 1);
+        }
+
+        private static List<string> ExtractTypes(dynamic? dyn)
+        {
+            try
+            {
+                if (dyn == null) return new List<string>();
+                if (dyn is JArray ja)
+                {
+                    return ja.ToObject<List<string>>()!
+                             .Where(x => !string.IsNullOrWhiteSpace(x))
+                             .Distinct()
+                             .ToList();
+                }
+                return new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        private static int SafeToInt(object? v)
+        {
+            if (v == null) return 0;
+            try
+            {
+                if (v is int i) return i;
+                if (v is long l) return (int)l;
+                if (v is string s && int.TryParse(s, out var r)) return r;
+                return Convert.ToInt32(v);
+            }
+            catch { return 0; }
+        }
+
+        #endregion
 
         private async Task<List<UserModSubscribeEntity>> SetUserModSubscribeToRedisAsync(string UserId)
         {

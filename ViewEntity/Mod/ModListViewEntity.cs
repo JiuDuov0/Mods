@@ -34,5 +34,10 @@ namespace ViewEntity.Mod
         /// 是否订阅了本mod
         /// </summary>
         public bool? IsMySubscribe { get; set; }
+
+        /// <summary>
+        /// 平均分
+        /// </summary>
+        public double? AVGPoint { get; set; }
     }
 }

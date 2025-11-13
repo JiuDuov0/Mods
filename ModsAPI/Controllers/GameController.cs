@@ -38,7 +38,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 获取游戏列表
         /// </summary>
-        /// <param name="json"></param>
+        /// <param name="json">{"Skip":"0","Take":"10"}</param>
         /// <returns></returns>
         [HttpPost(Name = "GetGamePageList")]
         [EnableRateLimiting("Concurrency")]

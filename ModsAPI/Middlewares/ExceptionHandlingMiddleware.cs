@@ -1,6 +1,7 @@
 ﻿using Entity;
 using Newtonsoft.Json;
 using System.Net;
+using System.Diagnostics;
 
 namespace ModsAPI.Middlewares
 {
@@ -21,69 +22,115 @@ namespace ModsAPI.Middlewares
         /// <summary>
         /// 执行中间件
         /// </summary>
-        /// <param name="httpContext"></param>
-        /// <returns></returns>
         public async Task InvokeAsync(HttpContext httpContext)
         {
             try
             {
-                await _next(httpContext); //要么在中间件中处理，要么被传递到下一个中间件中去
+                await _next(httpContext);
             }
             catch (Exception ex)
             {
-                await HandleExceptionAsync(httpContext, ex); // 捕获异常了 在HandleExceptionAsync中处理
+                await HandleExceptionAsync(httpContext, ex);
             }
         }
 
         /// <summary>
-        /// 异步处理异常
+        /// 异步处理异常（完善版）
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="exception"></param>
-        /// <returns></returns>
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            context.Response.ContentType = "application/json";  // 返回json 类型
+            var traceId = context.TraceIdentifier;
+            context.Response.ContentType = "application/json";
+            context.Response.Headers["X-Trace-Id"] = traceId;
+
+            var env = context.RequestServices.GetService<IHostEnvironment>();
+            var path = context.Request?.Path.Value;
+            var method = context.Request?.Method;
+
+            // 记录结构化日志
+            _logger.LogError(exception,
+                "Unhandled exception: {Message} | Method:{Method} Path:{Path} TraceId:{TraceId}",
+                exception.Message, method, path, traceId);
+
             var response = context.Response;
-            var errorResponse = new ResultEntity<string>()
+            var error = new ResultEntity<string>()
             {
-                ResultCode = 500,
                 ResultData = string.Empty
-            };  // 自定义的异常错误信息类型
+            };
+
+            // 根据异常类型设置 HTTP 状态码与业务消息
             switch (exception)
             {
-                case ApplicationException ex:
-                    if (ex.Message.Contains("Invalid token"))
-                    {
-                        response.StatusCode = (int)HttpStatusCode.Forbidden;
-                        errorResponse.ResultMsg = ex.Message;
-                        break;
-                    }
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    errorResponse.ResultMsg = ex.Message;
+                case ApplicationException ex when ex.Message.Contains("Invalid token", StringComparison.OrdinalIgnoreCase):
+                    response.StatusCode = (int)HttpStatusCode.Forbidden;
+                    error.ResultMsg = ex.Message;
                     break;
+
+                case UnauthorizedAccessException:
+                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    error.ResultMsg = "未授权的访问。";
+                    break;
+
                 case KeyNotFoundException ex:
                     response.StatusCode = (int)HttpStatusCode.NotFound;
-                    errorResponse.ResultMsg = ex.Message;
+                    error.ResultMsg = string.IsNullOrWhiteSpace(ex.Message) ? "资源不存在。" : ex.Message;
                     break;
-                case JsonReaderException ex:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    errorResponse.ResultMsg = "JSON 格式不正确";
-                    break;
-                case JsonSerializationException ex:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    errorResponse.ResultMsg = "JSON 字符串中的数据类型与目标对象的属性类型不匹配";
-                    break;
+
                 case ArgumentNullException ex:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    errorResponse.ResultMsg = "JSON为空";
+                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    error.ResultMsg = $"参数不能为空: {ex.ParamName}";
                     break;
+
+                case ArgumentException ex:
+                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    error.ResultMsg = string.IsNullOrWhiteSpace(ex.Message) ? "参数错误。" : ex.Message;
+                    break;
+
+                case JsonReaderException:
+                case JsonSerializationException:
+                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    error.ResultMsg = "JSON 解析/序列化错误。";
+                    break;
+
+                case TimeoutException:
+                    response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
+                    error.ResultMsg = "操作超时。";
+                    break;
+
+
+
                 default:
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    errorResponse.ResultMsg = "Internal Server errors." + exception.Message;
+                    error.ResultMsg = "Internal Server Error.";
                     break;
+            } 
+
+            error.ResultCode = response.StatusCode;
+
+            // 在开发环境返回更多调试信息（避免生产环境泄露细节）
+            if (env?.IsDevelopment() == true)
+            {
+                error.ResultData = JsonConvert.SerializeObject(new
+                {
+                    exception = exception.GetType().Name,
+                    message = exception.Message,
+                    stackTrace = exception.StackTrace,
+                    traceId,
+                    path,
+                    method
+                });
             }
-            await context.Response.WriteAsync(JsonConvert.SerializeObject(errorResponse));
+            else
+            {
+                // 生产环境仅附加必要追踪标识
+                error.ResultData = JsonConvert.SerializeObject(new
+                {
+                    traceId
+                });
+            }
+
+            var outputJson = JsonConvert.SerializeObject(error);
+            await context.Response.WriteAsync(outputJson);
         }
     }
 }
