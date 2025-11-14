@@ -9,17 +9,15 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Service.Interface;
 using System;
-using System.Runtime.CompilerServices;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 using ViewEntity.Mod;
 
 namespace ModsAPI.Controllers
 {
     /// <summary>
-    /// Mod相关API
+    /// Mod 相关 API（创建 / 列表 / 详情 / 类型 / 版本 / 评分 / 订阅）
+    /// 返回统一使用 ResultEntity，成功默认 ResultCode=200。
     /// </summary>
     [Route("api/[controller]/[action]")]
     [ApiController]
@@ -32,16 +30,13 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly HttpClient _httpClient;
 
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="iModService"></param>
-        /// <param name="iAPILogService"></param>
-        /// <param name="iHttpContextAccessor"></param>
-        /// <param name="jwtHelper"></param>
-        /// <param name="iTypesService"></param>
-        /// <param name="httpClient"></param>
-        public ModController(IModService iModService, IAPILogService iAPILogService, IHttpContextAccessor iHttpContextAccessor, JwtHelper jwtHelper, ITypesService iTypesService, HttpClient httpClient)
+        public ModController(
+            IModService iModService,
+            IAPILogService iAPILogService,
+            IHttpContextAccessor iHttpContextAccessor,
+            JwtHelper jwtHelper,
+            ITypesService iTypesService,
+            HttpClient httpClient)
         {
             _IModService = iModService;
             _IAPILogService = iAPILogService;
@@ -54,686 +49,631 @@ namespace ModsAPI.Controllers
                 _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             }
         }
+
+        #region 辅助方法
         /// <summary>
-        /// 分页获取Mod列表
+        /// 从请求头中获取 UserId（无或无效返回 null）
         /// </summary>
-        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
-        /// <returns></returns>
+        private string? GetUserId()
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            return string.IsNullOrWhiteSpace(token) ? null : _JwtHelper.GetTokenStr(token, "UserId");
+        }
+
+        /// <summary>
+        /// 安全反序列化 dynamic JSON
+        /// </summary>
+        private dynamic ParseJson(dynamic json)
+        {
+            if (json == null) return new JObject();
+            try
+            {
+                return JsonConvert.DeserializeObject(Convert.ToString(json));
+            }
+            catch
+            {
+                return new JObject();
+            }
+        }
+
+        /// <summary>
+        /// 安全转换为 int，失败返回 0
+        /// </summary>
+        private int ToInt(object? val)
+        {
+            if (val == null) return 0;
+            try
+            {
+                if (val is int i) return i;
+                if (val is long l) return (int)l;
+                if (val is string s && int.TryParse(s, out var r)) return r;
+                return Convert.ToInt32(val);
+            }
+            catch { return 0; }
+        }
+        #endregion
+
+        /// <summary>
+        /// 分页获取 Mod 列表（支持搜索 / 类型筛选 / 订阅标记 / 平均分）
+        /// </summary>
+        /// <param name="json">
+        /// JSON:
+        /// {
+        ///   "Skip":"0",
+        ///   "Take":"10",
+        ///   "Search":"",
+        ///   "Types":["typeId1","typeId2"],
+        ///   "GameId":"gameId"
+        /// }
+        /// </param>
+        /// <returns>ResultEntity(List(ModListViewEntity))</returns>
         [HttpPost(Name = "ModListPage")]
         public ResultEntity<List<ModListViewEntity>> ModListPage([FromBody] dynamic json)
         {
-            #region 记录访问 不确定是否含有Token
-            string UserId = null;
-            if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()))
-            {
-                var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-                UserId = _JwtHelper.GetTokenStr(token, "UserId");
-                _IAPILogService.WriteLogAsync("ModController/ModListPage", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            }
-            else
-            {
-                _IAPILogService.WriteLogAsync("ModController/ModListPage", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            }
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/ModListPage", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultMsg = "无Take" };
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Take" };
             }
-            #endregion
-            var list = _IModService.ModListPage(json, UserId);
-            //GC.Collect();
-            return new ResultEntity<List<ModListViewEntity>> { ResultData = list };
+
+            var list = _IModService.ModListPage(json, userId);
+            return new ResultEntity<List<ModListViewEntity>> { ResultCode = 200, ResultData = list };
         }
 
         /// <summary>
-        /// 分页搜索Mod列表
+        /// 分页搜索 Mod（只用于搜索场景，不带缓存平均分逻辑）
         /// </summary>
-        /// <param name="json">{"Skip":"0","Take":"10","Search":""}</param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {"Skip":"0","Take":"10","Search":"关键字"}
+        /// </param>
+        /// <returns>ResultEntity(List(ModEntity))</returns>
         [HttpPost(Name = "ModListPageSearch")]
         public async Task<ResultEntity<List<ModEntity>?>> ModListPageSearch([FromBody] dynamic json)
         {
-            #region 记录访问 不确定是否含有Token
-            string? UserId = null;
-            if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "")))
-            {
-                var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-                UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            }
-            await _IAPILogService.WriteLogAsync($"{GetType().Name}/ModListPageSearch", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            await _IAPILogService.WriteLogAsync("ModController/ModListPageSearch", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.Skip))
             {
-                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Skip" };
+                return new ResultEntity<List<ModEntity>?> { ResultCode = 400, ResultMsg = "无Skip" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Take))
             {
-                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Take" };
+                return new ResultEntity<List<ModEntity>?> { ResultCode = 400, ResultMsg = "无Take" };
             }
             if (string.IsNullOrWhiteSpace((string)json.Search))
             {
-                return new ResultEntity<List<ModEntity>?>() { ResultCode = 400, ResultMsg = "无Search" };
+                return new ResultEntity<List<ModEntity>?> { ResultCode = 400, ResultMsg = "无Search" };
             }
-            #endregion
-            return new ResultEntity<List<ModEntity>?>() { ResultData = await _IModService.ModListPageSearch((int)json.Skip, (int)json.Take, (string)json.Search) };
+
+            int skip = ToInt(json.Skip);
+            int take = ToInt(json.Take);
+            var result = await _IModService.ModListPageSearch(skip, take, (string)json.Search);
+            return new ResultEntity<List<ModEntity>?> { ResultCode = 200, ResultData = result };
         }
 
         /// <summary>
-        /// 获取所有mod类型
+        /// 获取所有 Mod 类型
         /// </summary>
-        /// <param name="json">{"GameId":""}</param>
-        /// <returns></returns>
+        /// <param name="json">{"GameId":"gameId"}</param>
+        /// <returns>ResultEntity(List(TypesEntity))</returns>
         [HttpPost(Name = "GetAllModTypes")]
         public ResultEntity<List<TypesEntity>> GetAllModTypes([FromBody] dynamic json)
         {
-            #region 记录访问 不确定是否含有Token
-            string UserId = null;
-            if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()))
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            json = ParseJson(json);
+            var gameId = (string)json.GameId;
+            if (string.IsNullOrWhiteSpace(gameId))
             {
-                var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-                UserId = _JwtHelper.GetTokenStr(token, "UserId");
-                _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
+                return new ResultEntity<List<TypesEntity>> { ResultCode = 400, ResultMsg = "无GameId" };
             }
-            else
-            {
-                _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            }
-            #endregion
-            return new ResultEntity<List<TypesEntity>>() { ResultData = _ITypesService.GetTypesListAsync((string)json.GameId).Result };
+
+            var types = _ITypesService.GetTypesListAsync(gameId).Result;
+            return new ResultEntity<List<TypesEntity>> { ResultCode = 200, ResultData = types };
         }
 
         /// <summary>
-        /// 创建mod,并创建版本,创建mod依赖
+        /// 创建 Mod（附首版本、类型、依赖、自动获取封面）
         /// </summary>
-        /// <param name="json">{"Name":"","Description":"","VideoUrl":"","ModVersionEntities":[{"VersionNumber":"","Description":""}]}</param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {
+        ///  "Name":"",
+        ///  "Description":"",
+        ///  "VideoUrl":"BV号(可选)",
+        ///  "PicUrl":"",
+        ///  "GameId":"",
+        ///  "ModVersionEntities":[{"VersionNumber":"1.0.0","Description":"描述"}],
+        ///  "ModTypeEntities":[{"TypesId":"xxx"}],
+        ///  "ModDependenceEntities":[{"DependenceModVersionId":"xxx"}]
+        /// }
+        /// </param>
+        /// <returns>ResultEntity(ModEntity)</returns>
         [HttpPost(Name = "CreateMod")]
         [Authorize]
         public async Task<ResultEntity<ModEntity>> CreateMod([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/CreateMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/CreateMod", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
 
-            #region 验证
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.Name))
-            {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无Mod名称" };
-            }
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无Mod名称" };
             if (string.IsNullOrWhiteSpace((string)json.Description))
-            {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无Mod描述" };
-            }
-            if (string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].VersionNumber))
-            {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无版本号" };
-            }
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无Mod描述" };
+            if (json.ModVersionEntities == null ||
+                string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].VersionNumber))
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无版本号" };
             if (string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].Description))
-            {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无版本描述" };
-            }
-            #endregion
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无版本描述" };
 
-            var ModId = Guid.NewGuid().ToString();
-            var ModVersion = new ModVersionEntity()
+            var modId = Guid.NewGuid().ToString();
+            var version = new ModVersionEntity
             {
                 VersionId = Guid.NewGuid().ToString(),
-                ModId = ModId,
+                ModId = modId,
                 VersionNumber = (string)json.ModVersionEntities[0].VersionNumber,
-                Description = (string)json.ModVersionEntities[0].Description,
+                Description = ((string)json.ModVersionEntities[0].Description).Replace("\n", "</br>"),
                 CreatedAt = DateTime.Now
             };
-            ModVersion.Description = ModVersion.Description.Replace("\n", "</br>");
-            var ListTypes = new List<ModTypeEntity>();
-            if (((JArray)json.ModTypeEntities).HasValues)
+
+            var typesList = new List<ModTypeEntity>();
+            if (json.ModTypeEntities is JArray arr1 && arr1.HasValues)
             {
-                ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
+                typesList = arr1.ToObject<List<ModTypeEntity>>() ?? new List<ModTypeEntity>();
             }
-            var ModDependenceList = new List<ModDependenceEntity>();
-            if (((JArray)json.ModDependenceEntities).HasValues)
+
+            var dependenceList = new List<ModDependenceEntity>();
+            if (json.ModDependenceEntities is JArray arr2 && arr2.HasValues)
             {
-                ModDependenceList = ((JArray)json.ModDependenceEntities).ToObject<List<ModDependenceEntity>>();
-                ModDependenceList.ForEach(x => { x.ModId = ModId; x.ModDependenceId = Guid.NewGuid().ToString(); });
+                dependenceList = arr2.ToObject<List<ModDependenceEntity>>() ?? new List<ModDependenceEntity>();
+                dependenceList.ForEach(x =>
+                {
+                    x.ModDependenceId = Guid.NewGuid().ToString();
+                    x.ModId = modId;
+                });
             }
-            var Mod = new ModEntity()
+
+            var mod = new ModEntity
             {
-                ModId = ModId,
+                ModId = modId,
                 Name = (string)json.Name,
-                Description = (string)json.Description,
-                CreatorUserId = UserId,
+                Description = ((string)json.Description).Replace("\n", "</br>"),
+                CreatorUserId = userId,
                 CreatedAt = DateTime.Now,
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
                 GameId = (string)json.GameId,
                 DownloadCount = 0
             };
-            Mod.Description = Mod.Description.Replace("\n", "</br>");
-            #region Get方法获取视频封面信息
-            async Task<string?> GetAsync(string url, string content)
+
+            // 处理视频封面
+            if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
             {
                 try
                 {
-                    return await _httpClient.GetStringAsync(url + content);
+                    var api = $"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}";
+                    var body = await _httpClient.GetStringAsync(api);
+                    var jobj = JObject.Parse(body);
+                    var cover = jobj["data"]?["pic"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(mod.PicUrl) && !string.IsNullOrWhiteSpace(cover))
+                        mod.PicUrl = cover;
+                    mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
                 }
                 catch
                 {
-                    return null;
+                    return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "BV号不正确" };
                 }
             }
-            #endregion
-            if (!string.IsNullOrWhiteSpace(Mod.VideoUrl))
-            {
-                var res = await GetAsync($"https://api.bilibili.com/x/web-interface/view?bvid={Mod.VideoUrl}", "");
-                if (res == null)
-                {
-                    return new ResultEntity<ModEntity>() { ResultCode = 400, ResultMsg = "BV号不正确" };
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(Mod.PicUrl))
-                    {
-                        Mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
-                    }
-                }
-                Mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={Mod.VideoUrl}&autoplay=false&danmaku=false";
-            }
-            if (_IModService.AddModAndModVersion(Mod, ModVersion, ListTypes, ModDependenceList))
-            {
-                Mod.ModVersionEntities = new List<ModVersionEntity> { ModVersion };
-                return new ResultEntity<ModEntity> { ResultData = Mod };
-            }
-            return new ResultEntity<ModEntity> { ResultMsg = "创建版本失败", ResultData = null };
 
+            if (_IModService.AddModAndModVersion(mod, version, typesList, dependenceList))
+            {
+                mod.ModVersionEntities = new List<ModVersionEntity> { version };
+                return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = mod };
+            }
+            return new ResultEntity<ModEntity> { ResultCode = 500, ResultMsg = "创建版本失败" };
         }
 
         /// <summary>
-        /// Mod添加ModType
+        /// 为 Mod 批量添加类型
         /// </summary>
-        /// <param name="json">[{"ModId":"","TypesId":""},{"ModId":"","TypesId":""}]</param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// [
+        ///   {"ModId":"modId1","TypesId":"typeId1"},
+        ///   {"ModId":"modId1","TypesId":"typeId2"}
+        /// ]
+        /// </param>
+        /// <returns>ResultEntity(bool)</returns>
         [HttpPost(Name = "ModAddModType")]
         [Authorize]
         public ResultEntity<bool> ModAddModType([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/ModAddModType", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/ModAddModType", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
 
             JArray jArray = json;
-
-            #region 验证
             if (jArray == null || jArray.Count == 0)
-            {
-                return new ResultEntity<bool>() { ResultMsg = "不能为空" };
-            }
-            var ModsIdList = new List<string>();
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "不能为空" };
+
+            var modIds = new List<string>();
             foreach (JObject item in jArray)
             {
-                if (ModsIdList.FirstOrDefault(x => x == item["ModId"].ToString()) == null)
-                {
-                    ModsIdList.Add(item["ModId"].ToString());
-                }
+                var mid = item["ModId"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(mid) && !modIds.Contains(mid))
+                    modIds.Add(mid);
             }
-            if (!_IModService.IsLoginUserMods(ModsIdList, UserId))
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "含有非本人Mod" };
-            }
-            #endregion
-            return new ResultEntity<bool>() { ResultData = _IModService.AddModTypes(jArray) };
+
+            if (!_IModService.IsLoginUserMods(modIds, userId))
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "含有非本人Mod" };
+
+            var ok = _IModService.AddModTypes(jArray);
+            return new ResultEntity<bool> { ResultCode = 200, ResultData = ok };
         }
 
         /// <summary>
-        /// 添加mod版本
+        /// 添加 Mod 版本（作者操作）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {"ModId":"modId","VersionNumber":"1.0.1","Description":"变更说明"}
+        /// </param>
+        /// <returns>ResultEntity(ModVersionEntity)</returns>
         [HttpPost(Name = "ModAddVersion")]
         [Authorize]
         public ResultEntity<ModVersionEntity> ModAddVersion([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/ModAddVersion", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/ModAddVersion", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
-            }
+                return new ResultEntity<ModVersionEntity> { ResultCode = 400, ResultMsg = "无ModId" };
             if (string.IsNullOrWhiteSpace((string)json.VersionNumber))
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无VersionNumber" };
-            }
+                return new ResultEntity<ModVersionEntity> { ResultCode = 400, ResultMsg = "无VersionNumber" };
             if (string.IsNullOrWhiteSpace((string)json.Description))
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "无Description" };
-            }
-            if (!_IModService.IsLoginUserMods(new List<string>() { (string)json.ModId }, UserId))
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "含有非本人Mod" };
-            }
-            #endregion
-            var entity = new ModVersionEntity()
+                return new ResultEntity<ModVersionEntity> { ResultCode = 400, ResultMsg = "无Description" };
+
+            if (!_IModService.IsLoginUserMods(new List<string> { (string)json.ModId }, userId))
+                return new ResultEntity<ModVersionEntity> { ResultCode = 400, ResultMsg = "含有非本人Mod" };
+
+            var entity = new ModVersionEntity
             {
                 VersionId = Guid.NewGuid().ToString(),
                 ModId = (string)json.ModId,
                 VersionNumber = (string)json.VersionNumber,
-                Description = (string)json.Description,
+                Description = ((string)json.Description).Replace("\n", "</br>"),
                 CreatedAt = DateTime.Now
             };
-            entity.Description = entity.Description.Replace("\n", "</br>");
+
             if (_IModService.AddModVersion(entity))
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultData = entity };
-            }
-            else
-            {
-                return new ResultEntity<ModVersionEntity>() { ResultCode = 400, ResultMsg = "添加失败" };
-            }
+                return new ResultEntity<ModVersionEntity> { ResultCode = 200, ResultData = entity };
+
+            return new ResultEntity<ModVersionEntity> { ResultCode = 500, ResultMsg = "添加失败" };
         }
 
         /// <summary>
-        /// 获取我创建的Mod
+        /// 获取我创建的 Mod 列表（分页）
         /// </summary>
-        /// <param name="json">Take=取出多少数据，Skip=跳过多少数据，Search=查询框，Types=类型  json示例{"Skip":"0","Take":"10","Search":"","Types":["",""]}</param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {"Skip":"0","Take":"10","Search":"","Types":["t1","t2"],"GameId":"gameId"}
+        /// </param>
+        /// <returns>ResultEntity(List(ModListViewEntity))</returns>
         [HttpPost(Name = "GetMyCreateMod")]
         [Authorize]
         public ResultEntity<List<ModListViewEntity>> GetMyCreateMod([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/GetMyCreateMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetMyCreateMod", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.Skip))
-            {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
-            }
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Skip" };
             if (string.IsNullOrWhiteSpace((string)json.Take))
-            {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
-            }
-            #endregion
-            return new ResultEntity<List<ModListViewEntity>> { ResultData = _IModService.GetMyCreateMod(UserId, json) };
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Take" };
+
+            var data = _IModService.GetMyCreateMod(userId, json);
+            return new ResultEntity<List<ModListViewEntity>> { ResultCode = 200, ResultData = data };
         }
 
         /// <summary>
-        /// 获取Mod详细信息（展示，非作者）
+        /// 获取 Mod 详情（普通用户视角：仅已审批且有文件的版本）
         /// </summary>
-        /// <param name="json">{"ModId":""}</param>
-        /// <returns></returns>
+        /// <param name="json">{"ModId":"modId"}</param>
+        /// <returns>ResultEntity(ModEntity)</returns>
         [HttpPost(Name = "ModDetail")]
         public async Task<ResultEntity<ModEntity>> ModDetail([FromBody] dynamic json)
         {
-            #region 记录访问 不确定是否含有Token
-            string UserId = null;
-            string token = null;
-            string UserRoleIDs = null;
-            if (!string.IsNullOrWhiteSpace(Request.Headers["Authorization"].FirstOrDefault()))
-            {
-                token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-                UserId = _JwtHelper.GetTokenStr(token, "UserId");
-                UserRoleIDs = _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
-                _IAPILogService.WriteLogAsync("ModController/ModDetail", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            }
-            else
-            {
-                _IAPILogService.WriteLogAsync("ModController/ModDetail", "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            }
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+            string? roles = string.IsNullOrWhiteSpace(token) ? null : _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
+
+            _ = _IAPILogService.WriteLogAsync("ModController/ModDetail", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无ModId" };
+
+            var modId = (string)json.ModId;
+            if (!string.IsNullOrWhiteSpace(roles) && (roles.Contains("Developer") || roles.Contains("Auditors")))
             {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
+                var full = await _IModService.ModDetailAllModVersion(userId, modId);
+                return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = full };
             }
-            #endregion
-            //根据角色返回不同的内容
-            if (!string.IsNullOrWhiteSpace(UserRoleIDs) && (UserRoleIDs.Contains("Developer") || UserRoleIDs.Contains("Auditors")))
-            {
-                return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetailAllModVersion(UserId, (string)json.ModId) };
-            }
-            return new ResultEntity<ModEntity> { ResultData = await _IModService.ModDetail(UserId, (string)json.ModId) };
+            var entity = await _IModService.ModDetail(userId, modId);
+            return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = entity };
         }
 
         /// <summary>
-        /// 获取Mod详细信息（编辑，作者）
+        /// 获取 Mod 编辑详情（作者视角，包含未发布版本）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">{"ModId":"modId"}</param>
+        /// <returns>ResultEntity(ModEntity)</returns>
         [HttpPost(Name = "GetModDetailUpdate")]
         [Authorize]
         public ResultEntity<ModEntity> GetModDetailUpdate([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/GetModDetailUpdate", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetModDetailUpdate", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<ModEntity>() { ResultMsg = "无ModId" };
-            }
-            #endregion
-            var entity = _IModService.ModDetailUpd(UserId, (string)json.ModId);
-            entity.Description = entity.Description.Replace("</br>", "\n");
+                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无ModId" };
+
+            var entity = _IModService.ModDetailUpd(userId, (string)json.ModId);
             if (entity == null)
-            {
                 return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "非本人Mod！" };
-            }
-            return new ResultEntity<ModEntity> { ResultData = entity };
+
+            entity.Description = entity.Description?.Replace("</br>", "\n");
+            return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = entity };
         }
 
         /// <summary>
-        /// 更新Mod信息
+        /// 更新 Mod 基本信息（描述 / 视频 / 封面 / 类型 / 依赖）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {
+        ///  "ModId":"",
+        ///  "Description":"",
+        ///  "VideoUrl":"",
+        ///  "PicUrl":"",
+        ///  "GameId":"",
+        ///  "ModTypeEntities":[{"TypesId":""}],
+        ///  "ModDependenceEntities":[{"DependenceModVersionId":""}]
+        /// }
+        /// </param>
+        /// <returns>ResultEntity(bool)</returns>
         [HttpPost(Name = "UpdateModInfo")]
         [Authorize]
         public ResultEntity<bool> UpdateModInfo([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            var ListTypes = new List<ModTypeEntity>();
-            if (((JArray)json.ModTypeEntities).HasValues)
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
+            var typesList = new List<ModTypeEntity>();
+            if (json.ModTypeEntities is JArray arr1 && arr1.HasValues)
+                typesList = arr1.ToObject<List<ModTypeEntity>>() ?? new List<ModTypeEntity>();
+
+            var dependenceList = new List<ModDependenceEntity>();
+            if (json.ModDependenceEntities is JArray arr2 && arr2.HasValues)
             {
-                ListTypes = ((JArray)json.ModTypeEntities).ToObject<List<ModTypeEntity>>();
+                dependenceList = arr2.ToObject<List<ModDependenceEntity>>() ?? new List<ModDependenceEntity>();
+                dependenceList.ForEach(x => x.ModDependenceId = Guid.NewGuid().ToString());
             }
-            var ModDependenceList = new List<ModDependenceEntity>();
-            if (((JArray)json.ModDependenceEntities).HasValues)
-            {
-                ModDependenceList = ((JArray)json.ModDependenceEntities).ToObject<List<ModDependenceEntity>>();
-                ModDependenceList.ForEach(x => x.ModDependenceId = Guid.NewGuid().ToString());
-            }
-            var mod = new ModEntity()
+
+            var mod = new ModEntity
             {
                 ModId = (string)json.ModId,
-                Description = (string)json.Description,
+                Description = ((string)json.Description)?.Replace("\n", "</br>"),
                 VideoUrl = (string)json.VideoUrl,
                 PicUrl = (string)json.PicUrl,
                 GameId = (string)json.GameId,
-                ModTypeEntities = ListTypes,
-                ModDependenceEntities = ModDependenceList
+                ModTypeEntities = typesList,
+                ModDependenceEntities = dependenceList
             };
-            mod.Description = mod.Description.Replace("\n", "</br>");
-            #region Get方法获取视频封面信息
-            string Get(string url, string content)
+
+            // 处理视频封面（使用注入 HttpClient 而不是 new）
+            if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json")); // 设置响应数据的ContentType
-                        return client.GetStringAsync(url + content).Result;
-                    }
+                    var body = _httpClient.GetStringAsync($"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}")
+                                          .GetAwaiter().GetResult();
+                    var cover = JObject.Parse(body)["data"]?["pic"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(mod.PicUrl) && !string.IsNullOrWhiteSpace(cover))
+                        mod.PicUrl = cover;
+                    mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
                 }
-                catch (Exception ex)
+                catch
                 {
-                    return null;
+                    return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "BV号不正确" };
                 }
-            }
-            #endregion
-            if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
-            {
-                var res = Get($"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}", "");
-                if (res == null)
-                {
-                    return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "BV号不正确" };
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(mod.PicUrl))
-                    {
-                        mod.PicUrl = JObject.Parse(res)["data"]["pic"].ToString();
-                    }
-                }
-                mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
-            }
-            var UpdateRelult = _IModService.UpdateModInfo(mod, UserId);
-            if (UpdateRelult == null)
-            {
-                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
             }
 
-            if ((bool)UpdateRelult)
-            {
-                return new ResultEntity<bool> { ResultMsg = "更新成功" };
-            }
-            else
-            {
-                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "更新失败" };
-            }
-            return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "更新失败" };
+            var updateResult = _IModService.UpdateModInfo(mod, userId);
+            if (updateResult == null)
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
+            if (updateResult == true)
+                return new ResultEntity<bool> { ResultCode = 200, ResultData = true, ResultMsg = "更新成功" };
+            return new ResultEntity<bool> { ResultCode = 500, ResultMsg = "更新失败" };
         }
 
         /// <summary>
-        /// 删除Mod
+        /// 删除 Mod（软删除）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">{"ModId":"modId"}</param>
+        /// <returns>ResultEntity(bool)</returns>
         [HttpPost(Name = "DeleteMod")]
         [Authorize]
         public ResultEntity<bool> DeleteMod([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/DeleteMod", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/DeleteMod", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModId" };
-            }
-            #endregion
-            var res = _IModService.DeleteMod((string)json.ModId, UserId);
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "无ModId" };
+
+            var res = _IModService.DeleteMod((string)json.ModId, userId);
             if (res == null)
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "非本人Mod" };
-            }
-            if ((bool)res)
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultData = true, ResultMsg = "删除成功" };
-            }
-            else
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "删除失败" };
-            }
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
+            if (res == true)
+                return new ResultEntity<bool> { ResultCode = 200, ResultData = true, ResultMsg = "删除成功" };
+            return new ResultEntity<bool> { ResultCode = 500, ResultMsg = "删除失败" };
         }
 
         /// <summary>
-        /// 添加Mod评分
+        /// 添加 Mod 评分（1~5）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">{"ModId":"modId","Point":5}</param>
+        /// <returns>ResultEntity(bool)</returns>
         [HttpPost(Name = "AddModPoint")]
         [Authorize]
         public ResultEntity<bool> AddModPoint([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/AddModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/AddModPoint", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModId" };
-            }
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "无ModId" };
             if (string.IsNullOrWhiteSpace((string)json.Point))
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无Point" };
-            }
-            #endregion
-            var entity = new ModPointEntity()
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "无Point" };
+
+            int point = ToInt(json.Point);
+            if (point < 1 || point > 5)
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "Point需在1~5之间" };
+
+            var entity = new ModPointEntity
             {
                 ModPointId = Guid.NewGuid().ToString(),
                 ModId = (string)json.ModId,
-                UserId = UserId,
-                Point = (int)json.Point
+                UserId = userId,
+                Point = point
             };
-            return new ResultEntity<bool> { ResultData = _IModService.AddModPoint(entity) };
+            var ok = _IModService.AddModPoint(entity);
+            return new ResultEntity<bool> { ResultCode = 200, ResultData = ok, ResultMsg = ok ? "评分成功" : "评分失败" };
         }
 
         /// <summary>
-        /// 获得Mod评分
+        /// 获取当前用户对某 Mod 的评分
         /// </summary>
-        /// <param name="json">{"ModId":"","UserId":""}</param>
-        /// <returns></returns>
+        /// <param name="json">{"ModId":"modId"}</param>
+        /// <returns>ResultEntity(ModPointEntity)</returns>
         [HttpPost(Name = "GetModPointByModId")]
         [Authorize]
         public ResultEntity<ModPointEntity> GetModPointByModId([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/GetModPointByModId", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetModPointByModId", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
-            }
-            #endregion
-            return new ResultEntity<ModPointEntity> { ResultData = _IModService.GetModPointEntity((string)json.ModId, UserId) };
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "无ModId" };
+
+            var point = _IModService.GetModPointEntity((string)json.ModId, userId);
+            return new ResultEntity<ModPointEntity> { ResultCode = 200, ResultData = point };
         }
 
         /// <summary>
-        /// 更新Mod评分
+        /// 更新评分（只能修改自己的评分，分值 1~5）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {"ModPointId":"id","ModId":"modId","Point":"5","UserId":"当前用户Id"}
+        /// </param>
+        /// <returns>ResultEntity(ModPointEntity)</returns>
         [HttpPost(Name = "UpdateModPoint")]
         [Authorize]
         public ResultEntity<ModPointEntity> UpdateModPoint([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/UpdateModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/UpdateModPoint", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModPointId))
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModPointId" };
-            }
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "无ModPointId" };
             if (string.IsNullOrWhiteSpace((string)json.ModId))
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无ModId" };
-            }
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "无ModId" };
             if (string.IsNullOrWhiteSpace((string)json.Point))
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "无Point" };
-            }
-            int point = 0;
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "无Point" };
+
+            int point;
             if (!int.TryParse((string)json.Point, out point))
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "Point不是数字" };
-            }
-            if (point > 5)
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "Point不大于5" };
-            }
-            #endregion
-            var entity = new ModPointEntity()
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "Point不是数字" };
+            if (point < 1 || point > 5)
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "Point需在1~5之间" };
+
+            var entity = new ModPointEntity
             {
                 ModPointId = (string)json.ModPointId,
-                UserId = (string)json.UserId,
+                UserId = (string)json.UserId, // 前端传入用于校验
                 ModId = (string)json.ModId,
-                Point = (int)json.Point
+                Point = point
             };
-            var result = _IModService.UpdateModPointEntity(entity);
-            if (result == null)
-            {
-                return new ResultEntity<ModPointEntity>() { ResultCode = 400, ResultMsg = "更新失败" };
-            }
-            return new ResultEntity<ModPointEntity>() { ResultData = result };
+
+            var updated = _IModService.UpdateModPointEntity(entity);
+            if (updated == null)
+                return new ResultEntity<ModPointEntity> { ResultCode = 400, ResultMsg = "更新失败" };
+
+            return new ResultEntity<ModPointEntity> { ResultCode = 200, ResultData = updated };
         }
 
         /// <summary>
-        /// 删除Mod评分
+        /// 删除评分（当前用户 / 或管理控制）
         /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
+        /// <param name="json">{"ModPointId":"scoreId"}</param>
+        /// <returns>ResultEntity(bool)</returns>
         [HttpPost(Name = "DeleteModPoint")]
         [Authorize]
         public ResultEntity<bool> DeleteModPoint([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync("ModController/DeleteModPoint", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/DeleteModPoint", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.ModPointId))
-            {
-                return new ResultEntity<bool>() { ResultCode = 400, ResultMsg = "无ModPointId" };
-            }
-            #endregion
-            return new ResultEntity<bool> { ResultData = _IModService.DeleteModPoint((string)json.ModPointId) };
+                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "无ModPointId" };
+
+            var ok = _IModService.DeleteModPoint((string)json.ModPointId);
+            return new ResultEntity<bool> { ResultCode = ok ? 200 : 500, ResultData = ok, ResultMsg = ok ? "删除成功" : "删除失败" };
         }
 
         /// <summary>
-        /// 分页获取某人创建的Mod
+        /// 分页获取某用户创建的 Mod 列表
         /// </summary>
-        /// <param name="json">{"Skip":"0","Take":"100","UserId":"b68eb200-4c81-4285-b5c9-af9ccfcbcd75","Search":"","Types":[]}</param>
-        /// <returns></returns>
+        /// <param name="json">
+        /// {"Skip":"0","Take":"100","UserId":"userId","Search":"","Types":[],"GameId":"gameId"}
+        /// </param>
+        /// <returns>ResultEntity(List(ModListViewEntity))</returns>
         [HttpPost(Name = "GetModPageListByUserId")]
         [Authorize]
         public ResultEntity<List<ModListViewEntity>> GetModPageListByUserId([FromBody] dynamic json)
         {
-            #region 记录访问
-            var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
-            var UserId = _JwtHelper.GetTokenStr(token, "UserId");
-            _IAPILogService.WriteLogAsync($"{GetType().Name}/GetModPageListByUserId", UserId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString());
-            json = JsonConvert.DeserializeObject(Convert.ToString(json));
-            #endregion
-            #region 验证
+            string? callerUserId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetModPageListByUserId", callerUserId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            json = ParseJson(json);
+
             if (string.IsNullOrWhiteSpace((string)json.Skip))
-            {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Skip" };
-            }
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Skip" };
             if (string.IsNullOrWhiteSpace((string)json.Take))
-            {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无Take" };
-            }
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无Take" };
             if (string.IsNullOrWhiteSpace((string)json.UserId))
-            {
-                return new ResultEntity<List<ModListViewEntity>>() { ResultCode = 400, ResultMsg = "无UserId" };
-            }
-            #endregion
-            return new ResultEntity<List<ModListViewEntity>> { ResultData = _IModService.GetMyCreateMod((string)json.UserId, json) };
+                return new ResultEntity<List<ModListViewEntity>> { ResultCode = 400, ResultMsg = "无UserId" };
+
+            var list = _IModService.GetMyCreateMod((string)json.UserId, json);
+            return new ResultEntity<List<ModListViewEntity>> { ResultCode = 200, ResultData = list };
         }
     }
 }
