@@ -514,6 +514,14 @@ export default {
 </style>
 
 <style>
+body {
+    background-image: url("https://www.loliapi.com/acg/pc/") !important;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
 body.dark-theme .el-dropdown-menu__item:not(.is-disabled) {
     background-color: #1e1e1e;
     color: #ffffffa6;

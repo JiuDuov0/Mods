@@ -172,6 +172,14 @@ export default {
 </script>
 
 <style scoped>
+body {
+    background-image: url("https://www.loliapi.com/acg/pc/") !important;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
 .el-card {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

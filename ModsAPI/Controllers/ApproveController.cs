@@ -74,7 +74,7 @@ namespace ModsAPI.Controllers
             }
             #endregion
             await _IModService.ApproveModVersionAsync(VersionId, UserId, Status, Comments);
-            return new ResultEntity<string>() { ResultData = "审核成功" };
+            return new ResultEntity<string>() { ResultData = "审核成功" }; 
         }
 
         /// <summary>

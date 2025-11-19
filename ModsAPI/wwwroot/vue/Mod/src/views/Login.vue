@@ -4,7 +4,7 @@
             <el-card>
                 <div>
                     <img src="../assets/logo.png" class="img-logo" />
-                    <span class="span-logo">Modcat</span>
+                    <span class="span-logo">MODCAT</span>
                 </div>
                 <h1 style="margin-bottom: 24px;font-size: 24px;">登录</h1>
                 <div>
@@ -182,23 +182,50 @@ input {
 }
 
 .span-logo {
-    font-size: 25px;
-    color: rgb(102, 102, 102);
-    margin-left: 0.5rem;
-    margin-bottom: 1rem;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-left: 0.6rem;
+    margin-bottom: 1.2rem;
+    background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c);
+    -webkit-background-clip: text;
+    color: transparent;
+    position: relative;
+    padding-right: 6px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition: transform .3s, filter .3s;
 }
 </style>
 
 <style>
+body {
+    background-image: url("https://www.loliapi.com/acg/pc/") !important;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
 body.dark-theme {
     background-color: #121212;
     color: #ffffffa6;
 }
 
 body.dark-theme .el-card {
-    background-color: #1e1e1e;
+    background-color: rgba(30, 30, 30, 0.7) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(80, 80, 80, 0.6);
     color: #ffffffa6;
-    border-color: #1e1e1e;
+}
+
+.el-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: background .3s;
 }
 
 body.dark-theme .el-input__inner {
@@ -226,9 +253,10 @@ input:-webkit-autofill {
 }
 
 body.dark-theme input:-webkit-autofill {
-    background-color: #2c2c2c !important;
+    background-color: transparent !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
     -webkit-text-fill-color: #ffffffa6 !important;
-    box-shadow: 0 0 0px 1000px #2c2c2c inset !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 body.dark-theme input {

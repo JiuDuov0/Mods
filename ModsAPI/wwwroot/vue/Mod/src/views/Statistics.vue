@@ -299,6 +299,14 @@ export default {
 </style>
 
 <style>
+body {
+  background-image: url("https://www.loliapi.com/acg/pc/") !important;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+}
+
 body.dark-theme {
   background-color: #121212;
   color: #ffffffa6;

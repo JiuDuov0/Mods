@@ -739,4 +739,12 @@ body.dark-theme .el-input__wrapper {
     border: 1px solid #2c2c2c;
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
+
+body {
+    background-image: url("https://www.loliapi.com/acg/pc/") !important;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
 </style>
