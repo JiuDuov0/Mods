@@ -1,6 +1,6 @@
 <template>
     <el-container>
-        <el-main>
+        <el-main class="mod-main">
             <el-row :gutter="20">
                 <el-col :span="1">
                     <el-icon class="fullicon" @click="goBack">
@@ -1127,5 +1127,254 @@ body.dark-theme .code-preview pre::-webkit-scrollbar-track {
 
 body.dark-theme .code-preview pre::-webkit-scrollbar-corner {
     background-color: #1e1e1e;
+}
+</style>
+<style scoped>
+.mod-detail-page {
+    padding-bottom: 4rem;
+}
+
+h2 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+    background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c);
+    -webkit-background-clip: text;
+    color: transparent;
+    margin: .5rem 0 1rem;
+}
+
+.el-card {
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+    transition: box-shadow .25s, transform .25s;
+}
+
+.el-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+
+.el-tag {
+    margin: 4px 4px 0 0;
+    background: linear-gradient(135deg, #e4e7ed, #f5f7fa);
+    color: #333;
+    border: none;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.el-button {
+    width: 100%;
+    background: linear-gradient(90deg, #409eff, #66b1ff);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    letter-spacing: .5px;
+    transition: background .25s, transform .2s;
+}
+
+.el-button:hover {
+    background: linear-gradient(90deg, #66b1ff, #409eff);
+    transform: translateY(-2px);
+}
+
+.el-button.is-danger,
+.el-button--danger {
+    background: linear-gradient(90deg, #f56c6c, #f78989) !important;
+}
+
+.el-button--danger:hover {
+    background: linear-gradient(90deg, #f78989, #f56c6c) !important;
+}
+
+.copy-button.el-button {
+    width: auto;
+    padding: 4px 10px;
+    background: #409eff;
+    font-size: 12px;
+    letter-spacing: 0;
+}
+
+.copy-button.el-button:hover {
+    background: #66b1ff;
+    transform: none;
+}
+
+.rating-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, #409eff, #66b1ff);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: box-shadow .3s, transform .25s;
+    z-index: 1200;
+}
+
+.rating-float:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .32);
+}
+
+.code-preview {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(200, 200, 200, .4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background .3s;
+}
+
+.code-preview h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: #333;
+}
+
+#monaco-editor {
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.code-preview pre::-webkit-scrollbar,
+#monaco-editor::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.code-preview pre::-webkit-scrollbar-thumb,
+#monaco-editor::-webkit-scrollbar-thumb {
+    background: #b5b5b5;
+    border-radius: 4px;
+}
+
+.code-preview pre::-webkit-scrollbar-thumb:hover,
+#monaco-editor::-webkit-scrollbar-thumb:hover {
+    background: #909090;
+}
+
+.code-preview pre::-webkit-scrollbar-track,
+#monaco-editor::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sticky-subscribe {
+    position: sticky;
+    top: 12px;
+}
+
+@media (max-width: 1000px) {
+    .sticky-subscribe {
+        position: static;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .rating-float {
+        bottom: 16px;
+        right: 16px;
+    }
+}
+
+body.dark-theme .el-card {
+    background: rgba(30, 30, 30, 0.78) !important;
+    border: 1px solid rgba(70, 70, 70, .6);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .6);
+}
+
+body.dark-theme h2 {
+    background: linear-gradient(90deg, #8ab4f8, #81c784, #fdd286);
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .6);
+}
+
+body.dark-theme .el-tag {
+    background: linear-gradient(135deg, #2c2c2c, #3a3a3a);
+    color: #ddd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+    border: none;
+}
+
+body.dark-theme .el-button {
+    background: linear-gradient(90deg, #333, #454545);
+    color: #ffffffd9;
+}
+
+body.dark-theme .el-button:hover {
+    background: linear-gradient(90deg, #454545, #333);
+}
+
+body.dark-theme .copy-button.el-button {
+    background: #409eff;
+    color: #fff;
+}
+
+body.dark-theme .copy-button.el-button:hover {
+    background: #66b1ff;
+}
+
+body.dark-theme .rating-float {
+    background: linear-gradient(135deg, #409eff, #66b1ff);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .55);
+}
+
+body.dark-theme .code-preview {
+    background: rgba(40, 40, 40, 0.6);
+    border: 1px solid rgba(90, 90, 90, .5);
+    color: #ddd;
+}
+
+body.dark-theme #monaco-editor {
+    border-color: #555;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-thumb,
+body.dark-theme #monaco-editor::-webkit-scrollbar-thumb {
+    background: #555;
+}
+
+body.dark-theme .code-preview pre::-webkit-scrollbar-thumb:hover,
+body.dark-theme #monaco-editor::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+.mod-main {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 22px 26px 40px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+    transition: box-shadow .25s;
+}
+
+.mod-main:hover {
+    box-shadow: 0 6px 22px rgba(0, 0, 0, .18);
+}
+
+body.dark-theme .mod-main {
+    background: rgba(30, 30, 30, 0.72);
+    border-color: rgba(70, 70, 70, .6);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .55);
 }
 </style>

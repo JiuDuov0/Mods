@@ -578,13 +578,6 @@ body.dark-theme {
     color: #ffffffa6;
 }
 
-body.dark-theme .el-card {
-    background-color: #1e1e1e;
-    color: #ffffffa6;
-    border-color: #333333;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
 body.dark-theme .el-input__inner {
     background-color: #2c2c2c;
     color: #ffffffa6;
@@ -746,5 +739,22 @@ body {
     background-size: cover;
     background-position: center center;
     background-attachment: fixed;
+}
+
+body.dark-theme .el-card {
+    background-color: rgba(30, 30, 30, 0.7) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(80, 80, 80, 0.6);
+    color: #ffffffa6;
+}
+
+.el-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: background .3s;
 }
 </style>

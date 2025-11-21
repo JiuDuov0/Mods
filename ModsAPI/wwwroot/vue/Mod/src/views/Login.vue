@@ -195,6 +195,48 @@ input {
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     transition: transform .3s, filter .3s;
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #333 !important;
+    caret-color: #333;
+    transition: background-color 0s;
+    background-color: transparent !important;
+    background-clip: content-box !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
+    border-bottom: 1px solid rgb(102, 102, 102) !important;
+}
+
+body.dark-theme input:-webkit-autofill,
+body.dark-theme input:-webkit-autofill:hover,
+body.dark-theme input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffffa6 !important;
+    caret-color: #ffffffa6;
+    background-color: transparent !important;
+    background-clip: content-box !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
+    border-bottom: 1px solid #444444 !important;
+}
+
+body.dark-theme .el-input__inner:-webkit-autofill,
+.el-input__inner:-webkit-autofill {
+    -webkit-text-fill-color: inherit !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
+    background-color: transparent !important;
+}
+
+body:not(.dark-theme) input:-webkit-autofill,
+body:not(.dark-theme) input:-webkit-autofill:hover,
+body:not(.dark-theme) input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #333 !important;
+    caret-color: #333;
+    background-color: transparent !important;
+    box-shadow: 0 0 0px 1000px transparent inset !important;
+    background-clip: content-box !important;
+    border-bottom: 1px solid rgb(102, 102, 102) !important;
+    transition: background-color 9999s ease-in-out 0s;
+}
 </style>
 
 <style>
