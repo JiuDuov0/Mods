@@ -203,10 +203,11 @@ namespace ModsAPI.Controllers
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             var userId = _JwtHelper.GetTokenStr(token, "UserId");
-            await _IAPILogService.WriteLogAsync("FilesController/DownloadFile", userId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
 
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             string fileId = json.FileId;
+            // 记录访问并包含下载的文件ID
+            await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", userId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
             bool noCount = false;
             try { if (json.NoCount != null) bool.TryParse(json.NoCount.ToString(), out noCount); } catch { }
 
