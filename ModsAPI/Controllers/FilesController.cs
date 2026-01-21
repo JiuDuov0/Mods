@@ -206,8 +206,6 @@ namespace ModsAPI.Controllers
 
             json = JsonConvert.DeserializeObject(Convert.ToString(json));
             string fileId = json.FileId;
-            // 记录访问并包含下载的文件ID
-            await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", userId, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
             bool noCount = false;
             try { if (json.NoCount != null) bool.TryParse(json.NoCount.ToString(), out noCount); } catch { }
 
@@ -249,6 +247,21 @@ namespace ModsAPI.Controllers
                 if (start <= end) isPartial = true;
             }
 
+            // 优化：仅在非分片请求或分片且为首片（start == 0）时记录一次下载日志，避免大量分片请求产生重复日志
+            try
+            {
+                var remoteIp = _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+                var shouldLog = !isPartial || (isPartial && start == 0);
+                if (shouldLog)
+                {
+                    await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", userId, remoteIp);
+                }
+            }
+            catch
+            {
+                // 日志失败不应影响下载流程，吞掉异常
+            }
+
             var length = end - start + 1;
             if (length <= 0)
                 return StatusCode(StatusCodes.Status416RangeNotSatisfiable);
@@ -268,10 +281,7 @@ namespace ModsAPI.Controllers
                 _ => "application/octet-stream"
             };
 
-            // 忽略原始文件名与 Mod 名称：仅使用 FileId 作为文件区分依据
-            // 始终输出 ASCII 安全文件名：{FileId}{扩展名}
             var pureName = $"{fileId}{fileMeta.FilesType}";
-            // 去除潜在非法头部字符（理论上 GUID + 扩展名不会有问题，防御性处理）
             var safeName = Regex.Replace(pureName, @"[^\x20-\x7E]", "_");
 
             Response.Headers[HeaderNames.AcceptRanges] = "bytes";
@@ -286,11 +296,7 @@ namespace ModsAPI.Controllers
             }
 
             Response.ContentType = contentType;
-
-            // 在 isPartial 与全量响应公共头部设置之后（紧接着 Accept-Ranges / ETag / LastModified / ContentDisposition）追加：
             Response.Headers.TryAdd("Access-Control-Expose-Headers", "Content-Range,Content-Disposition,ETag,Last-Modified,Accept-Ranges");
-
-            // 可选：补充 Content-Length 明确长度，避免中间层剥离 Content-Range
             Response.Headers[HeaderNames.ContentLength] = length.ToString();
 
             await using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);

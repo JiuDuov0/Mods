@@ -199,6 +199,7 @@ export default {
                 }
             }).catch(error => {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
+                router.push('/');
                 console.log(error);
             }).finally(() => {
                 this.isFetching = false;
