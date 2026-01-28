@@ -37,7 +37,8 @@
                                 <template
                                     v-if="dependence.DependenceModVersionId !== '未知' && dependence.DependenceModVersionId !== null">
                                     {{ dependence.DependenceModVersion.Mod.Name }} - {{
-                                        dependence.DependenceModVersion.VersionNumber }}
+                                        dependence.DependenceModVersion.VersionNumber
+                                    }}
                                 </template>
                                 <template v-else>
                                     <a :href="dependence.ModIOURL" target="_blank" rel="noopener noreferrer">
@@ -432,12 +433,13 @@ export default {
 
             try {
                 if (!savedMeta || forceReset) {
+                    const token = localStorage.getItem('token' + localStorage.getItem('Mail'));
                     const metaResp = await this.$axios({
-                        url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFile`,
-                        method: 'POST',
-                        data: { FileId, NoCount: savedMeta && !forceReset ? true : false },
+                        url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFileGet`,
+                        method: 'GET',
+                        params: { FileId, NoCount: savedMeta && !forceReset ? true : false },
                         headers: {
-                            'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')),
+                            'Authorization': 'Bearer ' + token,
                             'Range': 'bytes=0-'
                         },
                         responseType: 'arraybuffer',
@@ -508,6 +510,7 @@ export default {
                 const chunks = [];
                 let downloaded = startOffset;
                 let lastContentType = savedMeta.mime || defaultMime;
+                const token2 = localStorage.getItem('token' + localStorage.getItem('Mail'));
 
                 while (downloaded < totalSize) {
                     const chunkEnd = Math.min(downloaded + CHUNK_SIZE - 1, totalSize - 1);
@@ -516,11 +519,11 @@ export default {
                     let partResp;
                     try {
                         partResp = await this.$axios({
-                            url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFile`,
-                            method: 'POST',
-                            data: { FileId, NoCount: true },
+                            url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFileGet`,
+                            method: 'GET',
+                            params: { FileId, NoCount: true },
                             headers: {
-                                'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')),
+                                'Authorization': 'Bearer ' + token2,
                                 'Range': rangeHeader
                             },
                             responseType: 'arraybuffer',
@@ -642,12 +645,13 @@ export default {
             this.showPreviewStatus = true;
             this.versionDialogVisible = false;
             try {
+                const token = localStorage.getItem('token' + localStorage.getItem('Mail'));
                 const response = await this.$axios({
-                    url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFile`,
-                    method: 'POST',
+                    url: `${import.meta.env.VITE_API_BASE_URL}/Files/DownloadFileGet`,
+                    method: 'GET',
+                    params: { FileId },
+                    headers: { 'Authorization': 'Bearer ' + token },
                     timeout: 300000,
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token' + localStorage.getItem('Mail')) },
-                    data: { FileId },
                     responseType: 'blob',
                     onDownloadProgress: (e) => {
                         if (e.total) this.progress = Math.round((e.loaded * 100) / e.total);
@@ -736,6 +740,7 @@ export default {
     }
 };
 </script>
+
 
 <style>
 @media (max-width: 1000px) {

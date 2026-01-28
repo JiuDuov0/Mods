@@ -198,6 +198,7 @@ namespace ModsAPI.Controllers
         /// 3. 支持 If-None-Match / ETag 缓存，命中返回 304
         /// 4. 可通过传入 NoCount=true 跳过下载次数统计（重复下载不希望累计时）
         /// </summary>
+        // （仅展示被修改的 DownloadFile 方法，其他代码保持不变）
         [HttpPost(Name = "DownloadFile")]
         public async Task<IActionResult> DownloadFile([FromBody] dynamic json)
         {
@@ -247,7 +248,11 @@ namespace ModsAPI.Controllers
                 if (start <= end) isPartial = true;
             }
 
-            // 优化：仅在非分片请求或分片且为首片（start == 0）时记录一次下载日志，避免大量分片请求产生重复日志
+            var length = end - start + 1;
+            if (length <= 0)
+                return StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+            // 优化日志：仅在非分片或分片且为首片 (start == 0) 时写一次日志，避免大量分片请求产生重复日志
             try
             {
                 var remoteIp = _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
@@ -259,14 +264,74 @@ namespace ModsAPI.Controllers
             }
             catch
             {
-                // 日志失败不应影响下载流程，吞掉异常
+                // 写日志失败不影响下载
             }
 
-            var length = end - start + 1;
-            if (length <= 0)
-                return StatusCode(StatusCodes.Status416RangeNotSatisfiable);
-
             // 更新下载次数（可跳过）
+            if (!noCount)
+                _IFilesService.AddModDownLoadCount(fileId);
+
+            var contentType = (fileMeta.FilesType ?? "").ToLowerInvariant().TrimStart('.') switch
+            {
+                "zip" => "application/zip",
+                "json" => "application/json",
+                "png" => "image/png",
+                "jpg" or "jpeg" => "image/jpeg",
+                "txt" => "text/plain",
+                "rar" => "application/x-rar-compressed",
+                _ => "application/octet-stream"
+            };
+
+            var pureName = $"{fileId}{fileMeta.FilesType}";
+            var safeName = Regex.Replace(pureName, @"[^\x20-\x7E]", "_");
+
+            // 设置响应头（部分由 PhysicalFileResult 处理 Range）
+            Response.Headers[HeaderNames.AcceptRanges] = "bytes";
+            Response.Headers[HeaderNames.ETag] = $"\"{etag}\"";
+            Response.Headers[HeaderNames.LastModified] = fileInfo.LastWriteTimeUtc.ToString("R");
+            // 注意：PhysicalFileResult 会设置 Content-Disposition / Content-Length / 206 等；我们仍设置下载文件名
+            var fileResult = new PhysicalFileResult(fullPath, contentType)
+            {
+                FileDownloadName = safeName,
+                EnableRangeProcessing = true
+            };
+
+            // 返回 PhysicalFileResult，让框架/IIS 处理 Range 与分片（更可靠且性能更好）
+            return fileResult;
+        }
+
+        // 新增：GET 下载接口，支持 Range（断点续传）。保留原 POST 以兼容现有调用。
+        [HttpGet]
+        public async Task<IActionResult> DownloadFileGet([FromQuery] string fileId, [FromQuery] bool noCount = false)
+        {
+            if (string.IsNullOrWhiteSpace(fileId))
+                return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "无FileId" });
+
+            if (_IFilesService.CheckMod(fileId) == null)
+                return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "作者已删除" });
+
+            var fileMeta = _IFilesService.GetFilesEntityById(fileId);
+            if (fileMeta == null)
+                return NotFound(new ResultEntity<string> { ResultCode = 404, ResultMsg = "文件元数据不存在" });
+
+            var fullPath = Path.Combine(_IConfiguration["FilePath"], fileId + fileMeta.FilesType);
+            if (!System.IO.File.Exists(fullPath))
+                return NotFound(new ResultEntity<string> { ResultCode = 404, ResultMsg = "文件未找到" });
+
+            var fileInfo = new FileInfo(fullPath);
+            var etag = $"{fileInfo.Length:x}-{fileInfo.LastWriteTimeUtc.Ticks:x}";
+
+            // 记录一次下载日志（GET 时一般不是分片多次到达后端）
+            try
+            {
+                var remoteIp = _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+                await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", _JwtHelper.GetTokenStr(Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", ""), "UserId"), remoteIp);
+            }
+            catch
+            {
+                // 写日志失败不影响下载
+            }
+
             if (!noCount)
                 _IFilesService.AddModDownLoadCount(fileId);
 
@@ -287,32 +352,64 @@ namespace ModsAPI.Controllers
             Response.Headers[HeaderNames.AcceptRanges] = "bytes";
             Response.Headers[HeaderNames.ETag] = $"\"{etag}\"";
             Response.Headers[HeaderNames.LastModified] = fileInfo.LastWriteTimeUtc.ToString("R");
-            Response.Headers[HeaderNames.ContentDisposition] = $"attachment; filename=\"{safeName}\"";
 
-            if (isPartial)
+            // 如果请求带有 Range，则使用手动分片写入作为回退，确保在 IIS/反向代理场景下也能支持断点续传
+            var rangeHeader = Request.Headers["Range"].ToString();
+            if (!string.IsNullOrWhiteSpace(rangeHeader) && rangeHeader.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
             {
+                long start = 0;
+                long end = fileInfo.Length - 1;
+                var range = rangeHeader.Substring(6).Split('-', StringSplitOptions.RemoveEmptyEntries);
+                if (range.Length > 0 && long.TryParse(range[0], out var s)) start = s;
+                if (range.Length > 1 && long.TryParse(range[1], out var e)) end = e;
+                if (start < 0) start = 0;
+                if (end >= fileInfo.Length) end = fileInfo.Length - 1;
+                if (start > end)
+                    return StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+                var length = end - start + 1;
+
                 Response.StatusCode = StatusCodes.Status206PartialContent;
-                Response.Headers["Content-Range"] = $"bytes {start}-{end}/{fileInfo.Length}";
+                Response.ContentType = contentType;
+                Response.Headers[HeaderNames.ContentRange] = $"bytes {start}-{end}/{fileInfo.Length}";
+                Response.ContentLength = length;
+                // 设置下载文件名
+                Response.Headers[HeaderNames.ContentDisposition] = $"attachment; filename=\"{safeName}\"";
+
+                // 直接流式输出指定区间
+                const int bufferSize = 64 * 1024;
+                var buffer = new byte[bufferSize];
+                try
+                {
+                    await using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    fs.Seek(start, SeekOrigin.Begin);
+                    long remaining = length;
+                    while (remaining > 0)
+                    {
+                        var read = await fs.ReadAsync(buffer, 0, (int)Math.Min(buffer.Length, remaining));
+                        if (read == 0) break;
+                        await Response.Body.WriteAsync(buffer, 0, read);
+                        remaining -= read;
+                        await Response.Body.FlushAsync();
+                        // 如果客户端断开，WriteAsync 会抛异常或 CancellationToken 会触发（可根据需要捕获）
+                    }
+                }
+                catch
+                {
+                    // 忽略写入期间的异常（客户端断开等），不影响后续行为
+                }
+
+                return new EmptyResult();
             }
 
-            Response.ContentType = contentType;
-            Response.Headers.TryAdd("Access-Control-Expose-Headers", "Content-Range,Content-Disposition,ETag,Last-Modified,Accept-Ranges");
-            Response.Headers[HeaderNames.ContentLength] = length.ToString();
-
-            await using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Seek(start, SeekOrigin.Begin);
-
-            const int bufferSize = 64 * 1024;
-            long remaining = length;
-            var buffer = new byte[bufferSize];
-            while (remaining > 0)
+            // 不带 Range 的请求交由 PhysicalFileResult 处理（框架优化）
+            var fileResult = new PhysicalFileResult(fullPath, contentType)
             {
-                int read = await fs.ReadAsync(buffer.AsMemory(0, (int)Math.Min(bufferSize, remaining)));
-                if (read <= 0) break;
-                await Response.Body.WriteAsync(buffer.AsMemory(0, read));
-                remaining -= read;
-            }
-            return new EmptyResult();
+                FileDownloadName = safeName,
+                EnableRangeProcessing = true
+            };
+
+            return fileResult;
         }
     }
 }
