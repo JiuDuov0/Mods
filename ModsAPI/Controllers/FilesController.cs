@@ -198,7 +198,6 @@ namespace ModsAPI.Controllers
         /// 3. 支持 If-None-Match / ETag 缓存，命中返回 304
         /// 4. 可通过传入 NoCount=true 跳过下载次数统计（重复下载不希望累计时）
         /// </summary>
-        // （仅展示被修改的 DownloadFile 方法，其他代码保持不变）
         [HttpPost(Name = "DownloadFile")]
         public async Task<IActionResult> DownloadFile([FromBody] dynamic json)
         {
@@ -300,7 +299,20 @@ namespace ModsAPI.Controllers
             return fileResult;
         }
 
-        // 新增：GET 下载接口，支持 Range（断点续传）。保留原 POST 以兼容现有调用。
+        /// <summary>
+        /// 使用 HTTP GET 为指定文件标识发起下载，请求支持 Range 头以实现断点续传。
+        /// </summary>
+        /// <remarks>
+        /// - 支持 HTTP Range（bytes=）部分内容请求，便于恢复中断下载或获取指定片段。
+        /// - 记录一次下载日志并在需要时更新下载次数。
+        /// - 当文件或元数据不存在、作者已删除或标识无效时返回相应错误。
+        /// - 自动设置 ETag、Last-Modified、Accept-Ranges 等响应头以优化缓存与续传。
+        /// </remarks>
+        /// <param name="fileId">文件唯一标识。不能为空或仅包含空白字符。</param>
+        /// <param name="noCount">是否跳过下载次数统计。默认值为 <see langword="false"/>。</param>
+        /// <returns>
+        /// 成功时返回文件结果（支持全量/分片下载）；失败时返回包含错误信息的响应，例如文件未找到或无效的文件标识。
+        /// </returns>
         [HttpGet]
         public async Task<IActionResult> DownloadFileGet([FromQuery] string fileId, [FromQuery] bool noCount = false)
         {

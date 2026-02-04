@@ -39,6 +39,9 @@
                                     <el-button :disabled="!user.Token" @click="copy">
                                         {{ user.Token ? '复制 Token' : '不可复制' }}
                                     </el-button>
+                                    <el-button :disabled="!user.Token" type="primary" @click="openMintCat">
+                                        唤起 MintCat
+                                    </el-button>
                                 </div>
                             </el-form-item>
 
@@ -254,6 +257,20 @@ export default {
                 ElMessage.error('请求失败: ' + (error.response?.data?.ResultMsg || error.message));
                 console.log(error);
             });
+        },
+        openMintCat() {
+            if (!this.user.Token) {
+                ElMessage.warning('尚未获取 Token');
+                return;
+            }
+            const url = `mintcat://oauth/callback?platform=modcat&access_token=${encodeURIComponent(this.user.Token)}`;
+            // 优先使用 window.location 触发 deeplink
+            window.location.href = url;
+
+            // 可选：降级提示（未安装时）
+            setTimeout(() => {
+                ElMessage.info('若未唤起，请确认已安装 MintCat 客户端');
+            }, 1200);
         },
         handleDropdownClick() { },
         handleHome() { router.push('/home'); },

@@ -16,6 +16,10 @@ export default defineConfig({
       dts: true,
       resolvers: [ElementPlusResolver()],
     }),
-  ],
-  base: process.env.NODE_ENV === 'production' ? '/' : '/'
+  ]//,
+  // base: process.env.NODE_ENV === 'production' ? '/' : '/',
+  // server: {
+  //   port: 1420,
+  //   host: true
+  // }
 })
