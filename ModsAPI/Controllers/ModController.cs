@@ -30,6 +30,18 @@ namespace ModsAPI.Controllers
         private readonly JwtHelper _JwtHelper;
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Initializes a new instance of the ModController class with the specified services and HTTP client for
+        /// managing modifications and related operations.
+        /// </summary>
+        /// <remarks>The HTTP client is configured to accept JSON responses by default, ensuring
+        /// compatibility with APIs that return JSON data.</remarks>
+        /// <param name="iModService">The service used to perform operations related to modifications.</param>
+        /// <param name="iAPILogService">The service responsible for logging API activities and errors.</param>
+        /// <param name="iHttpContextAccessor">Provides access to the current HTTP context for retrieving request-specific information.</param>
+        /// <param name="jwtHelper">A helper used for handling JSON Web Token (JWT) authentication and authorization.</param>
+        /// <param name="iTypesService">The service that manages type-related functionality within the application.</param>
+        /// <param name="httpClient">The HTTP client used to send requests to external services.</param>
         public ModController(
             IModService iModService,
             IAPILogService iAPILogService,
@@ -674,6 +686,59 @@ namespace ModsAPI.Controllers
 
             var list = _IModService.GetMyCreateMod((string)json.UserId, json);
             return new ResultEntity<List<ModListViewEntity>> { ResultCode = 200, ResultData = list };
+        }
+
+        /// <summary>
+        /// 根据 ModId 列表查询版本信息（可选 Since 参数，仅返回 Since 之后创建的版本）
+        /// </summary>
+        /// <param name="json">
+        /// {"ModIds":["0","1"],"Since":"2026-02-01 00:00:00" }
+        /// </param>
+        /// <returns>ResultEntity(List(ModVersionEntity))</returns>
+        [HttpPost(Name = "GetVersionsByModIds")]
+        public ResultEntity<List<ModVersionEntity>> GetVersionsByModIds([FromBody] dynamic json)
+        {
+            string? userId = GetUserId();
+            _ = _IAPILogService.WriteLogAsync("ModController/GetVersionsByModIds", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            json = ParseJson(json);
+
+            if (json.ModIds == null)
+            {
+                return new ResultEntity<List<ModVersionEntity>> { ResultCode = 400, ResultMsg = "无ModIds" };
+            }
+
+            JArray arr;
+            try
+            {
+                arr = (JArray)json.ModIds;
+            }
+            catch
+            {
+                return new ResultEntity<List<ModVersionEntity>> { ResultCode = 400, ResultMsg = "ModIds格式错误" };
+            }
+
+            var modIds = arr.ToObject<List<string>>()?.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            if (modIds == null || modIds.Count == 0)
+            {
+                return new ResultEntity<List<ModVersionEntity>> { ResultCode = 400, ResultMsg = "无有效ModId" };
+            }
+
+            DateTime? since = null;
+            if (json.Since != null && !string.IsNullOrWhiteSpace((string)json.Since))
+            {
+                if (DateTime.TryParse((string)json.Since, out var parsed))
+                {
+                    since = parsed;
+                }
+                else
+                {
+                    return new ResultEntity<List<ModVersionEntity>> { ResultCode = 400, ResultMsg = "Since 时间格式不正确" };
+                }
+            }
+
+            var result = _IModService.GetVersionsByModIds(modIds, since);
+            return new ResultEntity<List<ModVersionEntity>> { ResultCode = 200, ResultData = result };
         }
     }
 }

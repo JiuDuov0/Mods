@@ -103,12 +103,19 @@ namespace Service.Realization
                     m.ModId,
                     m.Name,
                     m.PicUrl,
+                    m.DownloadCount,
                     Types = m.ModTypeEntities.Select(mt => new { mt.TypesId, TypeName = mt.Types.TypeName }),
                     Avg = m.ModPointEntities.Any(p => p.Point.HasValue)
                         ? Math.Round(m.ModPointEntities.Where(p => p.Point.HasValue).Average(p => p.Point!.Value), 2)
                         : (double?)null,
                     IsSub = !string.IsNullOrWhiteSpace(userId) &&
-                            m.UserModSubscribeEntities.Any(s => s.UserId == userId)
+                            m.UserModSubscribeEntities.Any(s => s.UserId == userId),
+                    Creator = new
+                    {
+                        UserId = m.CreatorEntity != null ? m.CreatorEntity.UserId : null,
+                        NickName = m.CreatorEntity != null ? m.CreatorEntity.NickName : null,
+                        HeadPic = m.CreatorEntity != null ? m.CreatorEntity.HeadPic : null
+                    }
                 })
                 .ToList();
 
@@ -126,7 +133,11 @@ namespace Service.Realization
                         TypeName = t.TypeName
                     }).ToList(),
                     IsMySubscribe = m.IsSub,
-                    AVGPoint = m.Avg
+                    AVGPoint = m.Avg,
+                    DownloadCount = m.DownloadCount,
+                    CreatorUserId = m.Creator?.UserId,
+                    CreatorNickName = m.Creator?.NickName,
+                    CreatorHeadPic = m.Creator?.HeadPic
                 });
             }
             return list;
@@ -180,10 +191,17 @@ namespace Service.Realization
                     m.ModId,
                     m.Name,
                     m.PicUrl,
+                    m.DownloadCount,
                     Types = m.ModTypeEntities.Select(mt => new { mt.TypesId, TypeName = mt.Types.TypeName }),
                     Avg = m.ModPointEntities.Any(p => p.Point.HasValue)
                         ? Math.Round(m.ModPointEntities.Where(p => p.Point.HasValue).Average(p => p.Point!.Value), 2)
-                        : (double?)null
+                        : (double?)null,
+                    Creator = new
+                    {
+                        UserId = m.CreatorEntity != null ? m.CreatorEntity.UserId : null,
+                        NickName = m.CreatorEntity != null ? m.CreatorEntity.NickName : null,
+                        HeadPic = m.CreatorEntity != null ? m.CreatorEntity.HeadPic : null
+                    }
                 });
 
             var raw = await baseQuery.ToListAsync();
@@ -200,8 +218,12 @@ namespace Service.Realization
                         TypesId = t.TypesId,
                         TypeName = t.TypeName
                     }).ToList(),
-                    // 缓存不存订阅状态（与用户相关），仅保留平均分
-                    AVGPoint = m.Avg
+                    // 缓存不存订阅状态（与用户相关），仅保留平均分、下载数及作者信息
+                    AVGPoint = m.Avg,
+                    DownloadCount = m.DownloadCount,
+                    CreatorUserId = m.Creator?.UserId,
+                    CreatorNickName = m.Creator?.NickName,
+                    CreatorHeadPic = m.Creator?.HeadPic
                 });
             }
 
@@ -453,7 +475,10 @@ namespace Service.Realization
                     ModId = mod.ModId,
                     Name = mod.Name,
                     PicUrl = mod.PicUrl,
-                    ModTypeEntities = typesList
+                    ModTypeEntities = typesList,
+                    DownloadCount = mod.DownloadCount,
+                    CreatorUserId = mod.CreatorUserId,
+                    CreatorNickName = mod.CreatorEntity?.NickName
                 });
             }
 
@@ -713,6 +738,43 @@ namespace Service.Realization
             x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()) ||
             x.ModVersionEntities.Any(y => y.Status == ((int)ApproveModVersionStatusEnum.Approved).ToString()));
             return await Context.OrderByDescending(x => x.DownloadCount).ThenBy(x => x.CreatedAt).Skip(Skip).Take(Take).ToListAsync();
+        }
+
+        public List<ModVersionEntity> GetVersionsByModIds(List<string> modIds, DateTime? since)
+        {
+            if (modIds == null || modIds.Count == 0)
+                return new List<ModVersionEntity>();
+
+            var ctx = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+
+            IQueryable<ModVersionEntity> q = ctx.ModVersionEntity
+                .Include(v => v.Files)
+                .Include(v => v.Mod)
+                .Where(v => v.ModId != null && modIds.Contains(v.ModId));
+
+            if (since.HasValue)
+            {
+                q = q.Where(v => v.CreatedAt.HasValue && v.CreatedAt > since.Value);
+            }
+
+            var list = q.OrderByDescending(v => v.CreatedAt).ThenByDescending(v => v.VersionNumber).ToList();
+
+            // 清理返回结果中不要暴露的字段
+            foreach (var v in list)
+            {
+                if (v.Mod != null)
+                {
+                    // 去除 Mod 中的版本列表，避免递归/多余数据
+                    v.Mod.ModVersionEntities = null;
+                }
+                if (v.Files != null)
+                {
+                    // 隐藏文件的本地存储路径
+                    v.Files.Path = null;
+                }
+            }
+
+            return list;
         }
     }
 }

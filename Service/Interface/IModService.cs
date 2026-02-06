@@ -34,5 +34,7 @@ namespace Service.Interface
         public bool DeleteModPoint(string ModId, string UserId);
         public bool DeleteModPoint(string ModPointId);
         public ModPointEntity? GetModPointEntity(string ModId, string UserId);
+
+        public List<ModVersionEntity> GetVersionsByModIds(List<string> modIds, DateTime? since);
     }
 }

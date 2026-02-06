@@ -39,5 +39,25 @@ namespace ViewEntity.Mod
         /// 平均分
         /// </summary>
         public double? AVGPoint { get; set; }
+
+        /// <summary>
+        /// 下载次数
+        /// </summary>
+        public long? DownloadCount { get; set; }
+
+        /// <summary>
+        /// 作者用户Id
+        /// </summary>
+        public string? CreatorUserId { get; set; }
+
+        /// <summary>
+        /// 作者昵称
+        /// </summary>
+        public string? CreatorNickName { get; set; }
+
+        /// <summary>
+        /// 作者头像
+        /// </summary>
+        public string CreatorHeadPic { get; set; }
     }
 }
