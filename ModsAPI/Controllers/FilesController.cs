@@ -312,7 +312,7 @@ namespace ModsAPI.Controllers
         /// <param name="fileId">文件唯一标识。不能为空或仅包含空白字符。</param>
         /// <param name="noCount">是否跳过下载次数统计。默认值为 <see langword="false"/>。</param>
         /// <returns>
-        /// 成功时返回文件结果（支持全量/分片下载）；失败时返回包含错误信息的响应，例如文件未找到或无效的文件标识。
+        /// 成功时返回文件结果（支持全量/分片下载）；失败时返回包含错误信息的响应，例如文件未找到或无效的文件标识
         /// </returns>
         [HttpGet]
         public async Task<IActionResult> DownloadFileGet([FromQuery] string fileId, [FromQuery] bool noCount = false)
