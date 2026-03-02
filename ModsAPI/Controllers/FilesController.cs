@@ -24,7 +24,6 @@ namespace ModsAPI.Controllers
     /// </summary>
     [Route("api/[controller]/[action]")]
     [ApiController]
-    [Authorize]
     public class FilesController : ControllerBase
     {
         private readonly IAPILogService _IAPILogService;
@@ -47,6 +46,7 @@ namespace ModsAPI.Controllers
         /// <summary>
         /// 上传Mod文件并提交审核
         /// </summary>
+        [Authorize]
         [HttpPost(Name = "UploadMod")]
         [SwaggerOperation(Summary = "上传Mod文件", Description = "上传一个Mod文件和相关的JSON数据")]
         public async Task<ResultEntity<string>> UploadMod([SwaggerParameter(Description = "要上传的文件")] IFormFile file, [FromForm, SwaggerRequestBody(Description = "包含VersionId的JSON数据")] string VersionId)
@@ -199,6 +199,7 @@ namespace ModsAPI.Controllers
         /// 4. 可通过传入 NoCount=true 跳过下载次数统计（重复下载不希望累计时）
         /// </summary>
         [HttpPost(Name = "DownloadFile")]
+        [Authorize]
         public async Task<IActionResult> DownloadFile([FromBody] dynamic json)
         {
             var token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
@@ -316,9 +317,7 @@ namespace ModsAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> DownloadFileGet([FromQuery] string fileId, [FromQuery] bool noCount = false)
         {
-            if (string.IsNullOrWhiteSpace(fileId))
-                return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "无FileId" });
-
+            if (string.IsNullOrWhiteSpace(fileId)) return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "无FileId" });
             if (_IFilesService.CheckMod(fileId) == null)
                 return Ok(new ResultEntity<string> { ResultCode = 400, ResultMsg = "作者已删除" });
 
@@ -333,15 +332,94 @@ namespace ModsAPI.Controllers
             var fileInfo = new FileInfo(fullPath);
             var etag = $"{fileInfo.Length:x}-{fileInfo.LastWriteTimeUtc.Ticks:x}";
 
-            // 记录一次下载日志（GET 时一般不是分片多次到达后端）
+            // If-None-Match 缓存检测
+            var inm = Request.Headers["If-None-Match"].ToString();
+            if (!string.IsNullOrWhiteSpace(inm) && inm.Replace("\"", "") == etag)
+            {
+                Response.Headers[HeaderNames.ETag] = $"\"{etag}\"";
+                return StatusCode(StatusCodes.Status304NotModified);
+            }
+
+            // 获取请求方标识（优先 Origin，其次 Referer，其次 Host）
+            string originHeader = Request.Headers["Origin"].FirstOrDefault()
+                                  ?? Request.Headers["Referer"].FirstOrDefault()
+                                  ?? Request.Headers["Host"].FirstOrDefault()
+                                  ?? string.Empty;
+
+            // 解析到 scheme+host[:port] 形式，便于比较；若解析失败则使用原始 header 小写化
+            string originNormalized;
             try
             {
-                var remoteIp = _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-                await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", _JwtHelper.GetTokenStr(Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", ""), "UserId"), remoteIp);
+                var uri = new Uri(originHeader);
+                originNormalized = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/').ToLowerInvariant();
             }
             catch
             {
-                // 写日志失败不影响下载
+                originNormalized = originHeader.TrimEnd('/').ToLowerInvariant();
+            }
+
+            // 客户端 IP（用于日志）
+            var xff = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            var clientIp = !string.IsNullOrWhiteSpace(xff) ? xff.Split(',')[0].Trim() : _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+
+            // 记录或拦截规则：
+            // - 来自 http://localhost:1420 或 http://tauri.localhost ：记录日志，消息填写 "Mintcat Download"
+            // - 来自 https://modcat.top 或 http://localhost:5173 ：正常记录（默认消息）
+            // - 其他来源：拦截请求（403）
+            var mintcatOrigins = new[] { "http://localhost:1420", "http://tauri.localhost" };
+            var normalOrigins = new[] { "https://modcat.top", "http://localhost:5173" };
+
+            bool allowed = false;
+            bool useMintcatMessage = false;
+            if (!string.IsNullOrWhiteSpace(originNormalized))
+            {
+                if (mintcatOrigins.Contains(originNormalized))
+                {
+                    allowed = true;
+                    useMintcatMessage = true;
+                }
+                else if (normalOrigins.Contains(originNormalized))
+                {
+                    allowed = true;
+                }
+            }
+
+            if (!allowed)
+            {
+                // 拦截：来源不允许
+                return StatusCode(StatusCodes.Status403Forbidden, new ResultEntity<string> { ResultCode = 403, ResultMsg = "请求来源不允许" });
+            }
+
+            // 优化日志：仅在非分片或分片且为首片 (start == 0) 时写一次日志
+            long start = 0;
+            long end = fileInfo.Length - 1;
+            bool isPartial = false;
+            var rangeHeader = Request.Headers["Range"].ToString();
+            if (!string.IsNullOrWhiteSpace(rangeHeader) && rangeHeader.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+            {
+                var range = rangeHeader.Substring(6).Split('-', StringSplitOptions.RemoveEmptyEntries);
+                if (range.Length > 0 && long.TryParse(range[0], out var s)) start = s;
+                if (range.Length > 1 && long.TryParse(range[1], out var e)) end = e;
+                if (start < 0) start = 0;
+                if (end >= fileInfo.Length) end = fileInfo.Length - 1;
+                if (start <= end) isPartial = true;
+            }
+
+            var shouldLog = !isPartial || (isPartial && start == 0);
+            if (shouldLog)
+            {
+                try
+                {
+                    var callerUserId = _JwtHelper.GetTokenStr(Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", ""), "UserId");
+                    if (useMintcatMessage)
+                        await _IAPILogService.WriteLogAsync("Mintcat Download", callerUserId, clientIp);
+                    else
+                        await _IAPILogService.WriteLogAsync($"FilesController/DownloadFile FileId:{fileId}", callerUserId, clientIp);
+                }
+                catch
+                {
+                    // 写日志失败不影响下载流程
+                }
             }
 
             if (!noCount)
@@ -365,30 +443,19 @@ namespace ModsAPI.Controllers
             Response.Headers[HeaderNames.ETag] = $"\"{etag}\"";
             Response.Headers[HeaderNames.LastModified] = fileInfo.LastWriteTimeUtc.ToString("R");
 
-            // 如果请求带有 Range，则使用手动分片写入作为回退，确保在 IIS/反向代理场景下也能支持断点续传
-            var rangeHeader = Request.Headers["Range"].ToString();
-            if (!string.IsNullOrWhiteSpace(rangeHeader) && rangeHeader.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+            // 如果请求带有 Range，则使用手动分片写入作为回退
+            if (isPartial)
             {
-                long start = 0;
-                long end = fileInfo.Length - 1;
-                var range = rangeHeader.Substring(6).Split('-', StringSplitOptions.RemoveEmptyEntries);
-                if (range.Length > 0 && long.TryParse(range[0], out var s)) start = s;
-                if (range.Length > 1 && long.TryParse(range[1], out var e)) end = e;
-                if (start < 0) start = 0;
-                if (end >= fileInfo.Length) end = fileInfo.Length - 1;
                 if (start > end)
                     return StatusCode(StatusCodes.Status416RangeNotSatisfiable);
 
                 var length = end - start + 1;
-
                 Response.StatusCode = StatusCodes.Status206PartialContent;
                 Response.ContentType = contentType;
                 Response.Headers[HeaderNames.ContentRange] = $"bytes {start}-{end}/{fileInfo.Length}";
                 Response.ContentLength = length;
-                // 设置下载文件名
                 Response.Headers[HeaderNames.ContentDisposition] = $"attachment; filename=\"{safeName}\"";
 
-                // 直接流式输出指定区间
                 const int bufferSize = 64 * 1024;
                 var buffer = new byte[bufferSize];
                 try
@@ -403,18 +470,17 @@ namespace ModsAPI.Controllers
                         await Response.Body.WriteAsync(buffer, 0, read);
                         remaining -= read;
                         await Response.Body.FlushAsync();
-                        // 如果客户端断开，WriteAsync 会抛异常或 CancellationToken 会触发（可根据需要捕获）
                     }
                 }
                 catch
                 {
-                    // 忽略写入期间的异常（客户端断开等），不影响后续行为
+                    // 忽略写入期间的异常
                 }
 
                 return new EmptyResult();
             }
 
-            // 不带 Range 的请求交由 PhysicalFileResult 处理（框架优化）
+            // 不带 Range 的请求交由 PhysicalFileResult 处理
             var fileResult = new PhysicalFileResult(fullPath, contentType)
             {
                 FileDownloadName = safeName,
