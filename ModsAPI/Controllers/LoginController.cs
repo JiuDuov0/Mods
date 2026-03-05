@@ -495,7 +495,7 @@ namespace ModsAPI.Controllers
                     {
                         try
                         {
-                            await _RedisManageService.SetAsync(redisKey, latestVersion, null, 4);
+                            await _RedisManageService.SetAsync(redisKey, latestVersion, TimeSpan.FromHours(4), 4);
                         }
                         catch
                         {
