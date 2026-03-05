@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -53,6 +54,11 @@ namespace Entity.Mod
         /// 版本的状态
         /// </summary>
         public string? Status { get; set; }
+
+        /// <summary>
+        /// 获取或设置 mod.io 平台上资源添加的时间戳（以秒为单位，自 Unix 纪元起计算）。
+        /// </summary>
+        public long? Date_Added_modio { get; set; }
 
         /// <summary>
         /// 导航属性，指向所属的Mod

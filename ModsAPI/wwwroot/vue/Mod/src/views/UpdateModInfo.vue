@@ -42,6 +42,10 @@
                                 <el-option v-for="tag in tags" :key="tag.TypesId" :label="tag.TypeName"
                                     :value="tag.TypesId"></el-option>
                             </el-select>
+                            <el-input v-if="showModioFields" v-model="modForm.GameIdmodio" placeholder="请输入modio游戏ID"
+                                style="margin-bottom: 16px;" />
+                            <el-input v-if="showModioFields" v-model="modForm.ModIdmodio" placeholder="请输入modio ModID"
+                                style="margin-bottom: 16px;" />
                             <el-select v-model="selectedMod" filterable remote placeholder="请选择 Mod 依赖"
                                 :filter-method="fetchMods" @change="fetchModVersions"
                                 style="margin-bottom: 16px; width: 100%;">
@@ -91,6 +95,8 @@ export default {
                 description: '', // Mod 描述
                 VideoUrl: '', // Mod 视频链接
                 tags: [],
+                GameIdmodio: '',
+                ModIdmodio: '',
                 ModDependenceEntities: []
             },
             mods: [],
@@ -104,6 +110,7 @@ export default {
             GameName: localStorage.getItem('GameName'),
             Icon: localStorage.getItem('Icon'),
             tags: [], // 存储所有可选的 Mod 类型
+            showModioFields: false,
             NickName: ''
         };
     },
@@ -114,6 +121,11 @@ export default {
         this.fetchTags();
         this.fetchModDetails();
         this.detectDarkMode();
+        if (this.GameId === 'drg') {
+            this.showModioFields = true; // 显示 GameIdmodio 和 ModIdmodio
+        } else {
+            this.showModioFields = false; // 隐藏 GameIdmodio 和 ModIdmodio
+        }
     },
     methods: {
         fetchTags() {
@@ -157,6 +169,8 @@ export default {
                     this.modForm.PicUrl = response.data.ResultData.PicUrl;
                     this.modForm.tags = response.data.ResultData.ModTypeEntities.map((type) => type.Types.TypesId);
                     this.modForm.ModDependenceEntities = response.data.ResultData.ModDependenceEntities;
+                    this.modForm.GameIdmodio = response.data.ResultData.GameIdmodio;
+                    this.modForm.ModIdmodio = response.data.ResultData.ModIdmodio;
                     this.modForm.ModDependenceEntities.forEach((dependence) => {
                         dependence.ModDependenceId = dependence.ModDependenceId;
                         dependence.ModId = dependence.ModId;

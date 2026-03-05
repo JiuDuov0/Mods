@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ModsAPI.tools;
 using Newtonsoft.Json;
+using Redis.Interface;
 using Service.Interface;
 using Service.Realization;
+using System.IO.Compression;
 using System.Web;
 
 namespace ModsAPI.Controllers
@@ -25,22 +27,24 @@ namespace ModsAPI.Controllers
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly IAPILogService _IAPILogService;
         private readonly IMailService _IMailService;
-
+        private readonly IRedisManageService _RedisManageService;
         /// <summary>
-        /// 构造函数依赖注入
+        /// 初始化 LoginController 类的新实例，并注入所需的服务以支持用户认证、JWT 令牌生成、HTTP 上下文访问、API 日志记录、邮件发送及 Redis 管理功能。
         /// </summary>
-        /// <param name="iUserService"></param>
-        /// <param name="jwtHelper"></param>
-        /// <param name="iHttpContextAccessor"></param>
-        /// <param name="iAPILogService"></param>
-        /// <param name="iMailService"></param>
-        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService, IMailService iMailService)
+        /// <param name="iUserService">用于处理用户相关操作的服务实例，如用户验证和信息查询。</param>
+        /// <param name="jwtHelper">用于生成和验证 JWT 令牌的辅助工具实例。</param>
+        /// <param name="iHttpContextAccessor">用于访问当前 HTTP 请求上下文的服务实例。</param>
+        /// <param name="iAPILogService">用于记录 API 调用日志的服务实例。</param>
+        /// <param name="iMailService">用于发送邮件通知的服务实例。</param>
+        /// <param name="redisManageService">用于管理 Redis 缓存和会话的服务实例。</param>
+        public LoginController(IUserService iUserService, JwtHelper jwtHelper, IHttpContextAccessor iHttpContextAccessor, IAPILogService iAPILogService, IMailService iMailService, IRedisManageService redisManageService)
         {
             _IUserService = iUserService;
             _JwtHelper = jwtHelper;
             _IHttpContextAccessor = iHttpContextAccessor;
             _IAPILogService = iAPILogService;
             _IMailService = iMailService;
+            _RedisManageService = redisManageService;
         }
 
         /// <summary>
@@ -49,7 +53,7 @@ namespace ModsAPI.Controllers
         /// <param name="json">LoginAccount=账号（Email），Password=密码 json示例：{"LoginAccount":"","Password":""}</param>
         /// <returns></returns>
         [HttpPost(Name = "UserLogin")]
-        [EnableRateLimiting("Concurrency")] 
+        [EnableRateLimiting("Concurrency")]
         public ResultEntity<ResponseToken> UserLogin([FromBody] dynamic json)
         {
             #region 记录访问
@@ -285,7 +289,7 @@ namespace ModsAPI.Controllers
                 }
             }
             catch (Exception ex)
-            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+            {
                 return new ResultEntity<ResponseToken> { ResultCode = 500, ResultMsg = $"Token续签异常: {ex.Message}" };
             }
         }
@@ -331,6 +335,224 @@ namespace ModsAPI.Controllers
 
 
             return null;
+        }
+
+        /// <summary>
+        /// 处理一个 HTTP POST 请求以执行更新 Mintcat 操作。
+        /// </summary>
+        [HttpPost(Name = "Mintcat")]
+        public async Task<ResultEntity<bool>> Mintcat()
+        {
+            try
+            {
+                var destDir = @"C:\Web\dist\assets";
+                Directory.CreateDirectory(destDir);
+
+                // 从文件名提取版本（示例：mintcat_0.5.0_x64-setup.exe）
+                static string? GetVersionFromName(string name)
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(name ?? string.Empty, @"mintcat[_\-]?v?([0-9]+(?:\.[0-9]+)*)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    return m.Success ? m.Groups[1].Value : null;
+                }
+
+                // 本地最大版本
+                string? localVersion = null;
+                var localExeFiles = Directory.EnumerateFiles(destDir, "mintcat*.exe", SearchOption.TopDirectoryOnly)
+                                             .Select(Path.GetFileName)
+                                             .ToList();
+                foreach (var f in localExeFiles)
+                {
+                    var v = GetVersionFromName(f);
+                    if (v == null) continue;
+                    if (localVersion == null)
+                        localVersion = v;
+                    else
+                    {
+                        int CompareVer(string a, string b)
+                        {
+                            if (a == null && b == null) return 0;
+                            if (a == null) return -1;
+                            if (b == null) return 1;
+                            var aa = a.Split('.').Select(s => int.TryParse(s, out var n) ? n : 0).ToArray();
+                            var bb = b.Split('.').Select(s => int.TryParse(s, out var n) ? n : 0).ToArray();
+                            var len = Math.Max(aa.Length, bb.Length);
+                            for (int i = 0; i < len; i++)
+                            {
+                                var av = i < aa.Length ? aa[i] : 0;
+                                var bv = i < bb.Length ? bb[i] : 0;
+                                if (av != bv) return av > bv ? 1 : -1;
+                            }
+                            return 0;
+                        }
+                        if (CompareVer(v, localVersion) > 0) localVersion = v;
+                    }
+                }
+
+                // 请求 GitHub API 获取最新 release
+                var apiUrl = "https://api.github.com/repos/iriscats/mintcat/releases/latest";
+                using var http = new HttpClient();
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("ModsAPI-Mintcat-Updater");
+                http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github.v3+json");
+
+                var resp = await http.GetAsync(apiUrl);
+                if (!resp.IsSuccessStatusCode)
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = $"无法获取 release 信息: {resp.StatusCode}" };
+
+                var body = await resp.Content.ReadAsStringAsync();
+                var jo = Newtonsoft.Json.Linq.JObject.Parse(body);
+
+                // 优先使用 tag_name 作为版本（去掉前导 v）
+                var latestVersion = (string?)jo["tag_name"];
+                if (!string.IsNullOrWhiteSpace(latestVersion) && latestVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                    latestVersion = latestVersion.Substring(1);
+
+                // 查找 assets 中的 exe 文件
+                var assets = jo["assets"] as Newtonsoft.Json.Linq.JArray;
+                if (assets == null || assets.Count == 0)
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = "未在 release 中发现 assets" };
+
+                Newtonsoft.Json.Linq.JToken? chosen = null;
+                foreach (var a in assets)
+                {
+                    var name = (string?)a["name"];
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                        name.IndexOf("mintcat", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        chosen = a;
+                        break;
+                    }
+                }
+                if (chosen == null)
+                {
+                    foreach (var a in assets)
+                    {
+                        var name = (string?)a["name"];
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+                        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            chosen = a;
+                            break;
+                        }
+                    }
+                }
+
+                if (chosen == null)
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = "未找到可下载的 exe 资源" };
+
+                var assetName = (string?)chosen["name"];
+                var downloadUrl = (string?)chosen["browser_download_url"];
+                if (string.IsNullOrWhiteSpace(downloadUrl) || string.IsNullOrWhiteSpace(assetName))
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = "找到资源但无下载地址" };
+
+                // 若 tag 不存在，从 asset 名称提取版本
+                if (string.IsNullOrWhiteSpace(latestVersion))
+                    latestVersion = GetVersionFromName(assetName);
+
+                var redisKey = "mintcat:latest";
+
+                // 使用注入的 _RedisManageService（db4）
+                string? redisVal = null;
+                try
+                {
+                    // 尝试异步读取 redis
+                    redisVal = await _RedisManageService.GetAsync<string>(redisKey, 4);
+                }
+                catch
+                {
+                    // 若读取失败，忽略并继续（不会阻塞下载）
+                    redisVal = null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(redisVal) && !string.IsNullOrWhiteSpace(latestVersion) && string.Equals(redisVal, latestVersion, StringComparison.Ordinal))
+                {
+                    return new ResultEntity<bool> { ResultData = true, ResultMsg = "已是最新版本（记录）" };
+                }
+
+                // 版本比较函数（语义比较）
+                int CompareVersionsPublic(string a, string b)
+                {
+                    if (a == null && b == null) return 0;
+                    if (a == null) return -1;
+                    if (b == null) return 1;
+                    var aa = a.Split('.').Select(s => int.TryParse(s, out var n) ? n : 0).ToArray();
+                    var bb = b.Split('.').Select(s => int.TryParse(s, out var n) ? n : 0).ToArray();
+                    var len = Math.Max(aa.Length, bb.Length);
+                    for (int i = 0; i < len; i++)
+                    {
+                        var av = i < aa.Length ? aa[i] : 0;
+                        var bv = i < bb.Length ? bb[i] : 0;
+                        if (av != bv) return av > bv ? 1 : -1;
+                    }
+                    return 0;
+                }
+
+                // 若本地已有版本且最新版本不比本地大，则保存到 Redis 并返回“已是最新”
+                if (!string.IsNullOrWhiteSpace(localVersion) && !string.IsNullOrWhiteSpace(latestVersion) && CompareVersionsPublic(latestVersion, localVersion) <= 0)
+                {
+                    // 将最新版本写入 Redis（覆盖）
+                    if (!string.IsNullOrWhiteSpace(latestVersion))
+                    {
+                        try
+                        {
+                            await _RedisManageService.SetAsync(redisKey, latestVersion, null, 4);
+                        }
+                        catch
+                        {
+                            // ignore
+                        }
+                    }
+                    return new ResultEntity<bool> { ResultData = true, ResultMsg = "已是最新版本（本地）" };
+                }
+
+                // 下载 exe
+                var filePath = Path.Combine(destDir, assetName);
+                using (var resp2 = await http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    if (!resp2.IsSuccessStatusCode)
+                        return new ResultEntity<bool> { ResultData = false, ResultMsg = $"下载失败: {resp2.StatusCode}" };
+
+                    using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                    await resp2.Content.CopyToAsync(fs);
+                }
+
+                // 压缩为 mintcat.zip（只包含刚下载的 exe，覆盖已有）
+                var zipPath = Path.Combine(destDir, "mintcat-BvUg5ULE.zip");
+                try
+                {
+                    if (System.IO.File.Exists(zipPath))
+                        System.IO.File.Delete(zipPath);
+
+                    using var zipStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                    using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
+                    {
+                        archive.CreateEntryFromFile(filePath, assetName);
+                    }
+                }
+                catch (Exception exZip)
+                {
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = $"下载成功但压缩失败: {exZip.Message}" };
+                }
+
+                // 下载并打包成功后，将最新版本写入 Redis db4（覆盖）
+                if (!string.IsNullOrWhiteSpace(latestVersion))
+                {
+                    try
+                    {
+                        await _RedisManageService.SetAsync(redisKey, latestVersion, null, 4);
+                    }
+                    catch
+                    {
+                        // 忽略 Redis 写入错误
+                    }
+                }
+
+                return new ResultEntity<bool> { ResultData = true, ResultMsg = "已下载并打包为 mintcat.zip" };
+            }
+            catch (Exception ex)
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = ex.Message };
+            }
         }
     }
 }

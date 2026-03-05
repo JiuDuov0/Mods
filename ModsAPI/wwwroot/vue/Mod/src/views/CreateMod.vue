@@ -12,6 +12,11 @@
                             <el-input v-model="modForm.videoUrl" placeholder="请输入视频BV号" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.PicUrl" placeholder="请输入封面URL" style="margin-bottom: 16px;" />
                             <el-input v-model="modForm.version" placeholder="请输入版本号" style="margin-bottom: 16px;" />
+                            <!-- 根据 showModioFields 动态显示 -->
+                            <el-input v-if="showModioFields" v-model="modForm.GameIdmodio" placeholder="输入modio游戏ID"
+                                style="margin-bottom: 16px;" />
+                            <el-input v-if="showModioFields" v-model="modForm.ModIdmodio" placeholder="输入modio ModId"
+                                style="margin-bottom: 16px;" />
                             <el-input type="textarea" v-model="modForm.versionDescription" placeholder="请输入版本描述"
                                 style="margin-bottom: 16px;" />
                             <el-select v-model="modForm.tags" multiple placeholder="请选择标签"
@@ -96,6 +101,8 @@ export default {
                 versionDescription: '',
                 PicUrl: '',
                 videoUrl: '',
+                GameIdmodio: '',
+                ModIdmodio: '',
                 tags: [],
                 ModDependenceEntities: []
             },
@@ -111,6 +118,7 @@ export default {
             GameName: localStorage.getItem('GameName'),
             Icon: localStorage.getItem('Icon'),
             headurl: head,
+            showModioFields: false,
             NickName: ""
         };
     },
@@ -121,6 +129,11 @@ export default {
         this.fetchTags();
         this.fetchMods();
         this.detectDarkMode();
+        if (this.GameId === 'drg') {
+            this.showModioFields = true; // 显示 GameIdmodio 和 ModIdmodio
+        } else {
+            this.showModioFields = false; // 隐藏 GameIdmodio 和 ModIdmodio
+        }
     },
     methods: {
         fetchTags() {

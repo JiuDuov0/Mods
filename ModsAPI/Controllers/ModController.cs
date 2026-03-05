@@ -452,20 +452,36 @@ namespace ModsAPI.Controllers
         }
 
         /// <summary>
-        /// 更新 Mod 基本信息（描述 / 视频 / 封面 / 类型 / 依赖）
+        /// 更新 Mod 信息（作者操作）
         /// </summary>
         /// <param name="json">
+        /// JSON 传入示例（字段说明见下）：
         /// {
-        ///  "ModId":"",
-        ///  "Description":"",
-        ///  "VideoUrl":"",
-        ///  "PicUrl":"",
-        ///  "GameId":"",
-        ///  "ModTypeEntities":[{"TypesId":""}],
-        ///  "ModDependenceEntities":[{"DependenceModVersionId":""}]
+        ///   "ModId": "mod 的唯一标识（必填）",
+        ///   "Description": "描述文本，支持换行",
+        ///   "VideoUrl": "B 站 BV 号或其他视频标识（可选）",
+        ///   "PicUrl": "封面地址（可选）",
+        ///   "GameId": "游戏标识（可选）",
+        ///   "ModTypeEntities": [ { "TypesId": "类型 id" }, ... ],
+        ///   "ModIdmodio": "mod.io 上的 mod id（可选）",
+        ///   "GameIdmodio": "mod.io 上的 game id（可选）",
+        ///   "ModDependenceEntities": [ { "DependenceModVersionId": "依赖版本 id" }, ... ]
         /// }
+        ///
+        /// 字段说明：
+        /// - ModId：必须提供，用于定位要更新的 Mod；
+        /// - Description：支持换行，方法内部会把换行替换为 "/br" 存储；
+        /// - VideoUrl：若为 B 站 BV 号，方法会尝试获取封面并填充 PicUrl；
+        /// - ModTypeEntities：类型列表，元素为 ModTypeEntity，仅需包含 TypesId 字段；
+        /// - ModDependenceEntities：依赖列表，元素为 ModDependenceEntity，API 会为每项生成 ModDependenceId。
         /// </param>
-        /// <returns>ResultEntity(bool)</returns>
+        /// <returns>
+        /// 返回值示例（统一使用 ResultEntity）：
+        /// - 更新成功：{ ResultCode = 200, ResultData = true,  ResultMsg = "更新成功" }
+        /// - 非本人 Mod：{ ResultCode = 400, ResultMsg = "非本人Mod" }
+        /// - 更新失败（服务器或数据库错误）：{ ResultCode = 500, ResultMsg = "更新失败" }
+        /// - BV 号错误（参数校验）：{ ResultCode = 400, ResultMsg = "BV号不正确" }
+        /// </returns>
         [HttpPost(Name = "UpdateModInfo")]
         [Authorize]
         public ResultEntity<bool> UpdateModInfo([FromBody] dynamic json)
@@ -493,6 +509,8 @@ namespace ModsAPI.Controllers
                 PicUrl = (string)json.PicUrl,
                 GameId = (string)json.GameId,
                 ModTypeEntities = typesList,
+                ModIdmodio = (string)json.ModIdmodio,
+                GameIdmodio = (string)json.GameIdmodio,
                 ModDependenceEntities = dependenceList
             };
 

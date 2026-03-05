@@ -68,6 +68,18 @@ namespace Entity.Mod
         public string? GameId { get; set; }
 
         /// <summary>
+        /// mod.io 平台关联的游戏标识符。
+        /// </summary>
+        [InverseProperty("GameIdmodio")]
+        public string? GameIdmodio { get; set; }
+
+        /// <summary>
+        /// mod.io 平台上对应模组的唯一标识符。
+        /// </summary>
+        [InverseProperty("ModIdmodio")]
+        public string? ModIdmodio { get; set; }
+
+        /// <summary>
         /// 导航属性，指向Mod的图片
         /// </summary>
         public List<ModPictureEntity> ModPictureEntities { get; set; }

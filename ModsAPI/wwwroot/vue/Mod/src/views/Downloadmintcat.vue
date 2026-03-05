@@ -94,16 +94,36 @@ export default {
     },
     mounted() {
         this.observeSections();
-        this.download(); // 页面加载时自动触发下载
+        this.handleMintcatRequest();
         document.body.classList.remove('dark-theme');
+        setTimeout(() => {
+            document.body.style.backgroundImage = 'none';
+        }, 10);
     },
     methods: {
         download() {
-            const fileUrl = new URL('../assets/mintcat_0.4.6_x64-setup.zip', import.meta.url).href;
+            const fileUrl = new URL('../assets/mintcat.zip', import.meta.url).href;
             const link = document.createElement('a');
             link.href = fileUrl; // 设置文件路径
-            link.download = 'mintcat_0.4.6_x64-setup.zip'; // 设置下载文件名
+            link.download = 'mintcat.zip'; // 设置下载文件名
             link.click(); // 触发下载
+        },
+        async handleMintcatRequest() {
+            try {
+                // 发送 POST 请求到 /Login/Mintcat
+                const response = await this.$axios({
+                    url: `${import.meta.env.VITE_API_BASE_URL}/Login/Mintcat`,
+                    method: 'POST',
+                    responseType: 'json',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                this.download(); // 请求成功后触发下载
+            } catch (error) {
+                console.error('请求失败:', error);
+                ElMessage.error('请求失败，请稍后重试');
+            }
         },
         scrollToSection(sectionId) {
             const section = document.getElementById(sectionId);
@@ -132,6 +152,14 @@ export default {
     }
 };
 </script>
+
+<style>
+body {
+    background: none !important;
+    background-image: none !important;
+}
+</style>
+
 
 <style scoped>
 html {
