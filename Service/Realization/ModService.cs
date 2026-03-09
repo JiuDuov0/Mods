@@ -522,7 +522,7 @@ namespace Service.Realization
                     return null;
                 }
 
-                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(10), 1);
+                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
             }
 
             var changedByModIo = await UpdateModDetailFrom_modio(entity.ModId, entity);
@@ -534,20 +534,18 @@ namespace Service.Realization
                     return null;
                 }
 
-                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(10), 1);
+                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
             }
 
-            var avgTask = context.ModPointEntity
+            var avg = await context.ModPointEntity
                 .Where(x => x.ModId == ModId)
                 .Select(x => (double?)x.Point)
                 .AverageAsync();
 
-            var subscribeTask = context.UserModSubscribeEntity
+            var isSubscribed = await context.UserModSubscribeEntity
                 .AnyAsync(x => x.UserId == UserId && x.ModId == ModId);
 
-            await Task.WhenAll(avgTask, subscribeTask);
-
-            NormalizeModDetailEntity(entity, subscribeTask.Result, avgTask.Result);
+            NormalizeModDetailEntity(entity, isSubscribed, avg);
             return entity;
         }
 
