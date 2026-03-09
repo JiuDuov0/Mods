@@ -233,7 +233,7 @@ namespace Service.Realization
                 });
             }
 
-            await _IRedisManageService.SetAsync($"ModListPage:{gameId}", list, TimeSpan.FromMinutes(30), 1);
+            await _IRedisManageService.SetAsync($"ModListPage:{gameId}", list, TimeSpan.FromMinutes(10), 1);
         }
 
         private static List<string> ExtractTypes(dynamic? dyn)
