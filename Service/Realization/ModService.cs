@@ -505,92 +505,125 @@ namespace Service.Realization
 
         public async Task<ModEntity> ModDetail(string UserId, string ModId)
         {
-            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
-            var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
+            if (string.IsNullOrWhiteSpace(ModId))
+            {
+                return null;
+            }
 
-            var entity = _IRedisManageService.Get<ModEntity>($"ModDetail:{ModId}", 1);
+            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            var cacheKey = $"ModDetail:{ModId}";
+
+            var entity = _IRedisManageService.Get<ModEntity>(cacheKey, 1);
             if (entity == null)
             {
-                entity = await Context.ModEntity.IgnoreQueryFilters()
-                    .Include(x => x.ModVersionEntities)
-                    .ThenInclude(x => x.ApproveModVersionEntity)
-                    .Include(x => x.ModTypeEntities)
-                    .ThenInclude(x => x.Types)
-                    .Include(x => x.CreatorEntity)
-                    .Include(x => x.ModDependenceEntities)
-                    .ThenInclude(x => x.DependenceModVersion)
-                    .ThenInclude(x => x.Mod)
-                    .Where(x => x.SoftDeleted == false)
-                    .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
-                    .FirstOrDefaultAsync(x => x.ModId == ModId);
-                await _IRedisManageService.SetAsync($"ModDetail:{entity.ModId}", entity, new TimeSpan(0, 10, 0), 1);
-            }
-
-            var boolreload = await UpdateModDetailFrom_modio(entity.ModId, entity);
-            if (boolreload)
-            {
-                entity = await Context.ModEntity.IgnoreQueryFilters()
-    .Include(x => x.ModVersionEntities)
-    .ThenInclude(x => x.ApproveModVersionEntity)
-    .Include(x => x.ModTypeEntities)
-    .ThenInclude(x => x.Types)
-    .Include(x => x.CreatorEntity)
-    .Include(x => x.ModDependenceEntities)
-    .ThenInclude(x => x.DependenceModVersion)
-    .ThenInclude(x => x.Mod)
-    .Where(x => x.SoftDeleted == false)
-    .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
-    .FirstOrDefaultAsync(x => x.ModId == ModId);
-                await _IRedisManageService.SetAsync($"ModDetail:{entity.ModId}", entity, new TimeSpan(0, 10, 0), 1);
-            }
-
-            var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);
-            if (entity != null)
-            {
-                var user = new UserEntity() { UserId = entity.CreatorEntity.UserId, NickName = entity.CreatorEntity.NickName };
-                entity.CreatorEntity = user;
-                entity.IsMySubscribe = subscribe != null;
-
-                entity.ModVersionEntities = entity.ModVersionEntities
-                    .Where(x => x.ApproveModVersionEntity.Status == "20")
-                    .Where(x => !string.IsNullOrWhiteSpace(x.FilesId))
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ToList();
-
-                foreach (var modVersion in entity.ModVersionEntities)
+                entity = await QueryModDetailEntityAsync(context, ModId);
+                if (entity == null)
                 {
-                    if (modVersion.ApproveModVersionEntity != null)
-                    {
-                        modVersion.ApproveModVersionEntity.User = null;
-                        modVersion.ApproveModVersionEntity.Comments = null;
-                        modVersion.ApproveModVersionEntity.ApprovedAt = null;
-                    }
+                    return null;
+                }
+
+                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(10), 1);
+            }
+
+            var changedByModIo = await UpdateModDetailFrom_modio(entity.ModId, entity);
+            if (changedByModIo)
+            {
+                entity = await QueryModDetailEntityAsync(context, ModId);
+                if (entity == null)
+                {
+                    return null;
+                }
+
+                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(10), 1);
+            }
+
+            var avgTask = context.ModPointEntity
+                .Where(x => x.ModId == ModId)
+                .Select(x => (double?)x.Point)
+                .AverageAsync();
+
+            var subscribeTask = context.UserModSubscribeEntity
+                .AnyAsync(x => x.UserId == UserId && x.ModId == ModId);
+
+            await Task.WhenAll(avgTask, subscribeTask);
+
+            NormalizeModDetailEntity(entity, subscribeTask.Result, avgTask.Result);
+            return entity;
+        }
+
+        private async Task<ModEntity> QueryModDetailEntityAsync(AllContext context, string modId)
+        {
+            return await context.ModEntity
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(x => x.ModVersionEntities)
+                .ThenInclude(x => x.ApproveModVersionEntity)
+                .Include(x => x.ModTypeEntities)
+                .ThenInclude(x => x.Types)
+                .Include(x => x.CreatorEntity)
+                .Include(x => x.ModDependenceEntities)
+                .ThenInclude(x => x.DependenceModVersion)
+                .ThenInclude(x => x.Mod)
+                .Where(x => x.SoftDeleted == false)
+                .Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                .FirstOrDefaultAsync(x => x.ModId == modId);
+        }
+
+        private static void NormalizeModDetailEntity(ModEntity entity, bool isSubscribed, double? avg)
+        {
+            if (entity == null)
+            {
+                return;
+            }
+
+            if (entity.CreatorEntity != null)
+            {
+                entity.CreatorEntity = new UserEntity
+                {
+                    UserId = entity.CreatorEntity.UserId,
+                    NickName = entity.CreatorEntity.NickName
+                };
+            }
+
+            entity.IsMySubscribe = isSubscribed;
+
+            entity.ModVersionEntities = (entity.ModVersionEntities ?? new List<ModVersionEntity>())
+                .Where(x => x.ApproveModVersionEntity != null && x.ApproveModVersionEntity.Status == "20")
+                .Where(x => !string.IsNullOrWhiteSpace(x.FilesId))
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList();
+
+            foreach (var modVersion in entity.ModVersionEntities)
+            {
+                if (modVersion.ApproveModVersionEntity != null)
+                {
+                    modVersion.ApproveModVersionEntity.User = null;
+                    modVersion.ApproveModVersionEntity.Comments = null;
+                    modVersion.ApproveModVersionEntity.ApprovedAt = null;
                 }
             }
 
-            if (avg != null)
+            if (avg.HasValue)
             {
-                entity.AVGPoint = Convert.ToDouble(((double)avg).ToString("0.00"));
+                entity.AVGPoint = Math.Round(avg.Value, 2);
             }
-            //GC.Collect();
-
-            return entity;
         }
 
         public async Task<bool> UpdateModDetailFrom_modio(string ModId, ModEntity Mod)
         {
-            // 若未配置 mod.io 关联标识，直接返回成功（无操作）
             if (Mod == null || string.IsNullOrWhiteSpace(Mod.ModIdmodio) || string.IsNullOrWhiteSpace(Mod.GameIdmodio))
-                return true;
-            //如果有数据则说明近期查询过 不再重复查询
-            var entity = _IRedisManageService.Get<string>($"modioDetail:{ModId}", 3);
-            if (!string.IsNullOrWhiteSpace(entity))
+                return false;
+
+            var modioCacheKey = $"modioDetail:{ModId}";
+            var existed = _IRedisManageService.Get<string>(modioCacheKey, 3);
+            if (!string.IsNullOrWhiteSpace(existed))
             {
-                return true;
+                return false;
             }
+
             try
             {
-                // 构造 mod.io API 地址
                 var gameIdEscaped = Uri.EscapeDataString(Mod.GameIdmodio);
                 var modIdEscaped = Uri.EscapeDataString(Mod.ModIdmodio);
                 var url = $"https://mod.io/v1/games/@{gameIdEscaped}/mods/@{modIdEscaped}/files?_sort=-date_added&_limit=100";
@@ -599,122 +632,108 @@ namespace Service.Realization
                 http.DefaultRequestHeaders.Accept.Clear();
                 http.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-                // 添加固定的 Authorization 头（Bearer <token>）
-                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer",
-                    "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiUlNBLU9BRVAiLCJjdHkiOiJKV1QiLCJ6aXAiOiJERUYiLCJ4NXQiOiJzR0pJLUJhTmhlTDctUjBMejJFdlhhNlQweGs9In0.e3KF-aKuaLxTD_jxlZYIO8TfAhK7_EFMjpX-p18AQVs6A4Rhen1EiOIv_jM1Oardx-TqtF7VZjPAtBJy-QwUuIMWmPnBctWLb4YiNriS66XnD15ElHhAinLfphgmqc6ac0X8Oyxgfh42IASLQvDoPhYAcIa00e4CvhkzpFQdX9cnkEbLwF057zQgsKGIz6dHUYXjvLuIF0WEfC7VraAdO72P5kjGvq6A5Ze5X7AuYMTO9mBS9yUnQ4SLIIKx-v_MBoEWodyvhjDcE5WBtMM_jnmlYH4uNVIAIRGpyEkTgsiRkYmcmlP4JNlu1ElhBZkqn7vtKfZ27T_yWMFvMaLVug.gHxjg6BtMIxQUmebDWDwZQ.mBEbsSPP_ekY2CDl4RoEsK3gBRMvRO_6pwgXzTb_EV44nPmnF8ioFWMW6GGA1Jk3P1aNAaItCsSvhtR7J4YdBhYp7HL1sl2e-ZyCUQaynbpnwg3FBnT3wC-40N-0e6S9sbf2gZDOG-oPlnKqoRM4FFMaScKIOujWteQpg8yCIjkijDSqe0eu6iYJD603wMKbNWyhT0rqKjCfdOqt7bqd77Aovj9EZAkjLEdSuw0YGL4hHkrEuoPDCoO0C-bAKKcBKUBYwOFQsl5TWKAnGPppu-kxXsTL1nPJxH-JIpHXHecrsyVK8ZddSDGunlTvPDO3XAdPh3fFQ2uPQkgUhPKGghTvsh3vzBc-R46OECVYFdkUsf7AOJV3IAg8iif_2sAazz8LFLmg9d58CUW8GFV58A1xG6K0xWivzcgmkXUwdJiRFZAQIjJFAXzsPYslTRuBVtfqVeQ77Qg49n2YmXw5m6zIe4Cuk4cpw8qzrw-CW-mey0NHcSdNJfPcUkNOecxEHDfPSkV769x9tcvV_LqSxgBXgXWSF7moOErDjsefupntqDwaCMiQHvJkfdVbjQs8_cSbvCdHHOFSW867el-2z3Zz2lsgq4spanUGtE-1fzzdpgmPtJ778J1Fk4kFrwck2ZsNUNP3ULUm2Ddsu-UK7REpPdl57iVR83F-7ONPqENRj6M8B7Ta7l4gYtrhliS1oUSkLbMl4HyTzuT3VlM_w-Uy72LW5q-1aTXZlTkXkZatCdQpy1X1926eKTm1CvyuI8Vrqil7fWxTDZYdP-uo9YRqKg_l_S-n58rRnLyfSNtziPnn1OUjVG0ub5_8FITm_2jAgD0_UaZA4oWX8CozsR3IE1XlufZkzT0OLQFypyGYUht_p-p42b3K4Tx0ZbPvgZS-YVZApvrvIxsiBEJjkSsfrYk6PkurBe8nlFroF2xWntZTRc27T6NXZJ3IogPj7Kq0HG0xW4OhDVH-eCRTTBNK6Ygh9hE7etM_nBe8vG80NoQ1XWCJyEl3_DM_8lEBElrbTFw3dNyw5IC1Z5kLxCovg9Nz9cRNnxhZquU70CtRJVTkwGvS3wbSA96XLGpi.LO_Fci_4ePJNSqlhchzxJQ"
-                );
+                var token = _configuration["ModIo:Token"];
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
 
-                // 发起 GET 请求
                 var resp = await http.GetAsync(url);
                 if (!resp.IsSuccessStatusCode)
                 {
                     return false;
                 }
 
-                // 读取返回内容
                 var body = await resp.Content.ReadAsStringAsync();
                 if (string.IsNullOrWhiteSpace(body))
+                {
                     return false;
+                }
 
-                // 将 body 解析为 JSON，并仅保存 data 中的第一条数据到 Redis（若存在）
+                JToken parsed;
                 try
                 {
-                    var parsed = JToken.Parse(body);
-                    JToken? firstData = null;
-
-                    if (parsed.Type == JTokenType.Object)
-                    {
-                        var obj = (JObject)parsed;
-                        if (obj.TryGetValue("data", out var dataToken) && dataToken is JArray dataArr && dataArr.Count > 0)
-                        {
-                            firstData = dataArr[0];
-                        }
-                    }
-                    else if (parsed is JArray arr && arr.Count > 0)
-                    {
-                        // 若返回本身就是数组，取第一项
-                        firstData = arr[0];
-                    }
-
-                    if (firstData != null)
-                    {
-                        // 以压缩的 JSON 字符串形式保存
-                        await _IRedisManageService.SetAsync($"modioDetail:{ModId}", firstData.ToString(Newtonsoft.Json.Formatting.None), TimeSpan.FromDays(1), 3);
-
-                        // 尝试从 mod.io 返回数据中读取 version 并与当前 Mod 的版本号对比
-                        try
-                        {
-                            string? modioVersion = null;
-                            if (firstData.Type == JTokenType.Object)
-                            {
-                                modioVersion = (string?)firstData["version"];
-                            }
-
-                            var currentVersion = Mod?.ModVersionEntities?
-                                .Where(v => !string.IsNullOrWhiteSpace(v.VersionNumber))
-                                .OrderByDescending(v => v.CreatedAt)
-                                .ThenByDescending(v => v.VersionNumber)
-                                .FirstOrDefault()?.VersionNumber;
-
-                            if (!string.IsNullOrWhiteSpace(modioVersion) && currentVersion != null && !string.Equals(modioVersion, currentVersion, StringComparison.Ordinal))
-                            {
-                                // 发现 mod.io 上的 version 与数据库中最新版本号不一致
-                                var fullPath = await DownloadAndSaveFileFromJsonAsync(firstData.ToString(Newtonsoft.Json.Formatting.None));
-                                if (!string.IsNullOrEmpty(fullPath))
-                                {
-
-                                    var fi = new System.IO.FileInfo(fullPath);
-                                    var fileEntity = new FilesEntity { FilesId = Guid.NewGuid().ToString(), FilesType = Path.GetExtension(fullPath)?.TrimStart('.') ?? string.Empty, FilesName = (string?)firstData["filename"] ?? Path.GetFileName(fullPath), Path = fullPath, Size = fi.Length.ToString(), CreatedAt = DateTime.Now };
-
-                                    // 创建 ModVersion 实体
-                                    var modVersionEntity = new ModVersionEntity
-                                    {
-                                        VersionId = Guid.NewGuid().ToString(),
-                                        ModId = Mod.ModId,
-                                        Description = (string?)firstData["changelog"],
-                                        VersionNumber = (string?)firstData["version"] ?? "unknown",
-                                        FilesId = fileEntity.FilesId,
-                                        Status = "20", // 已审核
-                                        CreatedAt = DateTime.Now
-                                    };
-
-                                    //创建ApproveModVersion
-                                    var approveEntity = new ApproveModVersionEntity
-                                    {
-                                        ApproveModVersionId = Guid.NewGuid().ToString(),
-                                        VersionId = modVersionEntity.VersionId,
-                                        UserId = "system",
-                                        ApprovedAt = DateTime.Now,
-                                        Status = "20",
-                                        Comments = "自动同步 mod.io 上的版本"
-                                    };
-
-                                    // 插入数据库
-                                    var db = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
-                                    db.FilesEntity.Add(fileEntity);
-                                    db.ModVersionEntity.Add(modVersionEntity);
-                                    db.ApproveModEntity.Add(approveEntity);
-                                    await db.SaveChangesAsync();
-                                    //清除redis缓存
-                                    _IRedisManageService.Remove($"ModDetail:{ModId}", 1);
-                                }
-                                else
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // 比对失败不影响主流程
-                        }
-                    }
+                    parsed = JToken.Parse(body);
                 }
                 catch
                 {
-                    // 解析或缓存失败不影响主流程
+                    return false;
                 }
+
+                JToken firstData = null;
+                if (parsed is JObject obj && obj.TryGetValue("data", out var dataToken) && dataToken is JArray dataArr && dataArr.Count > 0)
+                {
+                    firstData = dataArr[0];
+                }
+                else if (parsed is JArray arr && arr.Count > 0)
+                {
+                    firstData = arr[0];
+                }
+
+                if (firstData == null)
+                {
+                    return false;
+                }
+
+                await _IRedisManageService.SetAsync(modioCacheKey, firstData.ToString(Newtonsoft.Json.Formatting.None), TimeSpan.FromDays(1), 3);
+
+                string modioVersion = firstData.Type == JTokenType.Object ? (string)firstData["version"] : null;
+                var currentVersion = Mod.ModVersionEntities?
+                    .Where(v => !string.IsNullOrWhiteSpace(v.VersionNumber))
+                    .OrderByDescending(v => v.CreatedAt)
+                    .ThenByDescending(v => v.VersionNumber)
+                    .FirstOrDefault()?.VersionNumber;
+
+                if (string.IsNullOrWhiteSpace(modioVersion) || string.IsNullOrWhiteSpace(currentVersion) || string.Equals(modioVersion, currentVersion, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                var fullPath = await DownloadAndSaveFileFromJsonAsync(firstData.ToString(Newtonsoft.Json.Formatting.None));
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    return false;
+                }
+
+                var fi = new System.IO.FileInfo(fullPath);
+                var fileEntity = new FilesEntity
+                {
+                    FilesId = Guid.NewGuid().ToString(),
+                    FilesType = Path.GetExtension(fullPath)?.TrimStart('.') ?? string.Empty,
+                    FilesName = (string)firstData["filename"] ?? Path.GetFileName(fullPath),
+                    Path = fullPath,
+                    Size = fi.Length.ToString(),
+                    CreatedAt = DateTime.Now
+                };
+
+                var modVersionEntity = new ModVersionEntity
+                {
+                    VersionId = Guid.NewGuid().ToString(),
+                    ModId = Mod.ModId,
+                    Description = (string)firstData["changelog"],
+                    VersionNumber = modioVersion,
+                    FilesId = fileEntity.FilesId,
+                    Status = "20",
+                    CreatedAt = DateTime.Now
+                };
+
+                var approveEntity = new ApproveModVersionEntity
+                {
+                    ApproveModVersionId = Guid.NewGuid().ToString(),
+                    VersionId = modVersionEntity.VersionId,
+                    UserId = "system",
+                    ApprovedAt = DateTime.Now,
+                    Status = "20",
+                    Comments = "自动同步 mod.io 上的版本"
+                };
+
+                var db = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+                db.FilesEntity.Add(fileEntity);
+                db.ModVersionEntity.Add(modVersionEntity);
+                db.ApproveModEntity.Add(approveEntity);
+                await db.SaveChangesAsync();
+
+                _IRedisManageService.Remove($"ModDetail:{ModId}", 1);
                 return true;
             }
             catch

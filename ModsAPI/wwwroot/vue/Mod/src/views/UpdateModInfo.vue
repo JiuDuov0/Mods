@@ -264,6 +264,8 @@ export default {
                 VideoUrl: this.modForm.VideoUrl,
                 PicUrl: this.modForm.PicUrl,
                 GameId: this.GameId,
+                GameIdmodio: this.modForm.GameIdmodio,
+                ModIdmodio: this.modForm.ModIdmodio,
                 ModTypeEntities: this.modForm.tags.map((tag) => ({ TypesId: tag })),
                 ModDependenceEntities: this.modForm.ModDependenceEntities.map((dependence) => ({
                     ModDependenceId: dependence.ModDependenceId,

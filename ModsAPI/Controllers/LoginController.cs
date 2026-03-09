@@ -518,20 +518,30 @@ namespace ModsAPI.Controllers
 
                 // 压缩为 mintcat.zip（只包含刚下载的 exe，覆盖已有）
                 var zipPath = Path.Combine(destDir, "mintcat-BvUg5ULE.zip");
+                var tempZipPath = Path.Combine(destDir, $"mintcat-{Guid.NewGuid():N}.tmp.zip");
+
                 try
                 {
-                    if (System.IO.File.Exists(zipPath))
-                        System.IO.File.Delete(zipPath);
-
-                    using var zipStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                    using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
+                    // 先写临时文件，避免直接操作目标 zip 导致失败
+                    using (var archive = ZipFile.Open(tempZipPath, ZipArchiveMode.Create))
                     {
-                        archive.CreateEntryFromFile(filePath, assetName);
+                        archive.CreateEntryFromFile(filePath, assetName, CompressionLevel.SmallestSize);
                     }
+
+                    // 覆盖旧 zip；不需要先 File.Delete
+                    File.Move(tempZipPath, zipPath, overwrite: true);
                 }
                 catch (Exception exZip)
                 {
                     return new ResultEntity<bool> { ResultData = false, ResultMsg = $"下载成功但压缩失败: {exZip.Message}" };
+                }
+                finally
+                {
+                    // 清理临时文件
+                    if (System.IO.File.Exists(tempZipPath))
+                    {
+                        try { System.IO.File.Delete(tempZipPath); } catch { }
+                    }
                 }
 
                 // 下载并打包成功后，将最新版本写入 Redis db4（覆盖）
