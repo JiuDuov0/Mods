@@ -529,7 +529,7 @@ namespace ModsAPI.Controllers
                     }
 
                     // 覆盖旧 zip；不需要先 File.Delete
-                    File.Move(tempZipPath, zipPath, overwrite: true);
+                    System.IO.File.Move(tempZipPath, zipPath, overwrite: true);
                 }
                 catch (Exception exZip)
                 {
