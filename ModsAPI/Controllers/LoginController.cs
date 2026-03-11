@@ -28,6 +28,8 @@ namespace ModsAPI.Controllers
         private readonly IAPILogService _IAPILogService;
         private readonly IMailService _IMailService;
         private readonly IRedisManageService _RedisManageService;
+        private static readonly System.Threading.SemaphoreSlim _mintcatUpdateLock = new(1, 1);
+
         /// <summary>
         /// 初始化 LoginController 类的新实例，并注入所需的服务以支持用户认证、JWT 令牌生成、HTTP 上下文访问、API 日志记录、邮件发送及 Redis 管理功能。
         /// </summary>
@@ -343,6 +345,12 @@ namespace ModsAPI.Controllers
         [HttpPost(Name = "Mintcat")]
         public async Task<ResultEntity<bool>> Mintcat()
         {
+            // 尝试立即获取锁，避免请求堆积；拿不到就直接返回
+            if (!await _mintcatUpdateLock.WaitAsync(0))
+            {
+                return new ResultEntity<bool> { ResultData = false, ResultMsg = "Mintcat 更新任务正在执行，请稍后重试" };
+            }
+
             try
             {
                 var destDir = @"C:\Web\dist\assets";
@@ -355,7 +363,6 @@ namespace ModsAPI.Controllers
                     return m.Success ? m.Groups[1].Value : null;
                 }
 
-                // 本地最大版本
                 string? localVersion = null;
                 var localExeFiles = Directory.EnumerateFiles(destDir, "mintcat*.exe", SearchOption.TopDirectoryOnly)
                                              .Select(Path.GetFileName)
@@ -365,7 +372,9 @@ namespace ModsAPI.Controllers
                     var v = GetVersionFromName(f);
                     if (v == null) continue;
                     if (localVersion == null)
+                    {
                         localVersion = v;
+                    }
                     else
                     {
                         int CompareVer(string a, string b)
@@ -384,11 +393,11 @@ namespace ModsAPI.Controllers
                             }
                             return 0;
                         }
+
                         if (CompareVer(v, localVersion) > 0) localVersion = v;
                     }
                 }
 
-                // 请求 GitHub API 获取最新 release
                 var apiUrl = "https://api.github.com/repos/iriscats/mintcat/releases/latest";
                 using var http = new HttpClient();
                 http.DefaultRequestHeaders.UserAgent.ParseAdd("ModsAPI-Mintcat-Updater");
@@ -401,12 +410,10 @@ namespace ModsAPI.Controllers
                 var body = await resp.Content.ReadAsStringAsync();
                 var jo = Newtonsoft.Json.Linq.JObject.Parse(body);
 
-                // 优先使用 tag_name 作为版本（去掉前导 v）
                 var latestVersion = (string?)jo["tag_name"];
                 if (!string.IsNullOrWhiteSpace(latestVersion) && latestVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase))
                     latestVersion = latestVersion.Substring(1);
 
-                // 查找 assets 中的 exe 文件
                 var assets = jo["assets"] as Newtonsoft.Json.Linq.JArray;
                 if (assets == null || assets.Count == 0)
                     return new ResultEntity<bool> { ResultData = false, ResultMsg = "未在 release 中发现 assets" };
@@ -423,6 +430,7 @@ namespace ModsAPI.Controllers
                         break;
                     }
                 }
+
                 if (chosen == null)
                 {
                     foreach (var a in assets)
@@ -445,31 +453,27 @@ namespace ModsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(downloadUrl) || string.IsNullOrWhiteSpace(assetName))
                     return new ResultEntity<bool> { ResultData = false, ResultMsg = "找到资源但无下载地址" };
 
-                // 若 tag 不存在，从 asset 名称提取版本
                 if (string.IsNullOrWhiteSpace(latestVersion))
                     latestVersion = GetVersionFromName(assetName);
 
                 var redisKey = "mintcat:latest";
-
-                // 使用注入的 _RedisManageService（db4）
                 string? redisVal = null;
                 try
                 {
-                    // 尝试异步读取 redis
                     redisVal = await _RedisManageService.GetAsync<string>(redisKey, 4);
                 }
                 catch
                 {
-                    // 若读取失败，忽略并继续（不会阻塞下载）
                     redisVal = null;
                 }
 
-                if (!string.IsNullOrWhiteSpace(redisVal) && !string.IsNullOrWhiteSpace(latestVersion) && string.Equals(redisVal, latestVersion, StringComparison.Ordinal))
+                if (!string.IsNullOrWhiteSpace(redisVal) &&
+                    !string.IsNullOrWhiteSpace(latestVersion) &&
+                    string.Equals(redisVal, latestVersion, StringComparison.Ordinal))
                 {
                     return new ResultEntity<bool> { ResultData = true, ResultMsg = "已是最新版本（记录）" };
                 }
 
-                // 版本比较函数（语义比较）
                 int CompareVersionsPublic(string a, string b)
                 {
                     if (a == null && b == null) return 0;
@@ -487,25 +491,21 @@ namespace ModsAPI.Controllers
                     return 0;
                 }
 
-                // 若本地已有版本且最新版本不比本地大，则保存到 Redis 并返回“已是最新”
-                if (!string.IsNullOrWhiteSpace(localVersion) && !string.IsNullOrWhiteSpace(latestVersion) && CompareVersionsPublic(latestVersion, localVersion) <= 0)
+                if (!string.IsNullOrWhiteSpace(localVersion) &&
+                    !string.IsNullOrWhiteSpace(latestVersion) &&
+                    CompareVersionsPublic(latestVersion, localVersion) <= 0)
                 {
-                    // 将最新版本写入 Redis（覆盖）
-                    if (!string.IsNullOrWhiteSpace(latestVersion))
+                    try
                     {
-                        try
-                        {
-                            await _RedisManageService.SetAsync(redisKey, latestVersion, TimeSpan.FromHours(4), 4);
-                        }
-                        catch
-                        {
-                            // ignore
-                        }
+                        await _RedisManageService.SetAsync(redisKey, latestVersion, TimeSpan.FromHours(4), 4);
                     }
+                    catch
+                    {
+                    }
+
                     return new ResultEntity<bool> { ResultData = true, ResultMsg = "已是最新版本（本地）" };
                 }
 
-                // 下载 exe
                 var filePath = Path.Combine(destDir, assetName);
                 using (var resp2 = await http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
@@ -516,35 +516,67 @@ namespace ModsAPI.Controllers
                     await resp2.Content.CopyToAsync(fs);
                 }
 
-                // 压缩为 mintcat.zip（只包含刚下载的 exe，覆盖已有）
                 var zipPath = Path.Combine(destDir, "mintcat-BvUg5ULE.zip");
                 var tempZipPath = Path.Combine(destDir, $"mintcat-{Guid.NewGuid():N}.tmp.zip");
 
+                const int maxReplaceRetryCount = 5;
+                const int replaceRetryDelayMs = 200;
+
+                static bool IsReplaceRetryable(Exception ex)
+                {
+                    return ex is IOException || ex is UnauthorizedAccessException;
+                }
+
+                async Task ReplaceZipWithRetryAsync(string tempPath, string targetPath)
+                {
+                    Exception? lastEx = null;
+
+                    for (var i = 1; i <= maxReplaceRetryCount; i++)
+                    {
+                        try
+                        {
+                            if (System.IO.File.Exists(targetPath))
+                            {
+                                System.IO.File.Replace(tempPath, targetPath, null, ignoreMetadataErrors: true);
+                            }
+                            else
+                            {
+                                System.IO.File.Move(tempPath, targetPath);
+                            }
+
+                            return;
+                        }
+                        catch (Exception ex) when (IsReplaceRetryable(ex) && i < maxReplaceRetryCount)
+                        {
+                            lastEx = ex;
+                            await Task.Delay(replaceRetryDelayMs * i);
+                        }
+                    }
+
+                    throw new IOException($"替换 zip 失败，已重试 {maxReplaceRetryCount} 次", lastEx);
+                }
+
                 try
                 {
-                    // 先写临时文件，避免直接操作目标 zip 导致失败
                     using (var archive = ZipFile.Open(tempZipPath, ZipArchiveMode.Create))
                     {
                         archive.CreateEntryFromFile(filePath, assetName, CompressionLevel.SmallestSize);
                     }
 
-                    // 覆盖旧 zip；不需要先 File.Delete
-                    System.IO.File.Move(tempZipPath, zipPath, overwrite: true);
+                    await ReplaceZipWithRetryAsync(tempZipPath, zipPath);
                 }
                 catch (Exception exZip)
                 {
-                    return new ResultEntity<bool> { ResultData = false, ResultMsg = $"下载成功但压缩失败: {exZip.Message}" };
+                    return new ResultEntity<bool> { ResultData = false, ResultMsg = $"下载成功但压缩替换失败: {exZip.Message}" };
                 }
                 finally
                 {
-                    // 清理临时文件
                     if (System.IO.File.Exists(tempZipPath))
                     {
                         try { System.IO.File.Delete(tempZipPath); } catch { }
                     }
                 }
 
-                // 下载并打包成功后，将最新版本写入 Redis db4（覆盖）
                 if (!string.IsNullOrWhiteSpace(latestVersion))
                 {
                     try
@@ -553,7 +585,6 @@ namespace ModsAPI.Controllers
                     }
                     catch
                     {
-                        // 忽略 Redis 写入错误
                     }
                 }
 
@@ -562,6 +593,10 @@ namespace ModsAPI.Controllers
             catch (Exception ex)
             {
                 return new ResultEntity<bool> { ResultData = false, ResultMsg = ex.Message };
+            }
+            finally
+            {
+                _mintcatUpdateLock.Release();
             }
         }
     }

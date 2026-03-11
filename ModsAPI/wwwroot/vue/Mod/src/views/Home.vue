@@ -106,7 +106,7 @@ export default {
         return {
             colSpan: 21,
             skip: 0,
-            take: 100,
+            take: 20,
             modTypes: [],
             modList: [],
             NickName: "",
