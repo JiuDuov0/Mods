@@ -369,6 +369,9 @@ namespace ModsAPI.Controllers
             var mintcatOrigins = new[] { "http://localhost:1420", "http://tauri.localhost" };
             var normalOrigins = new[] { "https://modcat.top", "http://localhost:5173" };
 
+            var authToken = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "").Trim();
+            var hasToken = !string.IsNullOrWhiteSpace(authToken);
+
             bool allowed = false;
             bool useMintcatMessage = false;
             if (!string.IsNullOrWhiteSpace(originNormalized))
@@ -380,6 +383,11 @@ namespace ModsAPI.Controllers
                 }
                 else if (normalOrigins.Contains(originNormalized))
                 {
+                    allowed = true;
+                }
+                else if (hasToken)
+                {
+                    // 无来源头但有 token，按正常来源处理
                     allowed = true;
                 }
             }
