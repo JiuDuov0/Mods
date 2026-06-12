@@ -49,3 +49,9 @@
 /EF/bin/Release/net10.0
 /.github/copilot-instructions.md
 /ModsAPI/wwwroot/vue/Mod/src/assets/mintcat.zip
+/ModsAPI/wwwroot/Mods-React/Mods/.next/dev
+/ModsAPI/wwwroot/Mods-React/Mods/node_modules
+/ModsAPI/wwwroot/Mods-React/node_modules
+/ModsAPI/wwwroot/Mods-React/Mods/.env.development
+/ModsAPI/wwwroot/Mods-React/Mods/.env.production
+*.md
