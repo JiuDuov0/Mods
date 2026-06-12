@@ -340,13 +340,15 @@ namespace ModsAPI.Controllers
                 return StatusCode(StatusCodes.Status304NotModified);
             }
 
-            // 获取请求方标识（优先 Origin，其次 Referer，其次 Host）
+            // 客户端 IP（用于日志）
+            var xff = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            var clientIp = !string.IsNullOrWhiteSpace(xff) ? xff.Split(',')[0].Trim() : _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+
+            // 获取请求方来源（仅 Origin/Referer；不要把 Host 当来源）
             string originHeader = Request.Headers["Origin"].FirstOrDefault()
                                   ?? Request.Headers["Referer"].FirstOrDefault()
-                                  ?? Request.Headers["Host"].FirstOrDefault()
                                   ?? string.Empty;
 
-            // 解析到 scheme+host[:port] 形式，便于比较；若解析失败则使用原始 header 小写化
             string originNormalized;
             try
             {
@@ -358,44 +360,51 @@ namespace ModsAPI.Controllers
                 originNormalized = originHeader.TrimEnd('/').ToLowerInvariant();
             }
 
-            // 客户端 IP（用于日志）
-            var xff = Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            var clientIp = !string.IsNullOrWhiteSpace(xff) ? xff.Split(',')[0].Trim() : _IHttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var authToken = string.Empty;
+            if (!string.IsNullOrWhiteSpace(authHeader))
+            {
+                authToken = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                    ? authHeader.Substring("Bearer ".Length).Trim()
+                    : authHeader.Trim();
+            }
+            var hasToken = !string.IsNullOrWhiteSpace(authToken);
 
             // 记录或拦截规则：
-            // - 来自 http://localhost:1420 或 http://tauri.localhost ：记录日志，消息填写 "Mintcat Download"
-            // - 来自 https://modcat.top 或 http://localhost:5173 ：正常记录（默认消息）
-            // - 其他来源：拦截请求（403）
+            // - 来自 http://localhost:1420 或 http://tauri.localhost ：Mintcat 日志
+            // - 来自 https://modcat.top 或 http://localhost:5173 ：普通日志
+            // - 无来源但带 token：普通日志
+            // - 其他：403
             var mintcatOrigins = new[] { "http://localhost:1420", "http://tauri.localhost" };
             var normalOrigins = new[] { "https://modcat.top", "http://localhost:5173" };
 
-            var authToken = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "").Trim();
-            var hasToken = !string.IsNullOrWhiteSpace(authToken);
-
             bool allowed = false;
             bool useMintcatMessage = false;
-            if (!string.IsNullOrWhiteSpace(originNormalized))
+
+            if (string.IsNullOrWhiteSpace(originNormalized))
             {
-                if (mintcatOrigins.Contains(originNormalized))
-                {
-                    allowed = true;
-                    useMintcatMessage = true;
-                }
-                else if (normalOrigins.Contains(originNormalized))
+                if (hasToken)
                 {
                     allowed = true;
                 }
-                else if (hasToken)
-                {
-                    // 无来源头但有 token，按正常来源处理
-                    allowed = true;
-                }
+            }
+            else if (mintcatOrigins.Contains(originNormalized))
+            {
+                allowed = true;
+                useMintcatMessage = true;
+            }
+            else if (normalOrigins.Contains(originNormalized))
+            {
+                allowed = true;
             }
 
             if (!allowed)
             {
-                // 拦截：来源不允许
-                return StatusCode(StatusCodes.Status403Forbidden, new ResultEntity<string> { ResultCode = 403, ResultMsg = "请求来源不允许" });
+                return StatusCode(StatusCodes.Status403Forbidden, new ResultEntity<string>
+                {
+                    ResultCode = 403,
+                    ResultMsg = "请求来源不允许"
+                });
             }
 
             // 优化日志：仅在非分片或分片且为首片 (start == 0) 时写一次日志

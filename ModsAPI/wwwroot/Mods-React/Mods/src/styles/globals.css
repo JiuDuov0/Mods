@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+@media (max-width: 640px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+body {
+    background-color: white;
+    color: #111827;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dark {
+        background-color: #030712;
+        color: #f3f4f6;
+    }
+}
+
+/* 响应式工具 */
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .container {
+        padding: 0 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container {
+        padding: 0 2.5rem;
+        max-width: 80rem;
+    }
+}
+
+/* 防止缩放 */
+.no-zoom {
+    touch-action: manipulation;
+}
+
+/* 安全区域 */
+.safe-area {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
