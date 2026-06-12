@@ -1,7 +1,8 @@
 import apiService from './api';
 import { API_ENDPOINTS } from '@/config/api';
+import { ApiResponse } from '@/types/api';
 
-interface ResponseToken {
+export interface ResponseToken {
     token: string;
     refresh_Token: string;
     nickName: string;
@@ -9,13 +10,7 @@ interface ResponseToken {
     headPic?: string;
 }
 
-interface ApiResponse<T> {
-    resultCode: number;
-    resultMsg: string;
-    resultData?: T;
-}
-
-interface LoginRequest {
+export interface LoginRequest {
     loginAccount: string;
     password: string;
 }
@@ -27,9 +22,9 @@ export const authApi = {
     register: (data: LoginRequest & { username: string }): Promise<ApiResponse<ResponseToken>> =>
         apiService.post<ResponseToken>(API_ENDPOINTS.auth.register, data),
 
-    logout: (): Promise<ApiResponse<any>> =>
-        apiService.post(API_ENDPOINTS.auth.logout),
+    logout: (): Promise<ApiResponse<null>> =>
+        apiService.post<null>(API_ENDPOINTS.auth.logout),
 
     getProfile: (): Promise<ApiResponse<any>> =>
-        apiService.get(API_ENDPOINTS.auth.profile),
+        apiService.get<any>(API_ENDPOINTS.auth.profile),
 };

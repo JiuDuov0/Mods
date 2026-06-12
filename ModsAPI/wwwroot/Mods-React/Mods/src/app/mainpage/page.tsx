@@ -2,13 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGame } from '@/contexts/GameContext';
+import { ApiResponse } from '@/types/api';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface ModType {
-    TypesId: string;
-    TypeName: string;
-}
-
-interface ModTypeEntity {
     TypesId: string;
     TypeName: string;
 }
@@ -17,25 +14,13 @@ interface ModItem {
     ModId: string;
     Name: string;
     PicUrl: string;
-    ModTypeEntities: ModTypeEntity[];
+    ModTypeEntities: ModType[];
     IsMySubscribe: boolean;
     AVGPoint: number;
     DownloadCount: number;
     CreatorUserId: string;
     CreatorNickName: string;
     CreatorHeadPic: string;
-}
-
-interface ModListResponse {
-    ResultCode: number;
-    ResultMsg?: string;
-    ResultData: ModItem[];
-}
-
-interface TypesResponse {
-    ResultCode: number;
-    ResultMsg?: string;
-    ResultData: ModType[];
 }
 
 const MainPage = () => {
@@ -67,7 +52,7 @@ const MainPage = () => {
                 setError('');
 
                 // 获取所有类型
-                const typesResponse = await fetch(`${apiUrl}/api/Mod/GetAllModTypes`, {
+                const typesResponse = await fetch(API_ENDPOINTS.mods.getAllTypes, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ GameId: gameId }),
@@ -77,7 +62,7 @@ const MainPage = () => {
                     throw new Error(`获取类型失败: ${typesResponse.status}`);
                 }
 
-                const typesData: TypesResponse = await typesResponse.json();
+                const typesData: ApiResponse<ModType[]> = await typesResponse.json();
                 if (typesData.ResultCode === 200 && typesData.ResultData) {
                     setTypes(typesData.ResultData);
                 } else {
@@ -98,7 +83,7 @@ const MainPage = () => {
 
     const fetchModList = async (skip: number, typeIds: string[]) => {
         try {
-            const response = await fetch(`${apiUrl}/api/Mod/ModListPage`, {
+            const response = await fetch(API_ENDPOINTS.mods.listPage, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -114,7 +99,7 @@ const MainPage = () => {
                 throw new Error(`获取列表失败: ${response.status}`);
             }
 
-            const data: ModListResponse = await response.json();
+            const data: ApiResponse<ModItem[]> = await response.json();
             if (data.ResultCode === 200 && data.ResultData) {
                 setMods(data.ResultData);
                 setCurrentPage(skip / pageSize);

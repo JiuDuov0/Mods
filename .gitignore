@@ -55,3 +55,4 @@
 /ModsAPI/wwwroot/Mods-React/Mods/.env.development
 /ModsAPI/wwwroot/Mods-React/Mods/.env.production
 *.md
+/ModsAPI/wwwroot/Mods-React/Mods/.next

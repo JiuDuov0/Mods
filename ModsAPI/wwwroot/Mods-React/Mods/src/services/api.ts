@@ -1,10 +1,5 @@
 import { tokenManager } from '@/utils/tokenManager';
-
-interface ApiResponse<T> {
-    resultCode?: number;
-    resultMsg?: string;
-    resultData?: T;
-}
+import { ApiResponse } from '@/types/api';
 
 interface RequestOptions extends RequestInit {
     headers?: Record<string, string>;
@@ -33,7 +28,7 @@ class ApiService {
                 },
             });
 
-            const data = await response.json();
+            const data: ApiResponse<T> = await response.json();
 
             if (response.status === 401) {
                 tokenManager.clear();

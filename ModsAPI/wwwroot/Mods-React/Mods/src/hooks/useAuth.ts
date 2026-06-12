@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 
 const useAuth = () => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                // Replace with your authentication API call
                 const response = await fetch('/api/auth/user');
                 if (!response.ok) {
                     throw new Error('Failed to fetch user');
@@ -16,7 +15,7 @@ const useAuth = () => {
                 const data = await response.json();
                 setUser(data);
             } catch (err) {
-                setError(err);
+                setError(err instanceof Error ? err.message : String(err));
             } finally {
                 setLoading(false);
             }
@@ -25,14 +24,12 @@ const useAuth = () => {
         fetchUser();
     }, []);
 
-    const login = async (credentials) => {
+    const login = async (credentials: any) => {
         setLoading(true);
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials),
             });
             if (!response.ok) {
@@ -41,7 +38,7 @@ const useAuth = () => {
             const data = await response.json();
             setUser(data);
         } catch (err) {
-            setError(err);
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
@@ -50,12 +47,10 @@ const useAuth = () => {
     const logout = async () => {
         setLoading(true);
         try {
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-            });
+            await fetch('/api/auth/logout', { method: 'POST' });
             setUser(null);
         } catch (err) {
-            setError(err);
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
