@@ -510,10 +510,20 @@ namespace Service.Realization
                 return null;
             }
 
-            var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
+            await using var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
             var cacheKey = $"ModDetail:{ModId}";
 
-            var entity = _IRedisManageService.Get<ModEntity>(cacheKey, 1);
+            ModEntity? entity = null;
+
+            try
+            {
+                entity = _IRedisManageService.Get<ModEntity>(cacheKey, 1);
+            }
+            catch
+            {
+                entity = null;
+            }
+
             if (entity == null)
             {
                 entity = await QueryModDetailEntityAsync(context, ModId);
@@ -522,7 +532,13 @@ namespace Service.Realization
                     return null;
                 }
 
-                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
+                try
+                {
+                    await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
+                }
+                catch
+                {
+                }
             }
 
             var changedByModIo = await UpdateModDetailFrom_modio(entity.ModId, entity);
@@ -534,7 +550,13 @@ namespace Service.Realization
                     return null;
                 }
 
-                await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
+                try
+                {
+                    await _IRedisManageService.SetAsync(cacheKey, entity, TimeSpan.FromMinutes(30), 1);
+                }
+                catch
+                {
+                }
             }
 
             var avg = await context.ModPointEntity
@@ -542,8 +564,9 @@ namespace Service.Realization
                 .Select(x => (double?)x.Point)
                 .AverageAsync();
 
-            var isSubscribed = await context.UserModSubscribeEntity
-                .AnyAsync(x => x.UserId == UserId && x.ModId == ModId);
+            var isSubscribed = !string.IsNullOrWhiteSpace(UserId) &&
+                await context.UserModSubscribeEntity
+                    .AnyAsync(x => x.UserId == UserId && x.ModId == ModId);
 
             NormalizeModDetailEntity(entity, isSubscribed, avg);
             return entity;

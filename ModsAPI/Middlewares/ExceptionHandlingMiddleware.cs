@@ -3,6 +3,7 @@ using ModsAPI.tools;
 using Newtonsoft.Json;
 using Redis.Interface;
 using System.Net;
+using System.Text;
 
 namespace ModsAPI.Middlewares
 {
@@ -43,100 +44,81 @@ namespace ModsAPI.Middlewares
         /// <summary>
         /// 异步处理异常
         /// </summary>
+
+        private static readonly JsonSerializer CachedJsonSerializer = JsonSerializer.CreateDefault();
+
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            var traceId = context.TraceIdentifier;
-            context.Response.ContentType = "application/json";
-            context.Response.Headers["X-Trace-Id"] = traceId;
-
-            var env = context.RequestServices.GetService<IHostEnvironment>();
-            var path = context.Request?.Path.Value;
-            var method = context.Request?.Method;
-
-            _logger.LogError(
-                exception,
-                "Unhandled exception: {Message} | Method:{Method} Path:{Path} TraceId:{TraceId}",
-                exception.Message,
-                method,
-                path,
-                traceId);
-
-            await SaveExceptionLogToRedisAsync(context, exception, traceId);
-
-            var response = context.Response;
-            var error = new ResultEntity<string>()
+            if (context.Response.HasStarted)
             {
-                ResultData = string.Empty
+                return;
+            }
+
+            var traceId = context.TraceIdentifier;
+            var statusCode = GetStatusCode(exception);
+
+            try
+            {
+                await SaveExceptionLogToRedisAsync(context, exception, traceId);
+            }
+            catch
+            {
+                // 记录异常日志失败时，不再抛出，避免覆盖原始异常处理流程
+            }
+
+            context.Response.Clear();
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json; charset=utf-8";
+
+            var response = new
+            {
+                ResultCode = statusCode,
+                ResultData = GetClientMessage(exception, statusCode),
+                TraceId = traceId
             };
 
-            switch (exception)
+            await using var writer = new StreamWriter(
+                context.Response.Body,
+                new UTF8Encoding(false),
+                bufferSize: 1024,
+                leaveOpen: true);
+
+            using var jsonWriter = new JsonTextWriter(writer)
             {
-                case ApplicationException ex when ex.Message.Contains("Invalid token", StringComparison.OrdinalIgnoreCase):
-                    response.StatusCode = (int)HttpStatusCode.Forbidden;
-                    error.ResultMsg = ex.Message;
-                    break;
+                CloseOutput = false,
+                AutoCompleteOnClose = true
+            };
 
-                case UnauthorizedAccessException:
-                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    error.ResultMsg = "未授权的访问。";
-                    break;
+            CachedJsonSerializer.Serialize(jsonWriter, response);
+            await jsonWriter.FlushAsync(context.RequestAborted);
+            await writer.FlushAsync(context.RequestAborted);
+        }
 
-                case KeyNotFoundException ex:
-                    response.StatusCode = (int)HttpStatusCode.NotFound;
-                    error.ResultMsg = string.IsNullOrWhiteSpace(ex.Message) ? "资源不存在。" : ex.Message;
-                    break;
-
-                case ArgumentNullException ex:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    error.ResultMsg = $"参数不能为空: {ex.ParamName}";
-                    break;
-
-                case ArgumentException ex:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    error.ResultMsg = string.IsNullOrWhiteSpace(ex.Message) ? "参数错误。" : ex.Message;
-                    break;
-
-                case JsonReaderException:
-                case JsonSerializationException:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    error.ResultMsg = "JSON 解析/序列化错误。";
-                    break;
-
-                case TimeoutException:
-                    response.StatusCode = (int)HttpStatusCode.GatewayTimeout;
-                    error.ResultMsg = "操作超时。";
-                    break;
-
-                default:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    error.ResultMsg = "Internal Server Error.";
-                    break;
-            }
-
-            error.ResultCode = response.StatusCode;
-
-            if (env?.IsDevelopment() == true)
+        private static int GetStatusCode(Exception exception)
+        {
+            return exception switch
             {
-                error.ResultData = JsonConvert.SerializeObject(new
-                {
-                    Exception = exception.GetType().Name,
-                    Message = exception.Message,
-                    StackTrace = exception.StackTrace,
-                    TraceId = traceId,
-                    Path = path,
-                    Method = method
-                });
-            }
-            else
-            {
-                error.ResultData = JsonConvert.SerializeObject(new
-                {
-                    TraceId = traceId
-                });
-            }
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                ArgumentException => StatusCodes.Status400BadRequest,
+                FormatException => StatusCodes.Status400BadRequest,
+                KeyNotFoundException => StatusCodes.Status404NotFound,
+                NotImplementedException => StatusCodes.Status501NotImplemented,
+                OperationCanceledException => StatusCodes.Status408RequestTimeout,
+                _ => StatusCodes.Status500InternalServerError
+            };
+        }
 
-            var outputJson = JsonConvert.SerializeObject(error);
-            await context.Response.WriteAsync(outputJson);
+        private static string GetClientMessage(Exception exception, int statusCode)
+        {
+            return statusCode switch
+            {
+                StatusCodes.Status400BadRequest => exception.Message,
+                StatusCodes.Status401Unauthorized => "未授权访问。",
+                StatusCodes.Status404NotFound => "资源不存在。",
+                StatusCodes.Status408RequestTimeout => "请求已超时。",
+                StatusCodes.Status501NotImplemented => "功能尚未实现。",
+                _ => "服务器内部错误。"
+            };
         }
 
         private async Task SaveExceptionLogToRedisAsync(HttpContext context, Exception exception, string traceId)

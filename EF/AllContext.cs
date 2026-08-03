@@ -33,7 +33,14 @@ namespace EF
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(MyLogFactory);
-            optionsBuilder.UseSqlServer(_strConn, x => { x.CommandTimeout(120); });
+            optionsBuilder.UseSqlServer(_strConn, sqlOptions =>
+            {
+                sqlOptions.CommandTimeout(120);
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 10,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
+            });
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

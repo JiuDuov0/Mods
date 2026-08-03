@@ -10,36 +10,34 @@ namespace EF.Realization
 {
     public class CreateDBContextService : ICreateDBContextService
     {
-        private string[] _Conns;
-        public IConfiguration _configuration { get; set; }
+        private readonly string[] _Conns;
+        private readonly IConfiguration _configuration;
+
         public CreateDBContextService(IConfiguration configuration)
         {
             _configuration = configuration;
-            _Conns = _configuration["ReadConnectionString"].Split("|");
+
+            _Conns = (_configuration["ReadConnectionString"] ?? string.Empty)
+                .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
 
         public AllContext CreateContext(ReadOrWriteEnum @enum)
         {
-            var StrConn = string.Empty;
-            switch (@enum)
+            string strConn = @enum switch
             {
-                case ReadOrWriteEnum.Write:
-                    StrConn = _configuration["WriteConnectionString"];
-                    break;
-                case ReadOrWriteEnum.Read:
-                    StrConn = _Conns[new Random().Next(0, _Conns.Length - 1)];
-                    break;
-                default:
-                    break;
+                ReadOrWriteEnum.Write => _configuration["WriteConnectionString"] ?? string.Empty,
+                ReadOrWriteEnum.Read => _Conns.Length > 0
+                    ? _Conns[Random.Shared.Next(_Conns.Length)]
+                    : _configuration["WriteConnectionString"] ?? string.Empty,
+                _ => _configuration["WriteConnectionString"] ?? string.Empty
+            };
+
+            if (string.IsNullOrWhiteSpace(strConn))
+            {
+                throw new InvalidOperationException("数据库连接字符串未配置。");
             }
-            return new AllContext(StrConn);
+
+            return new AllContext(strConn);
         }
-        /*select * from openrowset( 'SQLOLEDB', '127.0.0.1'; 'sa'; '123','SELECT r.session_id,r.status,r.start_time,r.command,r.sql_handle,t.text as sql_text,s.host_name,s.login_name from sys.dm_exec_requests as r join sys.dm_exec_sessions as s on r.session_id=s.session_id cross apply sys.dm_exec_sql_text(r.sql_handle) as t where r.session_id > 50 
-and t.text not like(''%SELECT r.session_id,r.status,r.start_time,r.command%'')')
-exec sp_configure 'show advanced options',1
-reconfigure
-exec sp_configure 'Ad Hoc Distributed Queries',1
-reconfigure
-         */
     }
 }

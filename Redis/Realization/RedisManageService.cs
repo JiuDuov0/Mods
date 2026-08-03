@@ -116,17 +116,33 @@ namespace Redis.Realization
         }
 
 
-        public TEntity Get<TEntity>(string key, int DB = 0)
+        public TEntity? Get<TEntity>(string key, int DB = 0)
         {
-            var value = _redisConnection.GetDatabase(DB).StringGet(key);
-            if (value.HasValue)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                //需要用的反序列化，将Redis存储的Byte[]，进行反序列化
-                return JsonConvert.DeserializeObject<TEntity>(value);
+                return default;
             }
-            else
+
+            if (_redisConnection == null || !_redisConnection.IsConnected)
             {
-                return default(TEntity);
+                return default;
+            }
+
+            try
+            {
+                var database = _redisConnection.GetDatabase(DB);
+                var value = database.StringGet(key);
+
+                if (!value.HasValue)
+                {
+                    return default;
+                }
+
+                return JsonConvert.DeserializeObject<TEntity>(value!);
+            }
+            catch
+            {
+                return default;
             }
         }
 

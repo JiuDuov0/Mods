@@ -27,7 +27,7 @@ namespace Redis.Interface
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        TEntity Get<TEntity>(string key, int DB = 0);
+        TEntity? Get<TEntity>(string key, int DB = 0);
 
         /// <summary>
         /// 异步获取序列化值
