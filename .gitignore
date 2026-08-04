@@ -56,3 +56,4 @@
 /ModsAPI/wwwroot/Mods-React/Mods/.env.production
 *.md
 /ModsAPI/wwwroot/Mods-React/Mods/.next
+/ModsAPI/Properties/launchSettings.json
