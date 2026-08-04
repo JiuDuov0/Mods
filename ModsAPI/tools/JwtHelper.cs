@@ -121,17 +121,37 @@ namespace ModsAPI.tools
             }
         }
 
-        public ResponseToken Refresh(string Token, string refresh_Token, HttpContext httpContext)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Token"></param>
+        /// <param name="refresh_Token"></param>
+        /// <param name="httpContext"></param>
+        /// <returns></returns>
+        /// <exception cref="SecurityTokenException"></exception>
+        public ResponseToken? Refresh(string token, string refresh_Token, HttpContext httpContext)
         {
-            string key = _jwtSettings.Value.SecrentKey;
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(refresh_Token))
+            {
+                return null;
+            }
 
+            token = token.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+
+            // JWE 通常是 5 段，直接拒绝，不做解析
+            if (token.Split('.').Length == 5)
+            {
+                return null;
+            }
+
+            string key = _jwtSettings.Value.SecrentKey;
             byte[] secBytes = Encoding.UTF8.GetBytes(key);
             var secKey = new SymmetricSecurityKey(secBytes);
 
             var tokenHandler = new JwtSecurityTokenHandler();
             SecurityToken validatedToken;
 
-            var principal = tokenHandler.ValidateToken(Token, new TokenValidationParameters()
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = secKey,
@@ -142,23 +162,25 @@ namespace ModsAPI.tools
                 ValidateLifetime = false
             }, out validatedToken);
 
-            var jwtToken = validatedToken as JwtSecurityToken;
-
-            if (jwtToken == null || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256Signature, StringComparison.InvariantCultureIgnoreCase))
+            if (validatedToken is not JwtSecurityToken jwtToken ||
+                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256Signature, StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new SecurityTokenException("Token不合法");
+                return null;
             }
 
-            //string tokenStr = httpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty);
-
-            var handler = new JwtSecurityTokenHandler();
-            var payload = handler.ReadJwtToken(Token).Payload;
+            var payload = tokenHandler.ReadJwtToken(token).Payload;
             var claims = payload.Claims;
-            var UserId = claims.First(claim => claim.Type == "UserId").Value;
-            var OldRefreshToken = _RedisManage.GetValue($"RefreshToken:{UserId}").ToString().Replace("\"", "");
-            if (OldRefreshToken == null || refresh_Token != OldRefreshToken)
+            var userId = claims.FirstOrDefault(claim => claim.Type == "UserId")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                throw new SecurityTokenException("Token不合法");
+                return null;
+            }
+
+            var oldRefreshToken = _RedisManage.GetValue($"RefreshToken:{userId}")?.ToString()?.Replace("\"", "");
+            if (string.IsNullOrWhiteSpace(oldRefreshToken) || refresh_Token != oldRefreshToken)
+            {
+                return null;
             }
 
             var jwtSecurityToken = new JwtSecurityToken(
@@ -168,18 +190,15 @@ namespace ModsAPI.tools
                 issuer: _jwtSettings.Value.Issuer,
                 audience: _jwtSettings.Value.Audience,
                 signingCredentials: new SigningCredentials(secKey, SecurityAlgorithms.HmacSha256Signature)
-                );
+            );
 
-            var token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            var tokenNew = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
             var refreshToken = CreateRefreshToken();
 
-            //_RedisManage.SetAsync(UserId + "Token", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
-            //_RedisManage.SetAsync(UserId + "RefreshToken", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
+            _RedisManage.SetAsync($"Token:{userId}", tokenNew, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
+            _RedisManage.SetAsync($"RefreshToken:{userId}", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
 
-            _RedisManage.SetAsync($"Token:{UserId}", token, new TimeSpan(0, 0, _jwtSettings.Value.Expirces));
-            _RedisManage.SetAsync($"RefreshToken:{UserId}", refreshToken, new TimeSpan(0, 0, _jwtSettings.Value.RefreshTokenExpirces));
-
-            return new ResponseToken() { Token = token, Refresh_Token = refreshToken };
+            return new ResponseToken() { Token = tokenNew, Refresh_Token = refreshToken };
         }
         /// <summary>
         /// 解析token返回字符串
@@ -187,29 +206,51 @@ namespace ModsAPI.tools
         /// <param name="Token"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public string? GetTokenStr(string Token, string type)
+        public string? GetTokenStr(string token, string type)
         {
-            string key = _jwtSettings.Value.SecrentKey;
-
-            byte[] secBytes = Encoding.UTF8.GetBytes(key);
-            var secKey = new SymmetricSecurityKey(secBytes);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            SecurityToken validatedToken;
-
-            var principal = tokenHandler.ValidateToken(Token, new TokenValidationParameters()
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(type))
             {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = secKey,
-                ValidateIssuer = true,
-                ValidIssuer = _jwtSettings.Value.Issuer,
-                ValidateAudience = true,
-                ValidAudience = _jwtSettings.Value.Audience,
-                ValidateLifetime = false
-            }, out validatedToken);
+                return null;
+            }
 
-            var jwtToken = validatedToken as JwtSecurityToken;
-            return jwtToken?.Claims.FirstOrDefault(x => x.Type == type)?.Value;
+            token = token.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+
+            // JWE 通常是 5 段，直接返回空值，不做解析
+            if (token.Split('.').Length == 5)
+            {
+                return null;
+            }
+
+            try
+            {
+                string key = _jwtSettings.Value.SecrentKey;
+                byte[] secBytes = Encoding.UTF8.GetBytes(key);
+                var secKey = new SymmetricSecurityKey(secBytes);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = secKey,
+                    ValidateIssuer = true,
+                    ValidIssuer = _jwtSettings.Value.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = _jwtSettings.Value.Audience,
+                    ValidateLifetime = false,
+                    ClockSkew = TimeSpan.Zero
+                }, out var validatedToken);
+
+                if (validatedToken is not JwtSecurityToken jwtToken)
+                {
+                    return null;
+                }
+
+                return jwtToken.Claims.FirstOrDefault(x => x.Type == type)?.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
     /// <summary>
