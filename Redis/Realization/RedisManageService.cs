@@ -146,16 +146,39 @@ namespace Redis.Realization
             }
         }
 
-        public async Task<TEntity> GetAsync<TEntity>(string key, int DB = 0)
+        public async Task<TEntity?> GetAsync<TEntity>(string key, int DB = 0)
         {
-            var value = await _redisConnection.GetDatabase(DB).StringGetAsync(key);
-            if (value.HasValue)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                return JsonConvert.DeserializeObject<TEntity>(value);
+                return default;
             }
-            else
+
+            if (_redisConnection == null || !_redisConnection.IsConnected)
             {
-                return default(TEntity);
+                return default;
+            }
+
+            try
+            {
+                var database = _redisConnection.GetDatabase(DB);
+                var value = await database.StringGetAsync(key);
+
+                if (!value.HasValue)
+                {
+                    return default;
+                }
+
+                var json = value.ToString();
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return default;
+                }
+
+                return JsonConvert.DeserializeObject<TEntity>(json);
+            }
+            catch
+            {
+                return default;
             }
         }
 

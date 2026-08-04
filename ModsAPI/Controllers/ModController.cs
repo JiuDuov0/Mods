@@ -180,10 +180,11 @@ namespace ModsAPI.Controllers
         /// <param name="json">{"GameId":"gameId"}</param>
         /// <returns>ResultEntity(List(TypesEntity))</returns>
         [HttpPost(Name = "GetAllModTypes")]
-        public ResultEntity<List<TypesEntity>> GetAllModTypes([FromBody] dynamic json)
+        public async Task<ResultEntity<List<TypesEntity>>> GetAllModTypes([FromBody] dynamic json)
         {
             string? userId = GetUserId();
-            _ = _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            await _IAPILogService.WriteLogAsync("ModController/GetAllModTypes", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
 
             json = ParseJson(json);
             var gameId = (string)json.GameId;
@@ -192,7 +193,7 @@ namespace ModsAPI.Controllers
                 return new ResultEntity<List<TypesEntity>> { ResultCode = 400, ResultMsg = "无GameId" };
             }
 
-            var types = _ITypesService.GetTypesListAsync(gameId).Result;
+            var types = await _ITypesService.GetTypesListAsync(gameId);
             return new ResultEntity<List<TypesEntity>> { ResultCode = 200, ResultData = types };
         }
 

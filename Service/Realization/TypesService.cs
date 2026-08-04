@@ -33,7 +33,6 @@ namespace Service.Realization
                 await ReadContext.DisposeAsync();
                 await _IRedisManageService.SetAsync($"TypesList:{GameId}", list, new TimeSpan(24, 0, 0), 1);
             }
-            //GC.Collect();
             return list;
         }
     }
