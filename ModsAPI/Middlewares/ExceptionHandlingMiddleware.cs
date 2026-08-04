@@ -142,6 +142,13 @@ namespace ModsAPI.Middlewares
                         ContentType = request.ContentType,
                         Headers = request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
                         RemoteIpAddress = context.Connection.RemoteIpAddress?.ToString(),
+                        RequestSource = new
+                        {
+                            Origin = request.Headers.Origin.ToString(),
+                            Referer = request.Headers.Referer.ToString(),
+                            XForwardedFor = request.Headers["X-Forwarded-For"].ToString(),
+                            RemoteIpAddress = context.Connection.RemoteIpAddress?.ToString()
+                        },
                         UserAgent = request.Headers.UserAgent.ToString()
                     },
                     Response = new
