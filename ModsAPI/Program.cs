@@ -141,6 +141,8 @@ app.UseRateLimiter();
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<IpBlockMiddleware>();
+
 app.UseCors("Cors");
 app.UseAuthentication();
 app.UseAuthorization();

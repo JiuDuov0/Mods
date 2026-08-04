@@ -333,5 +333,48 @@ namespace Redis.Realization
                 throw ex;
             }
         }
+
+        /// <summary>
+        /// 根据模式获取值列表
+        /// </summary>
+        /// <param name="pattern"></param>
+        /// <param name="DB"></param>
+        /// <returns></returns>
+        public List<string> GetValuesByPattern(string pattern, int DB = 0)
+        {
+            var result = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return result;
+            }
+
+            if (_redisConnection == null || !_redisConnection.IsConnected)
+            {
+                return result;
+            }
+
+            try
+            {
+                var server = _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"]));
+                var database = _redisConnection.GetDatabase(DB);
+
+                foreach (var key in server.Keys(database: DB, pattern: pattern))
+                {
+                    var value = database.StringGet(key).ToString();
+
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        result.Add(value.Trim().Trim('"'));
+                    }
+                }
+
+                return result;
+            }
+            catch
+            {
+                return result;
+            }
+        }
     }
 }

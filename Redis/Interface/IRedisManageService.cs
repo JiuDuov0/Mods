@@ -86,5 +86,6 @@ namespace Redis.Interface
         Task ClearAsync(int? DB = null);
         public List<object> SelectTags(string pattern);
         public void LikeRemoveAsync(string pattern);
+        List<string> GetValuesByPattern(string pattern, int DB = 0);
     }
 }

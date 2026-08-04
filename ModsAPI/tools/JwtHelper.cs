@@ -14,11 +14,14 @@ namespace ModsAPI.tools
     {
         private readonly IOptionsSnapshot<JwtSettings> _jwtSettings;
         private readonly IRedisManageService _RedisManage;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public JwtHelper(IOptionsSnapshot<JwtSettings> jwtSettings, IRedisManageService redisManage)
+
+        public JwtHelper(IOptionsSnapshot<JwtSettings> jwtSettings, IRedisManageService redisManage, IHttpContextAccessor httpContextAccessor)
         {
             _jwtSettings = jwtSettings;
             _RedisManage = redisManage;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -138,9 +141,9 @@ namespace ModsAPI.tools
 
             token = token.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
 
-            // JWE 通常是 5 段，直接拒绝，不做解析
             if (token.Split('.').Length == 5)
             {
+                RecordIp(_httpContextAccessor.HttpContext);
                 return null;
             }
 
@@ -215,9 +218,9 @@ namespace ModsAPI.tools
 
             token = token.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
 
-            // JWE 通常是 5 段，直接返回空值，不做解析
             if (token.Split('.').Length == 5)
             {
+                RecordIp(_httpContextAccessor.HttpContext);
                 return null;
             }
 
@@ -251,6 +254,22 @@ namespace ModsAPI.tools
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="httpContext"></param>
+        private void RecordIp(HttpContext? httpContext)
+        {
+            var ip = httpContext?.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                return;
+            }
+
+            _RedisManage.Set($"BlockIp:{ip}", "1", TimeSpan.FromDays(30), 14);
         }
     }
     /// <summary>
