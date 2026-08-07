@@ -22,13 +22,13 @@ namespace ModsAPI.Middlewares
                 return;
             }
 
-            if (_redisManageService.KeyExists($"BlockIp:{currentIp}", 14))
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                await context.Response.WriteAsync("""{"ResultCode":403,"ResultMsg":"当前IP已被拦截,详细咨询群827532190"}""");
-                return;
-            }
+            //if (_redisManageService.KeyExists($"BlockIp:{currentIp}", 14))
+            //{
+            //    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            //    context.Response.ContentType = "application/json; charset=utf-8";
+            //    await context.Response.WriteAsync("""{"ResultCode":403,"ResultMsg":"当前IP已被拦截,详细咨询群827532190"}""");
+            //    return;
+            //}
 
             await _next(context);
         }

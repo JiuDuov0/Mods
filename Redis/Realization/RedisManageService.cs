@@ -1,120 +1,200 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Redis.Interface;
 using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 
 namespace Redis.Realization
 {
-    internal class RedisManageService : IRedisManageService
+    public class RedisManageService : IRedisManageService
     {
-        private volatile ConnectionMultiplexer _redisConnection;
-        private readonly object _redisConnectionLock = new object();
-        private readonly ConfigurationOptions _configOptions;
-        public IConfiguration _configuration { get; set; }
+        private const int RedisScanPageSize = 500;
+        private const int RedisBatchSize = 128;
+        private readonly IConfiguration _configuration;
+        private readonly ConfigurationOptions _configurationOptions;
+        private readonly EndPoint _redisEndPoint;
+        private readonly object _connectionLock = new();
+
+        private ConnectionMultiplexer? _redisConnection;
+
+        private static readonly JsonSerializerSettings JsonSettings = new()
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            DateFormatString = "yyyy-MM-dd HH:mm:ss",
+            ContractResolver = new DefaultContractResolver()
+        };
+
         public RedisManageService(IConfiguration configuration)
         {
             _configuration = configuration;
-            _configOptions = ReadRedisSetting();
-            _redisConnection = ConnectionRedis();
+
+            var host = configuration["Ip"];
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                throw new InvalidOperationException("Redis Ip 未配置。");
+            }
+
+            if (!int.TryParse(configuration["Port"], out var port))
+            {
+                throw new InvalidOperationException("Redis Port 配置无效。");
+            }
+
+            _redisEndPoint = new DnsEndPoint(host, port);
+
+            _configurationOptions = new ConfigurationOptions
+            {
+                ClientName = "JD_Soft_FrameWork_Redis",
+                Password = configuration["Password"],
+                ConnectTimeout = GetIntConfiguration("Timeout", 5000),
+                DefaultDatabase = GetIntConfiguration("DB", 0),
+                AbortOnConnectFail = false,
+                AllowAdmin = true
+            };
+
+            _configurationOptions.EndPoints.Add(_redisEndPoint);
         }
-        private ConfigurationOptions ReadRedisSetting()
+
+        private int GetIntConfiguration(string key, int defaultValue)
         {
+            return int.TryParse(_configuration[key], out var value)
+                ? value
+                : defaultValue;
+        }
+
+        private ConnectionMultiplexer? GetConnection()
+        {
+            if (_redisConnection is { IsConnected: true })
+            {
+                return _redisConnection;
+            }
+
+            lock (_connectionLock)
+            {
+                if (_redisConnection is { IsConnected: true })
+                {
+                    return _redisConnection;
+                }
+
+                try
+                {
+                    _redisConnection?.Dispose();
+                }
+                catch
+                {
+                    // 忽略旧连接释放异常
+                }
+
+                try
+                {
+                    _redisConnection = ConnectionMultiplexer.Connect(_configurationOptions);
+                    return _redisConnection;
+                }
+                catch
+                {
+                    _redisConnection = null;
+                    return null;
+                }
+            }
+        }
+
+        private IDatabase? GetDatabase(int DB = 0)
+        {
+            return GetConnection()?.GetDatabase(DB);
+        }
+
+        private IServer? GetServer()
+        {
+            var connection = GetConnection();
+            if (connection == null)
+            {
+                return null;
+            }
+
             try
             {
-                ConfigurationOptions options = new ConfigurationOptions
-                {
-                    EndPoints =
-                        {
-                                {
-                                    _configuration["Ip"].ToString(),
-                                    Convert.ToInt32(_configuration["Port"])
-                                }
-                            },
-                    ClientName = "JD_Soft_FrameWork_Redis",
-                    Password = _configuration["Password"].ToString(),
-                    ConnectTimeout = Convert.ToInt32(_configuration["Timeout"]),
-                    DefaultDatabase = Convert.ToInt32(_configuration["DB"]),
-                    AllowAdmin = true
-                };
-                return options;
+                return connection.GetServer(_redisEndPoint);
             }
-            catch (Exception ex)
+            catch
             {
                 return null;
             }
         }
-        private ConnectionMultiplexer ConnectionRedis()
+
+        private static string Serialize(object value)
         {
-            if (this._redisConnection != null && this._redisConnection.IsConnected)
-            {
-                return this._redisConnection; // 已有连接，直接使用
-            }
-            lock (_redisConnectionLock)
-            {
-                if (this._redisConnection != null)
-                {
-                    this._redisConnection.Dispose(); // 释放，重连
-                }
-                try
-                {
-                    return ConnectionMultiplexer.Connect(_configOptions);
-                }
-                catch (Exception ex)
-                {
-                }
-            }
-            return this._redisConnection;
+            return JsonConvert.SerializeObject(value, JsonSettings);
         }
+
+        public void Set(string key, object value, object? ts = null, int DB = 0)
+        {
+            if (string.IsNullOrWhiteSpace(key) || value == null)
+            {
+                return;
+            }
+
+            var database = GetDatabase(DB);
+            if (database == null)
+            {
+                return;
+            }
+
+            var cacheTime = ts is TimeSpan timeSpan
+                ? timeSpan
+                : TimeSpan.FromDays(1);
+
+            database.StringSet(key, Serialize(value), cacheTime);
+        }
+
+        public async Task SetAsync(string key, object value, object? cacheTime = null, int DB = 0)
+        {
+            if (string.IsNullOrWhiteSpace(key) || value == null)
+            {
+                return;
+            }
+
+            var database = GetDatabase(DB);
+            if (database == null)
+            {
+                return;
+            }
+
+            var expiration = cacheTime is TimeSpan timeSpan
+                ? timeSpan
+                : TimeSpan.FromDays(1);
+
+            await database.StringSetAsync(
+                key,
+                Serialize(value),
+                expiration);
+        }
+
         public string GetValue(string key, int DB = 0)
         {
-            return _redisConnection.GetDatabase(DB).StringGet(key);
-        }
-
-        public void Set(string key, object value, object ts = null, int DB = 0)
-        {
-            if (value != null)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                if (ts == null)
-                {
-                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), new TimeSpan(24, 0, 0));
-                }
-                else
-                {
-                    _redisConnection.GetDatabase(DB).StringSet(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), (TimeSpan)ts);
-                }
+                return string.Empty;
             }
+
+            var database = GetDatabase(DB);
+            return database?.StringGet(key).ToString() ?? string.Empty;
         }
 
-        public void Clear(int? DB = null)
+        public async Task<string> GetValueAsync(string key, int DB = 0)
         {
-            if (DB == null)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"])).FlushAllDatabases();
+                return string.Empty;
             }
-            else
+
+            var database = GetDatabase(DB);
+            if (database == null)
             {
-                _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"])).FlushDatabase(Convert.ToInt32(DB));
+                return string.Empty;
             }
-            //foreach (var endPoint in this.ConnectionRedis().GetEndPoints()) {
-            //    var server = this.ConnectionRedis().GetServer(endPoint);
-            //    foreach (var key in server.Keys()) {
-            //        _redisConnection.GetDatabase().KeyDelete(key);
-            //    }
-            //}
-        }
 
-        public bool KeyExists(string key, int DB = 0)
-        {
-            return _redisConnection.GetDatabase(DB).KeyExists(key);
+            return (await database.StringGetAsync(key)).ToString();
         }
-
 
         public TEntity? Get<TEntity>(string key, int DB = 0)
         {
@@ -123,22 +203,17 @@ namespace Redis.Realization
                 return default;
             }
 
-            if (_redisConnection == null || !_redisConnection.IsConnected)
-            {
-                return default;
-            }
-
             try
             {
-                var database = _redisConnection.GetDatabase(DB);
-                var value = database.StringGet(key);
+                var database = GetDatabase(DB);
+                var value = database?.StringGet(key);
 
                 if (!value.HasValue)
                 {
                     return default;
                 }
 
-                return JsonConvert.DeserializeObject<TEntity>(value!);
+                return JsonConvert.DeserializeObject<TEntity>(value.ToString());
             }
             catch
             {
@@ -146,35 +221,28 @@ namespace Redis.Realization
             }
         }
 
-        public async Task<TEntity?> GetAsync<TEntity>(string key, int DB = 0)
+        public async Task<TEntity> GetAsync<TEntity>(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return default;
             }
 
-            if (_redisConnection == null || !_redisConnection.IsConnected)
-            {
-                return default;
-            }
-
             try
             {
-                var database = _redisConnection.GetDatabase(DB);
-                var value = await database.StringGetAsync(key);
+                var database = GetDatabase(DB);
+                if (database == null)
+                {
+                    return default;
+                }
 
+                var value = await database.StringGetAsync(key);
                 if (!value.HasValue)
                 {
                     return default;
                 }
 
-                var json = value.ToString();
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return default;
-                }
-
-                return JsonConvert.DeserializeObject<TEntity>(json);
+                return JsonConvert.DeserializeObject<TEntity>(value.ToString());
             }
             catch
             {
@@ -182,165 +250,144 @@ namespace Redis.Realization
             }
         }
 
-        public void Remove(string key, int DB = 0)
+        public async Task<TEntity> GetEntityAsync<TEntity>(string key, int DB = 0)
         {
-            _redisConnection.GetDatabase(DB).KeyDelete(key);
+            return await GetAsync<TEntity>(key, DB);
         }
 
-
-        public async Task ClearAsync(int? DB = null)
+        public bool KeyExists(string key, int DB = 0)
         {
-            if (DB == null)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                await _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"])).FlushAllDatabasesAsync();
+                return false;
             }
-            else
-            {
-                await _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"])).FlushDatabaseAsync(Convert.ToInt32(DB));
-            }
-            //foreach (var endPoint in this.ConnectionRedis().GetEndPoints()) {
-            //    var server = this.ConnectionRedis().GetServer(endPoint);
-            //    foreach (var key in server.Keys()) {
-            //        await _redisConnection.GetDatabase().KeyDeleteAsync(key);
-            //    }
-            //}
+
+            return GetDatabase(DB)?.KeyExists(key) ?? false;
         }
 
         public async Task<bool> KeyExistsAsync(string key, int DB = 0)
         {
-            return await _redisConnection.GetDatabase(DB).KeyExistsAsync(key);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            var database = GetDatabase(DB);
+            if (database == null)
+            {
+                return false;
+            }
+
+            return await database.KeyExistsAsync(key);
         }
 
-        public async Task<string> GetValueAsync(string key, int DB = 0)
+        public void Remove(string key, int DB = 0)
         {
-            return await _redisConnection.GetDatabase(DB).StringGetAsync(key);
-        }
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
 
-        public async Task<TEntity> GetEntityAsync<TEntity>(string key, int DB = 0)
-        {
-            var value = await _redisConnection.GetDatabase(DB).StringGetAsync(key);
-            if (value.HasValue)
-            {
-                return JsonConvert.DeserializeObject<TEntity>(value);
-            }
-            else
-            {
-                return default;
-            }
+            GetDatabase(DB)?.KeyDelete(key);
         }
 
         public async Task RemoveAsync(string key, int DB = 0)
         {
-            await _redisConnection.GetDatabase(DB).KeyDeleteAsync(key);
-        }
-
-        public async Task RemoveByKey(string key, int DB = 0)
-        {
-            var redisResult = await _redisConnection.GetDatabase(DB).ScriptEvaluateAsync(LuaScript.Prepare(
-                //模糊查询：
-                " local res = redis.call('KEYS', @keypattern) " +
-                " return res "), new { @keypattern = key });
-
-            if (!redisResult.IsNull)
+            if (string.IsNullOrWhiteSpace(key))
             {
-                RedisKey[] preSult = (RedisKey[])redisResult;
-                _redisConnection.GetDatabase(DB).KeyDelete(preSult);
+                return;
+            }
+
+            var database = GetDatabase(DB);
+            if (database != null)
+            {
+                await database.KeyDeleteAsync(key);
             }
         }
 
-        public async Task SetAsync(string key, object value, object cacheTime = null, int DB = 0)
+        public void Clear(int? DB = null)
         {
-            if (value != null)
+            var server = GetServer();
+            if (server == null)
             {
-                if (cacheTime == null)
-                {
-                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), new TimeSpan(24, 0, 0));
-                }
-                else
-                {
-                    await _redisConnection.GetDatabase(DB).StringSetAsync(key, JsonConvert.SerializeObject(value, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, DateFormatString = "yyyy-MM-dd HH:mm:ss", ContractResolver = new DefaultContractResolver() }), (TimeSpan)cacheTime);
-                }
+                return;
+            }
+
+            if (DB.HasValue)
+            {
+                server.FlushDatabase(DB.Value);
+            }
+            else
+            {
+                server.FlushAllDatabases();
             }
         }
 
-        /// <summary>
-        /// 模糊查找
-        /// </summary>
-        /// <param name="key"></param>
-        public List<object> SelectTags(string pattern)
+        public async Task ClearAsync(int? DB = null)
         {
-            List<object> result = new List<object>();
+            var server = GetServer();
+            if (server == null)
+            {
+                return;
+            }
+
+            if (DB.HasValue)
+            {
+                await server.FlushDatabaseAsync(DB.Value);
+            }
+            else
+            {
+                await server.FlushAllDatabasesAsync();
+            }
+        }
+
+        public async Task RemoveByKey(string pattern, int DB = 0)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return;
+            }
+
+            var database = GetDatabase(DB);
+            var server = GetServer();
+
+            if (database == null || server == null)
+            {
+                return;
+            }
+
+            var keys = new List<RedisKey>(RedisBatchSize);
+
             try
             {
-
-
-                var redisResult = _redisConnection.GetDatabase().ScriptEvaluate(LuaScript.Prepare(
-                                //Redis的keys模糊查询：
-                                " local res = redis.call('KEYS', @keypattern) " +
-                                " return res "), new { @keypattern = pattern });
-
-                if (!redisResult.IsNull)
+                await foreach (var key in server.KeysAsync(
+                    database: DB,
+                    pattern: pattern,
+                    pageSize: RedisScanPageSize))
                 {
-                    RedisKey[] preSult = (RedisKey[])redisResult;
-                    var Tags = _redisConnection.GetDatabase().StringGet(preSult);
+                    keys.Add(key);
 
-                    if (Tags != null)
+                    if (keys.Count < RedisBatchSize)
                     {
-                        //result = Tags.Select(o => XJDataDll.Json.DataJsonSerializer.JsonToObject<object>(o.ToString())).ToList();
+                        continue;
                     }
+
+                    await database.KeyDeleteAsync(keys.ToArray());
+                    keys.Clear();
                 }
 
-
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-            finally
-            {
-                if (result == null)
+                if (keys.Count > 0)
                 {
-                    result = new List<object>();
+                    await database.KeyDeleteAsync(keys.ToArray());
                 }
             }
-
-            return result;
-        }
-        /// <summary>
-        /// 异步模糊删除
-        /// </summary>
-        /// <param name="key"></param>
-        public async void LikeRemoveAsync(string pattern)
-        {
-            try
+            catch
             {
-
-
-                var redisResult = _redisConnection.GetDatabase().ScriptEvaluate(LuaScript.Prepare(
-                                //Redis的keys模糊查询：
-                                " local res = redis.call('KEYS', @keypattern) " +
-                                " return res "), new { @keypattern = pattern });
-
-                if (!redisResult.IsNull)
-                {
-                    RedisKey[] preSult = (RedisKey[])redisResult;
-                    await _redisConnection.GetDatabase().KeyDeleteAsync(preSult);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
+                // Redis 异常时忽略，保持原有行为
             }
         }
 
-        /// <summary>
-        /// 根据模式获取值列表
-        /// </summary>
-        /// <param name="pattern"></param>
-        /// <param name="DB"></param>
-        /// <returns></returns>
-        public List<string> GetValuesByPattern(string pattern, int DB = 0)
+        public async Task<List<string>> GetValuesByPatternAsync(string pattern, int DB = 0)
         {
             var result = new List<string>();
 
@@ -349,32 +396,103 @@ namespace Redis.Realization
                 return result;
             }
 
-            if (_redisConnection == null || !_redisConnection.IsConnected)
+            var database = GetDatabase(DB);
+            var server = GetServer();
+
+            if (database == null || server == null)
+            {
+                return result;
+            }
+
+            var keys = new List<RedisKey>(RedisBatchSize);
+
+            try
+            {
+                await foreach (var key in server.KeysAsync(
+                    database: DB,
+                    pattern: pattern,
+                    pageSize: RedisScanPageSize))
+                {
+                    keys.Add(key);
+
+                    if (keys.Count < RedisBatchSize)
+                    {
+                        continue;
+                    }
+
+                    await AppendValuesAsync(database, keys, result);
+                    keys.Clear();
+                }
+
+                if (keys.Count > 0)
+                {
+                    await AppendValuesAsync(database, keys, result);
+                }
+            }
+            catch
+            {
+                // Redis 异常时返回已读取到的结果
+            }
+
+            return result;
+        }
+
+        private static async Task AppendValuesAsync(IDatabase database, List<RedisKey> keys, List<string> result)
+        {
+            var values = await database.StringGetAsync(keys.ToArray());
+
+            foreach (var value in values)
+            {
+                if (value.HasValue &&
+                    !string.IsNullOrWhiteSpace(value))
+                {
+                    result.Add(value.ToString().Trim('"'));
+                }
+            }
+        }
+
+        public List<object> SelectTags(string pattern)
+        {
+            var result = new List<object>();
+
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return result;
+            }
+
+            var database = GetDatabase();
+            var server = GetServer();
+
+            if (database == null || server == null)
             {
                 return result;
             }
 
             try
             {
-                var server = _redisConnection.GetServer(_configuration["Ip"].ToString(), Convert.ToInt32(_configuration["Port"]));
-                var database = _redisConnection.GetDatabase(DB);
-
-                foreach (var key in server.Keys(database: DB, pattern: pattern))
+                foreach (var key in server.Keys(
+                    database: 0,
+                    pattern: pattern))
                 {
-                    var value = database.StringGet(key).ToString();
+                    var value = database.StringGet(key);
 
-                    if (!string.IsNullOrWhiteSpace(value))
+                    if (value.HasValue)
                     {
-                        result.Add(value.Trim().Trim('"'));
+                        result.Add(value.ToString());
                     }
                 }
-
-                return result;
             }
             catch
             {
-                return result;
+                // Redis 异常时返回空集合
             }
+
+            return result;
+        }
+
+        public async Task LikeRemoveAsync(string pattern)
+        {
+            await RemoveByKey(pattern);
         }
     }
 }

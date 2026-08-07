@@ -409,6 +409,10 @@ namespace ModsAPI.Controllers
         public async Task<ResultEntity<ModEntity>> ModDetail([FromBody] dynamic json)
         {
             string? userId = GetUserId();
+
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new UnauthorizedAccessException("Token非法。");
+
             string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             string? roles = string.IsNullOrWhiteSpace(token) ? null : _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
 

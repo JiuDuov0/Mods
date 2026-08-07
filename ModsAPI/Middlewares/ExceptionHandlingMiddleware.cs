@@ -113,6 +113,8 @@ namespace ModsAPI.Middlewares
             return statusCode switch
             {
                 StatusCodes.Status400BadRequest => exception.Message,
+                StatusCodes.Status401Unauthorized when exception is UnauthorizedAccessException =>
+                    exception.Message,
                 StatusCodes.Status401Unauthorized => "未授权访问。",
                 StatusCodes.Status404NotFound => "资源不存在。",
                 StatusCodes.Status408RequestTimeout => "请求已超时。",
