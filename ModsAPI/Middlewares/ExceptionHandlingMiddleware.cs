@@ -1,4 +1,5 @@
 ﻿using Entity;
+using Microsoft.AspNetCore.Connections;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Redis.Interface;
@@ -103,6 +104,7 @@ namespace ModsAPI.Middlewares
                 FormatException => StatusCodes.Status400BadRequest,
                 KeyNotFoundException => StatusCodes.Status404NotFound,
                 NotImplementedException => StatusCodes.Status501NotImplemented,
+                ConnectionResetException => StatusCodes.Status408RequestTimeout,
                 OperationCanceledException => StatusCodes.Status408RequestTimeout,
                 _ => StatusCodes.Status500InternalServerError
             };

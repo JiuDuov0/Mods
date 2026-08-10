@@ -195,11 +195,12 @@ namespace Service.Realization
 
         public bool UserUnsubscribeMod(string UserId, string ModId)
         {
-            var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
-            var entity = Context.UserModSubscribeEntity.FirstOrDefault(x => x.UserId == UserId && x.ModId == ModId);
-            Context.UserModSubscribeEntity.Remove(entity);
+            using var context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Write);
+
+            var affectedRows = context.UserModSubscribeEntity.Where(x => x.UserId == UserId && x.ModId == ModId).ExecuteDelete();
             _IRedisManageService.Remove($"SetUserModSubscribe:{UserId}", 1);
-            return Context.SaveChanges() > 0;
+
+            return affectedRows > 0;
         }
 
         public async Task<UserEntity?> GetUserByUserIdAsync(string? UserId)
