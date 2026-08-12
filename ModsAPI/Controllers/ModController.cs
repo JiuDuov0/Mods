@@ -408,26 +408,31 @@ namespace ModsAPI.Controllers
         [HttpPost(Name = "ModDetail")]
         public async Task<ResultEntity<ModEntity>> ModDetail([FromBody] dynamic json)
         {
-            string? userId = GetUserId();
+            string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
 
-            if (string.IsNullOrWhiteSpace(userId))
+            string? userId = string.IsNullOrWhiteSpace(token) ? null : GetUserId();
+
+            // 请求包含 Token，但无法解析出 UserId，说明 Token 非法
+            if (!string.IsNullOrWhiteSpace(token) && token != "null" && string.IsNullOrWhiteSpace(userId))
                 throw new UnauthorizedAccessException("Token非法。");
 
-            string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             string? roles = string.IsNullOrWhiteSpace(token) ? null : _JwtHelper.GetTokenStr(token, ClaimTypes.Role);
 
-            _ = _IAPILogService.WriteLogAsync("ModController/ModDetail", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+            _ = _IAPILogService.WriteLogAsync("ModController/ModDetail", userId ?? string.Empty, _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
             json = ParseJson(json);
 
             if (string.IsNullOrWhiteSpace((string)json.ModId))
                 return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无ModId" };
 
             var modId = (string)json.ModId;
-            if (!string.IsNullOrWhiteSpace(roles) && (roles.Contains("Developer") || roles.Contains("Auditors")))
+            if (!string.IsNullOrWhiteSpace(roles) &&
+                (roles.Contains("Developer") || roles.Contains("Auditors")))
             {
                 var full = await _IModService.ModDetailAllModVersion(userId, modId);
                 return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = full };
             }
+
             var entity = await _IModService.ModDetail(userId, modId);
             return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = entity };
         }
@@ -608,9 +613,12 @@ namespace ModsAPI.Controllers
         /// <param name="json">{"ModId":"modId"}</param>
         /// <returns>ResultEntity(ModPointEntity)</returns>
         [HttpPost(Name = "GetModPointByModId")]
-        [Authorize]
         public ResultEntity<ModPointEntity> GetModPointByModId([FromBody] dynamic json)
         {
+            string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+            if (string.IsNullOrWhiteSpace(token) && token == "null")
+                return new ResultEntity<ModPointEntity>();
+
             string? userId = GetUserId();
             _ = _IAPILogService.WriteLogAsync("ModController/GetModPointByModId", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
             json = ParseJson(json);
