@@ -25,22 +25,34 @@ namespace EF
             build.AddDebug();    // 用于VS调试，输出窗口的输出
         });
         private string _strConn;
-        public AllContext(string Conn)
+        public AllContext(string connectionString)
         {
-            //连接字符串
-            _strConn = Conn;
-        }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseLoggerFactory(MyLogFactory);
-            optionsBuilder.UseSqlServer(_strConn, sqlOptions =>
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                sqlOptions.CommandTimeout(120);
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 10,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            });
+                throw new ArgumentException(
+                    "数据库连接字符串不能为空。",
+                    nameof(connectionString));
+            }
+
+            _strConn = connectionString;
+        }
+        protected override void OnConfiguring(
+            DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder
+                .UseLoggerFactory(MyLogFactory)
+                .UseSqlServer(_strConn, sqlOptions =>
+                {
+                    sqlOptions.CommandTimeout(120);
+
+                    sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 10,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+
+                    sqlOptions.UseQuerySplittingBehavior(
+                        QuerySplittingBehavior.SplitQuery);
+                });
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

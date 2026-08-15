@@ -12,6 +12,8 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using ViewEntity.Mod;
+using System.Net.Http;
+using System.Threading;
 
 namespace ModsAPI.Controllers
 {
@@ -29,6 +31,10 @@ namespace ModsAPI.Controllers
         private readonly IHttpContextAccessor _IHttpContextAccessor;
         private readonly JwtHelper _JwtHelper;
         private readonly HttpClient _httpClient;
+
+        private static readonly SemaphoreSlim BilibiliRequestGate = new(4, 4);
+        private static readonly TimeSpan BilibiliRequestTimeout = TimeSpan.FromSeconds(10);
+
 
         /// <summary>
         /// Initializes a new instance of the ModController class with the specified services and HTTP client for
@@ -218,40 +224,80 @@ namespace ModsAPI.Controllers
         public async Task<ResultEntity<ModEntity>> CreateMod([FromBody] dynamic json)
         {
             string? userId = GetUserId();
-            _ = _IAPILogService.WriteLogAsync("ModController/CreateMod", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            _ = _IAPILogService.WriteLogAsync(
+                "ModController/CreateMod",
+                userId ?? "",
+                _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
 
             json = ParseJson(json);
 
             if (string.IsNullOrWhiteSpace((string)json.Name))
-                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无Mod名称" };
+            {
+                return new ResultEntity<ModEntity>
+                {
+                    ResultCode = 400,
+                    ResultMsg = "无Mod名称"
+                };
+            }
+
             if (string.IsNullOrWhiteSpace((string)json.Description))
-                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无Mod描述" };
+            {
+                return new ResultEntity<ModEntity>
+                {
+                    ResultCode = 400,
+                    ResultMsg = "无Mod描述"
+                };
+            }
+
             if (json.ModVersionEntities == null ||
                 string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].VersionNumber))
-                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无版本号" };
+            {
+                return new ResultEntity<ModEntity>
+                {
+                    ResultCode = 400,
+                    ResultMsg = "无版本号"
+                };
+            }
+
             if (string.IsNullOrWhiteSpace((string)json.ModVersionEntities[0].Description))
-                return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "无版本描述" };
+            {
+                return new ResultEntity<ModEntity>
+                {
+                    ResultCode = 400,
+                    ResultMsg = "无版本描述"
+                };
+            }
 
             var modId = Guid.NewGuid().ToString();
+
             var version = new ModVersionEntity
             {
                 VersionId = Guid.NewGuid().ToString(),
                 ModId = modId,
                 VersionNumber = (string)json.ModVersionEntities[0].VersionNumber,
-                Description = ((string)json.ModVersionEntities[0].Description).Replace("\n", "</br>"),
+                Description = ((string)json.ModVersionEntities[0].Description)
+                    .Replace("\n", "</br>"),
                 CreatedAt = DateTime.Now
             };
 
             var typesList = new List<ModTypeEntity>();
+
             if (json.ModTypeEntities is JArray arr1 && arr1.HasValues)
             {
-                typesList = arr1.ToObject<List<ModTypeEntity>>() ?? new List<ModTypeEntity>();
+                typesList =
+                    arr1.ToObject<List<ModTypeEntity>>()
+                    ?? new List<ModTypeEntity>();
             }
 
             var dependenceList = new List<ModDependenceEntity>();
+
             if (json.ModDependenceEntities is JArray arr2 && arr2.HasValues)
             {
-                dependenceList = arr2.ToObject<List<ModDependenceEntity>>() ?? new List<ModDependenceEntity>();
+                dependenceList =
+                    arr2.ToObject<List<ModDependenceEntity>>()
+                    ?? new List<ModDependenceEntity>();
+
                 dependenceList.ForEach(x =>
                 {
                     x.ModDependenceId = Guid.NewGuid().ToString();
@@ -272,31 +318,57 @@ namespace ModsAPI.Controllers
                 DownloadCount = 0
             };
 
-            // 处理视频封面
             if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
             {
                 try
                 {
-                    var api = $"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}";
-                    var body = await _httpClient.GetStringAsync(api);
+                    var body = await GetBilibiliResponseAsync(mod.VideoUrl);
                     var jobj = JObject.Parse(body);
                     var cover = jobj["data"]?["pic"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(mod.PicUrl) && !string.IsNullOrWhiteSpace(cover))
+
+                    if (string.IsNullOrWhiteSpace(mod.PicUrl) &&
+                        !string.IsNullOrWhiteSpace(cover))
+                    {
                         mod.PicUrl = cover;
-                    mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
+                    }
+
+                    mod.VideoUrl =
+                        $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}" +
+                        "&autoplay=false&danmaku=false";
                 }
                 catch
                 {
-                    return new ResultEntity<ModEntity> { ResultCode = 400, ResultMsg = "BV号不正确" };
+                    return new ResultEntity<ModEntity>
+                    {
+                        ResultCode = 400,
+                        ResultMsg = "BV号不正确"
+                    };
                 }
             }
 
-            if (_IModService.AddModAndModVersion(mod, version, typesList, dependenceList))
+            if (_IModService.AddModAndModVersion(
+                mod,
+                version,
+                typesList,
+                dependenceList))
             {
-                mod.ModVersionEntities = new List<ModVersionEntity> { version };
-                return new ResultEntity<ModEntity> { ResultCode = 200, ResultData = mod };
+                mod.ModVersionEntities = new List<ModVersionEntity>
+        {
+            version
+        };
+
+                return new ResultEntity<ModEntity>
+                {
+                    ResultCode = 200,
+                    ResultData = mod
+                };
             }
-            return new ResultEntity<ModEntity> { ResultCode = 500, ResultMsg = "创建版本失败" };
+
+            return new ResultEntity<ModEntity>
+            {
+                ResultCode = 500,
+                ResultMsg = "创建版本失败"
+            };
         }
 
         /// <summary>
@@ -494,21 +566,38 @@ namespace ModsAPI.Controllers
         /// </returns>
         [HttpPost(Name = "UpdateModInfo")]
         [Authorize]
-        public ResultEntity<bool> UpdateModInfo([FromBody] dynamic json)
+        public async Task<ResultEntity<bool>> UpdateModInfo([FromBody] dynamic json)
         {
             string? userId = GetUserId();
-            _ = _IAPILogService.WriteLogAsync("ModController/UpdateModInfo", userId ?? "", _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            _ = _IAPILogService.WriteLogAsync(
+                "ModController/UpdateModInfo",
+                userId ?? "",
+                _IHttpContextAccessor.HttpContext.Connection.RemoteIpAddress?.ToString());
+
             json = ParseJson(json);
 
             var typesList = new List<ModTypeEntity>();
+
             if (json.ModTypeEntities is JArray arr1 && arr1.HasValues)
-                typesList = arr1.ToObject<List<ModTypeEntity>>() ?? new List<ModTypeEntity>();
+            {
+                typesList =
+                    arr1.ToObject<List<ModTypeEntity>>()
+                    ?? new List<ModTypeEntity>();
+            }
 
             var dependenceList = new List<ModDependenceEntity>();
+
             if (json.ModDependenceEntities is JArray arr2 && arr2.HasValues)
             {
-                dependenceList = arr2.ToObject<List<ModDependenceEntity>>() ?? new List<ModDependenceEntity>();
-                dependenceList.ForEach(x => x.ModDependenceId = Guid.NewGuid().ToString());
+                dependenceList =
+                    arr2.ToObject<List<ModDependenceEntity>>()
+                    ?? new List<ModDependenceEntity>();
+
+                dependenceList.ForEach(x =>
+                {
+                    x.ModDependenceId = Guid.NewGuid().ToString();
+                });
             }
 
             var mod = new ModEntity
@@ -524,30 +613,59 @@ namespace ModsAPI.Controllers
                 ModDependenceEntities = dependenceList
             };
 
-            // 处理视频封面（使用注入 HttpClient 而不是 new）
             if (!string.IsNullOrWhiteSpace(mod.VideoUrl))
             {
                 try
                 {
-                    var body = _httpClient.GetStringAsync($"https://api.bilibili.com/x/web-interface/view?bvid={mod.VideoUrl}")
-                                          .GetAwaiter().GetResult();
+                    var body = await GetBilibiliResponseAsync(mod.VideoUrl);
                     var cover = JObject.Parse(body)["data"]?["pic"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(mod.PicUrl) && !string.IsNullOrWhiteSpace(cover))
+
+                    if (string.IsNullOrWhiteSpace(mod.PicUrl) &&
+                        !string.IsNullOrWhiteSpace(cover))
+                    {
                         mod.PicUrl = cover;
-                    mod.VideoUrl = $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}&autoplay=false&danmaku=false";
+                    }
+
+                    mod.VideoUrl =
+                        $"//player.bilibili.com/player.html?bvid={mod.VideoUrl}" +
+                        "&autoplay=false&danmaku=false";
                 }
                 catch
                 {
-                    return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "BV号不正确" };
+                    return new ResultEntity<bool>
+                    {
+                        ResultCode = 400,
+                        ResultMsg = "BV号不正确"
+                    };
                 }
             }
 
             var updateResult = _IModService.UpdateModInfo(mod, userId);
+
             if (updateResult == null)
-                return new ResultEntity<bool> { ResultCode = 400, ResultMsg = "非本人Mod" };
+            {
+                return new ResultEntity<bool>
+                {
+                    ResultCode = 400,
+                    ResultMsg = "非本人Mod"
+                };
+            }
+
             if (updateResult == true)
-                return new ResultEntity<bool> { ResultCode = 200, ResultData = true, ResultMsg = "更新成功" };
-            return new ResultEntity<bool> { ResultCode = 500, ResultMsg = "更新失败" };
+            {
+                return new ResultEntity<bool>
+                {
+                    ResultCode = 200,
+                    ResultData = true,
+                    ResultMsg = "更新成功"
+                };
+            }
+
+            return new ResultEntity<bool>
+            {
+                ResultCode = 500,
+                ResultMsg = "更新失败"
+            };
         }
 
         /// <summary>
@@ -598,7 +716,7 @@ namespace ModsAPI.Controllers
 
             var entity = new ModPointEntity
             {
-                ModPointId = Guid.NewGuid().ToString(),
+                ModPointId = Guid.NewGuid().ToString(), 
                 ModId = (string)json.ModId,
                 UserId = userId,
                 Point = point
@@ -612,7 +730,7 @@ namespace ModsAPI.Controllers
         /// </summary>
         /// <param name="json">{"ModId":"modId"}</param>
         /// <returns>ResultEntity(ModPointEntity)</returns>
-        [HttpPost(Name = "GetModPointByModId")]
+        [HttpPost(Name = "GetModPointByModId")]                                                                                                                                                                                                                                        
         public ResultEntity<ModPointEntity> GetModPointByModId([FromBody] dynamic json)
         {
             string? token = Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
@@ -770,6 +888,57 @@ namespace ModsAPI.Controllers
 
             var result = _IModService.GetVersionsByModIds(modIds, since);
             return new ResultEntity<List<ModVersionEntity>> { ResultCode = 200, ResultData = result };
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bvid"></param>
+        /// <returns></returns>
+        /// <exception cref="TimeoutException"></exception>
+
+        private async Task<string> GetBilibiliResponseAsync(string bvid)
+        {
+            var acquired = false;
+            var requestAborted =
+                _IHttpContextAccessor.HttpContext?.RequestAborted
+                ?? CancellationToken.None;
+
+            try
+            {
+                acquired = await BilibiliRequestGate.WaitAsync(
+                    BilibiliRequestTimeout,
+                    requestAborted);
+
+                if (!acquired)
+                {
+                    throw new TimeoutException("Bilibili 请求并发等待超时。");
+                }
+
+                using var timeoutCts =
+                    CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
+
+                timeoutCts.CancelAfter(BilibiliRequestTimeout);
+
+                var requestUrl =
+                    $"https://api.bilibili.com/x/web-interface/view?bvid={Uri.EscapeDataString(bvid)}";
+
+                using var response = await _httpClient.GetAsync(
+                    requestUrl,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    timeoutCts.Token);
+
+                response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadAsStringAsync(timeoutCts.Token);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    BilibiliRequestGate.Release();
+                }
+            }
         }
     }
 }

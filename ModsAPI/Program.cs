@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using ModsAPI.Middlewares;
 using ModsAPI.tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,26 +59,19 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(s =>
 {
-    //添加安全定义
     s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "请输入token,格式为 Bearer xxxxxxxx（注意中间必须有空格）",
+        Description = "请输入 token，格式为 Bearer xxxxxxxx（中间必须有空格）",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.Http,
         BearerFormat = "JWT",
         Scheme = "Bearer"
     });
-    //添加安全要求
-    s.AddSecurityRequirement(new OpenApiSecurityRequirement {
-        {
-            new OpenApiSecurityScheme{
-                Reference =new OpenApiReference{
-                    Type = ReferenceType.SecurityScheme,
-                    Id ="Bearer"
-                }
-            },new string[]{ }
-        }
+
+    s.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer")] = []
     });
 
     s.SwaggerDoc("v1", new OpenApiInfo
@@ -87,11 +80,10 @@ builder.Services.AddSwaggerGen(s =>
         Version = "V1",
         Description = "Swagger测试接口"
     });
-    //s.OperationFilter<SwaggerFileOperationFilter>();
-    var file = Path.Combine(AppContext.BaseDirectory, "xml.xml");  // xml文档绝对路径
-    var path = Path.Combine(AppContext.BaseDirectory, file); // xml文档绝对路径
-    s.IncludeXmlComments(path, true); // true : 显示控制器层注释
-    s.OrderActionsBy(o => o.RelativePath); // 对action的名称进行排序，如果有多个，就可以看见效果了。
+
+    var path = Path.Combine(AppContext.BaseDirectory, "xml.xml");
+    s.IncludeXmlComments(path, true);
+    s.OrderActionsBy(o => o.RelativePath);
 });
 builder.Services.AddRateLimiter(_ => _
     .AddConcurrencyLimiter(policyName: "Concurrency", options =>

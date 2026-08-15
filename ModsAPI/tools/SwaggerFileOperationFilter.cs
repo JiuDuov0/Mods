@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace ModsAPI.tools
@@ -27,7 +27,7 @@ namespace ModsAPI.tools
                     Description = "File to upload",
                     Schema = new OpenApiSchema
                     {
-                        Type = "file",
+                        Type = JsonSchemaType.String,
                         Format = "binary"
                     }
                 });

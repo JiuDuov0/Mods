@@ -23,7 +23,7 @@ namespace Redis.Interface
         /// <summary>
         /// 异步获取序列化值
         /// </summary>
-        Task<TEntity> GetAsync<TEntity>(string key, int DB = 0);
+        Task<TEntity?> GetAsync<TEntity>(string key, int DB = 0);
 
         /// <summary>
         /// 判断 Key 是否存在
@@ -48,9 +48,13 @@ namespace Redis.Interface
         /// <summary>
         /// 异步获取序列化值
         /// </summary>
-        Task<TEntity> GetEntityAsync<TEntity>(string key, int DB = 0);
+        Task<TEntity?> GetEntityAsync<TEntity>(string key, int DB = 0);
 
-        Task SetAsync(string key, object value, object? cacheTime = null, int DB = 0);
+        Task SetAsync(
+            string key,
+            object value,
+            object? cacheTime = null,
+            int DB = 0);
 
         Task<bool> KeyExistsAsync(string key, int DB = 0);
 
@@ -73,6 +77,8 @@ namespace Redis.Interface
 
         Task LikeRemoveAsync(string pattern);
 
-        Task<List<string>> GetValuesByPatternAsync(string pattern, int DB = 0);
+        Task<List<string>> GetValuesByPatternAsync(
+            string pattern,
+            int DB = 0);
     }
 }

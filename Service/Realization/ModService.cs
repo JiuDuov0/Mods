@@ -767,7 +767,9 @@ namespace Service.Realization
         {
             var Context = _IDbContextServices.CreateContext(ReadOrWriteEnum.Read);
             var avg = await Context.ModPointEntity.Where(x => x.ModId == ModId).AverageAsync(x => x.Point);
-            var entity = await Context.ModEntity.IgnoreQueryFilters()
+            var entity = await Context.ModEntity
+                .IgnoreQueryFilters()
+                .AsNoTracking()
                 .Include(x => x.ModVersionEntities)
                 .ThenInclude(x => x.ApproveModVersionEntity)
                 .Include(x => x.ModTypeEntities)
@@ -776,8 +778,7 @@ namespace Service.Realization
                 .Include(x => x.ModDependenceEntities)
                 .ThenInclude(x => x.DependenceModVersion)
                 .ThenInclude(x => x.Mod)
-                .Where(x => x.SoftDeleted == false)
-                //.Where(x => x.ModVersionEntities.Any(y => y.ApproveModVersionEntity.Status == "20"))
+                .Where(x => !x.SoftDeleted)
                 .FirstOrDefaultAsync(x => x.ModId == ModId);
 
             var subscribe = await Context.UserModSubscribeEntity.FirstOrDefaultAsync(x => x.UserId == UserId && x.ModId == ModId);

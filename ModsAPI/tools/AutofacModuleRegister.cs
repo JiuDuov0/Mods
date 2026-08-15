@@ -1,6 +1,9 @@
 ﻿using Autofac;
-using Autofac.Core;
-using System.IdentityModel.Tokens.Jwt;
+using EF;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Redis.Interface;
+using Redis.Realization;
 using System.Reflection;
 
 namespace ModsAPI.tools
@@ -8,18 +11,57 @@ namespace ModsAPI.tools
     public class AutofacModuleRegister : Autofac.Module
     {
         /// <inheritdoc/>
-        /// 重写Autofac管道Load方法，在这里注册注入
         protected override void Load(ContainerBuilder builder)
         {
-            //程序集注入业务服务
-            var Redis = Assembly.Load("Redis");
-            var EF = Assembly.Load("EF");
-            var Service = Assembly.Load("Service");
-            //根据名称约定（服务层的接口和实现均以Service结尾），实现服务接口和服务实现的依赖
-            builder.RegisterAssemblyTypes(Redis, Redis).Where(t => t.Name.EndsWith("Service")).AsImplementedInterfaces();
-            builder.RegisterAssemblyTypes(EF, EF).Where(t => t.Name.EndsWith("Service")).AsImplementedInterfaces();
-            builder.RegisterAssemblyTypes(Service, Service).Where(t => t.Name.EndsWith("Service")).AsImplementedInterfaces();
-            builder.RegisterType<JwtHelper>().InstancePerLifetimeScope();
+            var redisAssembly = Assembly.Load("Redis");
+            var efAssembly = Assembly.Load("EF");
+            var serviceAssembly = Assembly.Load("Service");
+
+            builder.RegisterType<RedisManageService>()
+                .As<IRedisManageService>()
+                .As<IHostedService>()
+                .SingleInstance();
+
+            builder.RegisterAssemblyTypes(redisAssembly)
+                .Where(type =>
+                    type.Name.EndsWith("Service") &&
+                    type != typeof(RedisManageService))
+                .AsImplementedInterfaces()
+                .SingleInstance();
+
+            // 注册 AllContext。
+            // AllContext 的构造函数需要连接字符串，因此使用配置创建。
+            builder.Register(context =>
+            {
+                var configuration =
+                    context.Resolve<IConfiguration>();
+
+                var connectionString =
+                    configuration["WriteConnectionString"];
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "WriteConnectionString 未配置。");
+                }
+
+                return new AllContext(connectionString);
+            })
+            .As<AllContext>()
+            .InstancePerLifetimeScope();
+
+            builder.RegisterAssemblyTypes(efAssembly)
+                .Where(type =>
+                    type.Name.EndsWith("Service"))
+                .AsImplementedInterfaces();
+
+            builder.RegisterAssemblyTypes(serviceAssembly)
+                .Where(type =>
+                    type.Name.EndsWith("Service"))
+                .AsImplementedInterfaces();
+
+            builder.RegisterType<JwtHelper>()
+                .InstancePerLifetimeScope();
         }
     }
 }
