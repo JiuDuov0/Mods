@@ -36,20 +36,17 @@ namespace Redis.Realization
             var host = configuration["Ip"];
             if (string.IsNullOrWhiteSpace(host))
             {
-                throw new InvalidOperationException(
-                    "Redis Ip 未配置。");
+                throw new InvalidOperationException("Redis Ip 未配置。");
             }
 
             if (!int.TryParse(configuration["Port"], out var port))
             {
-                throw new InvalidOperationException(
-                    "Redis Port 配置无效。");
+                throw new InvalidOperationException("Redis Port 配置无效。");
             }
 
             if (port is < 1 or > 65535)
             {
-                throw new InvalidOperationException(
-                    "Redis Port 配置必须在 1 到 65535 之间。");
+                throw new InvalidOperationException("Redis Port 配置必须在 1 到 65535 之间。");
             }
 
             _redisEndPoint = new DnsEndPoint(host, port);
@@ -57,7 +54,7 @@ namespace Redis.Realization
             _configurationOptions = new ConfigurationOptions
             {
                 ClientName = "JD_Soft_FrameWork_Redis",
-                Password = configuration["Password"],
+                Password = configuration["Password"] ?? string.Empty,
                 ConnectTimeout = GetIntConfiguration("Timeout", 5000),
                 DefaultDatabase = GetIntConfiguration("DB", 0),
                 AbortOnConnectFail = false,
@@ -67,20 +64,14 @@ namespace Redis.Realization
             _configurationOptions.EndPoints.Add(_redisEndPoint);
         }
 
-        private int GetIntConfiguration(
-            string key,
-            int defaultValue)
+        private int GetIntConfiguration(string key, int defaultValue)
         {
-            return int.TryParse(_configuration[key], out var value)
-                ? value
-                : defaultValue;
+            return int.TryParse(_configuration[key], out var value) ? value : defaultValue;
         }
 
         private ConnectionMultiplexer GetConnection()
         {
-            return GetConnectionAsync()
-                .GetAwaiter()
-                .GetResult();
+            return GetConnectionAsync().GetAwaiter().GetResult();
         }
 
         private async Task<ConnectionMultiplexer> GetConnectionAsync()
@@ -92,12 +83,10 @@ namespace Redis.Realization
                 return connection;
             }
 
-            return await StartConnectionAttemptAsync()
-                .ConfigureAwait(false);
+            return await StartConnectionAttemptAsync().ConfigureAwait(false);
         }
 
-        private Task<ConnectionMultiplexer>
-            StartConnectionAttemptAsync()
+        private Task<ConnectionMultiplexer> StartConnectionAttemptAsync()
         {
             var currentTask = Volatile.Read(ref _connectionTask);
 
@@ -106,14 +95,9 @@ namespace Redis.Realization
                 return currentTask;
             }
 
-            var taskSource =
-                new TaskCompletionSource<ConnectionMultiplexer>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
+            var taskSource = new TaskCompletionSource<ConnectionMultiplexer>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            if (Interlocked.CompareExchange(
-                    ref _connectionTask,
-                    taskSource.Task,
-                    currentTask) != currentTask)
+            if (Interlocked.CompareExchange(ref _connectionTask, taskSource.Task, currentTask) != currentTask)
             {
                 return StartConnectionAttemptAsync();
             }
@@ -123,37 +107,37 @@ namespace Redis.Realization
             return taskSource.Task;
         }
 
-        private async Task ConnectAsync(
-            TaskCompletionSource<ConnectionMultiplexer> taskSource)
+        private async Task ConnectAsync(TaskCompletionSource<ConnectionMultiplexer> taskSource, int retryCount = 0, int maxRetries = 3)
         {
-            try
+            while (retryCount < maxRetries)
             {
-                var connection = await ConnectionMultiplexer
-                    .ConnectAsync(_configurationOptions)
-                    .ConfigureAwait(false);
-
-                var oldConnection = Interlocked.Exchange(
-                    ref _redisConnection,
-                    connection);
-
-                if (oldConnection != null &&
-                    oldConnection != connection)
+                try
                 {
-                    oldConnection.Dispose();
-                }
+                    var connection = await ConnectionMultiplexer.ConnectAsync(_configurationOptions).ConfigureAwait(false);
 
-                taskSource.TrySetResult(connection);
-            }
-            catch (Exception exception)
-            {
-                taskSource.TrySetException(exception);
-            }
-            finally
-            {
-                Interlocked.CompareExchange(
-                    ref _connectionTask,
-                    null,
-                    taskSource.Task);
+                    var oldConnection = Interlocked.Exchange(ref _redisConnection, connection);
+
+                    if (oldConnection != null && oldConnection != connection)
+                    {
+                        oldConnection.Dispose();
+                    }
+
+                    taskSource.TrySetResult(connection);
+                    return;
+                }
+                catch (Exception exception)
+                {
+                    retryCount++;
+                    if (retryCount >= maxRetries)
+                    {
+                        taskSource.TrySetException(exception);
+                        return;
+                    }
+
+                    var delayMs = Math.Min(1000 * (int)Math.Pow(2, retryCount - 1), 10000);
+
+                    await Task.Delay(delayMs).ConfigureAwait(false);
+                }
             }
         }
 
@@ -164,8 +148,7 @@ namespace Redis.Realization
 
         private async Task<IDatabase> GetDatabaseAsync(int DB = 0)
         {
-            var connection = await GetConnectionAsync()
-                .ConfigureAwait(false);
+            var connection = await GetConnectionAsync().ConfigureAwait(false);
 
             return connection.GetDatabase(DB);
         }
@@ -177,8 +160,7 @@ namespace Redis.Realization
 
         private async Task<IServer> GetServerAsync()
         {
-            var connection = await GetConnectionAsync()
-                .ConfigureAwait(false);
+            var connection = await GetConnectionAsync().ConfigureAwait(false);
 
             return connection.GetServer(_redisEndPoint);
         }
@@ -188,87 +170,57 @@ namespace Redis.Realization
             return JsonConvert.SerializeObject(value, JsonSettings);
         }
 
-        public void Set(
-            string key,
-            object value,
-            object? ts = null,
-            int DB = 0)
+        public void Set(string key, object value, object? ts = null, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key) || value == null)
             {
                 return;
             }
 
-            var cacheTime = ts is TimeSpan timeSpan
-                ? timeSpan
-                : TimeSpan.FromDays(1);
+            var cacheTime = ts is TimeSpan timeSpan ? timeSpan : TimeSpan.FromDays(1);
 
-            GetDatabase(DB).StringSet(
-                key,
-                Serialize(value),
-                cacheTime);
+            GetDatabase(DB).StringSet(key, Serialize(value), cacheTime);
         }
 
-        public async Task SetAsync(
-            string key,
-            object value,
-            object? cacheTime = null,
-            int DB = 0)
+        public async Task SetAsync(string key, object value, object? ts = null, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key) || value == null)
             {
                 return;
             }
 
-            var expiration = cacheTime is TimeSpan timeSpan
-                ? timeSpan
-                : TimeSpan.FromDays(1);
+            var cacheTime = ts is TimeSpan timeSpan ? timeSpan : TimeSpan.FromDays(1);
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            await database.StringSetAsync(
-                key,
-                Serialize(value),
-                expiration)
-                .ConfigureAwait(false);
+            await database.StringSetAsync(key, Serialize(value), cacheTime).ConfigureAwait(false);
         }
 
-        public string GetValue(
-            string key,
-            int DB = 0)
+        public string GetValue(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return string.Empty;
             }
 
-            return GetDatabase(DB)
-                .StringGet(key)
-                .ToString();
+            return GetDatabase(DB).StringGet(key).ToString();
         }
 
-        public async Task<string> GetValueAsync(
-            string key,
-            int DB = 0)
+        public async Task<string> GetValueAsync(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return string.Empty;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            var value = await database.StringGetAsync(key)
-                .ConfigureAwait(false);
+            var value = await database.StringGetAsync(key).ConfigureAwait(false);
 
             return value.ToString();
         }
 
-        public TEntity? Get<TEntity>(
-            string key,
-            int DB = 0)
+        public TEntity? Get<TEntity>(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -282,45 +234,34 @@ namespace Redis.Realization
                 return default;
             }
 
-            return JsonConvert.DeserializeObject<TEntity>(
-                value.ToString());
+            return JsonConvert.DeserializeObject<TEntity>(value.ToString());
         }
 
-        public async Task<TEntity?> GetAsync<TEntity>(
-            string key,
-            int DB = 0)
+        public async Task<TEntity?> GetAsync<TEntity>(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return default;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            var value = await database.StringGetAsync(key)
-                .ConfigureAwait(false);
+            var value = await database.StringGetAsync(key).ConfigureAwait(false);
 
             if (!value.HasValue)
             {
                 return default;
             }
 
-            return JsonConvert.DeserializeObject<TEntity>(
-                value.ToString());
+            return JsonConvert.DeserializeObject<TEntity>(value.ToString());
         }
 
-        public async Task<TEntity?> GetEntityAsync<TEntity>(
-            string key,
-            int DB = 0)
+        public async Task<TEntity?> GetEntityAsync<TEntity>(string key, int DB = 0)
         {
-            return await GetAsync<TEntity>(key, DB)
-                .ConfigureAwait(false);
+            return await GetAsync<TEntity>(key, DB).ConfigureAwait(false);
         }
 
-        public bool KeyExists(
-            string key,
-            int DB = 0)
+        public bool KeyExists(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -330,25 +271,19 @@ namespace Redis.Realization
             return GetDatabase(DB).KeyExists(key);
         }
 
-        public async Task<bool> KeyExistsAsync(
-            string key,
-            int DB = 0)
+        public async Task<bool> KeyExistsAsync(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return false;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            return await database.KeyExistsAsync(key)
-                .ConfigureAwait(false);
+            return await database.KeyExistsAsync(key).ConfigureAwait(false);
         }
 
-        public void Remove(
-            string key,
-            int DB = 0)
+        public void Remove(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -358,20 +293,16 @@ namespace Redis.Realization
             GetDatabase(DB).KeyDelete(key);
         }
 
-        public async Task RemoveAsync(
-            string key,
-            int DB = 0)
+        public async Task RemoveAsync(string key, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 return;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            await database.KeyDeleteAsync(key)
-                .ConfigureAwait(false);
+            await database.KeyDeleteAsync(key).ConfigureAwait(false);
         }
 
         public void Clear(int? DB = null)
@@ -390,42 +321,32 @@ namespace Redis.Realization
 
         public async Task ClearAsync(int? DB = null)
         {
-            var server = await GetServerAsync()
-                .ConfigureAwait(false);
+            var server = await GetServerAsync().ConfigureAwait(false);
 
             if (DB.HasValue)
             {
-                await server.FlushDatabaseAsync(DB.Value)
-                    .ConfigureAwait(false);
+                await server.FlushDatabaseAsync(DB.Value).ConfigureAwait(false);
             }
             else
             {
-                await server.FlushAllDatabasesAsync()
-                    .ConfigureAwait(false);
+                await server.FlushAllDatabasesAsync().ConfigureAwait(false);
             }
         }
 
-        public async Task RemoveByKey(
-            string pattern,
-            int DB = 0)
+        public async Task RemoveByKey(string pattern, int DB = 0)
         {
             if (string.IsNullOrWhiteSpace(pattern))
             {
                 return;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            var server = await GetServerAsync()
-                .ConfigureAwait(false);
+            var server = await GetServerAsync().ConfigureAwait(false);
 
             var keys = new List<RedisKey>(RedisBatchSize);
 
-            await foreach (var key in server.KeysAsync(
-                database: DB,
-                pattern: pattern,
-                pageSize: RedisScanPageSize))
+            await foreach (var key in server.KeysAsync(database: DB, pattern: pattern, pageSize: RedisScanPageSize))
             {
                 keys.Add(key);
 
@@ -434,22 +355,18 @@ namespace Redis.Realization
                     continue;
                 }
 
-                await database.KeyDeleteAsync(keys.ToArray())
-                    .ConfigureAwait(false);
+                await database.KeyDeleteAsync(keys.ToArray()).ConfigureAwait(false);
 
                 keys.Clear();
             }
 
             if (keys.Count > 0)
             {
-                await database.KeyDeleteAsync(keys.ToArray())
-                    .ConfigureAwait(false);
+                await database.KeyDeleteAsync(keys.ToArray()).ConfigureAwait(false);
             }
         }
 
-        public async Task<List<string>> GetValuesByPatternAsync(
-            string pattern,
-            int DB = 0)
+        public async Task<List<string>> GetValuesByPatternAsync(string pattern, int DB = 0)
         {
             var result = new List<string>();
 
@@ -458,18 +375,13 @@ namespace Redis.Realization
                 return result;
             }
 
-            var database = await GetDatabaseAsync(DB)
-                .ConfigureAwait(false);
+            var database = await GetDatabaseAsync(DB).ConfigureAwait(false);
 
-            var server = await GetServerAsync()
-                .ConfigureAwait(false);
+            var server = await GetServerAsync().ConfigureAwait(false);
 
             var keys = new List<RedisKey>(RedisBatchSize);
 
-            await foreach (var key in server.KeysAsync(
-                database: DB,
-                pattern: pattern,
-                pageSize: RedisScanPageSize))
+            await foreach (var key in server.KeysAsync(database: DB, pattern: pattern, pageSize: RedisScanPageSize))
             {
                 keys.Add(key);
 
@@ -478,40 +390,26 @@ namespace Redis.Realization
                     continue;
                 }
 
-                await AppendValuesAsync(
-                        database,
-                        keys,
-                        result)
-                    .ConfigureAwait(false);
+                await AppendValuesAsync(database, keys, result).ConfigureAwait(false);
 
                 keys.Clear();
             }
 
             if (keys.Count > 0)
             {
-                await AppendValuesAsync(
-                        database,
-                        keys,
-                        result)
-                    .ConfigureAwait(false);
+                await AppendValuesAsync(database, keys, result).ConfigureAwait(false);
             }
 
             return result;
         }
 
-        private static async Task AppendValuesAsync(
-            IDatabase database,
-            List<RedisKey> keys,
-            List<string> result)
+        private static async Task AppendValuesAsync(IDatabase database, List<RedisKey> keys, List<string> result)
         {
-            var values = await database.StringGetAsync(
-                    keys.ToArray())
-                .ConfigureAwait(false);
+            var values = await database.StringGetAsync(keys.ToArray()).ConfigureAwait(false);
 
             foreach (var value in values)
             {
-                if (value.HasValue &&
-                    !string.IsNullOrWhiteSpace(value))
+                if (value.HasValue && !string.IsNullOrWhiteSpace(value))
                 {
                     result.Add(value.ToString().Trim('"'));
                 }
@@ -530,9 +428,7 @@ namespace Redis.Realization
             var database = GetDatabase();
             var server = GetServer();
 
-            foreach (var key in server.Keys(
-                database: 0,
-                pattern: pattern))
+            foreach (var key in server.Keys(database: 0, pattern: pattern))
             {
                 var value = database.StringGet(key);
 
@@ -547,24 +443,26 @@ namespace Redis.Realization
 
         public async Task LikeRemoveAsync(string pattern)
         {
-            await RemoveByKey(pattern)
-                .ConfigureAwait(false);
+            await RemoveByKey(pattern).ConfigureAwait(false);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            await GetConnectionAsync()
-                .WaitAsync(cancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                await GetConnectionAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            var connection = Interlocked.Exchange(
-                ref _redisConnection,
-                null);
+            var connection = Interlocked.Exchange(ref _redisConnection, null);
 
             connection?.Dispose();
 
